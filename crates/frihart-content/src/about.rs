@@ -567,16 +567,16 @@ fn campaigns_page(url: &Url) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Campaigns".into(),
-                subtitle: "A–G now. H and I wait.".into(),
+                subtitle: "A B C closed (v0.1.0). D+E next. H and I parked.".into(),
             },
             Block::List(vec![
-                "A Foundation — identity, license, crates".into(),
-                "B Chrome — black/yellow, containers, blocker, wipe".into(),
-                "C Network OPSEC — rustls, Tor fail-closed, safe downloads".into(),
-                "D Engine — HTML/CSS/layout (you are here)".into(),
-                "E Isolation — one content slot per site key".into(),
-                "F Linux homes — Arch, Cachy, Fedora, Mint, Tails, Qubes".into(),
-                "G Script — off. Fingerprint APIs stay denied.".into(),
+                "A Foundation — closed".into(),
+                "B Chrome — closed".into(),
+                "C Network OPSEC — closed".into(),
+                "D Engine — open (you are here)".into(),
+                "E Isolation — open (landlock in child; no process split yet)".into(),
+                "F Linux homes — open (detect + Tails private default)".into(),
+                "G Script — refuse-only".into(),
             ]),
             Block::Note(
                 "H Other OS (Windows, macOS, Android) and I Depth (media, i18n, \
@@ -1312,15 +1312,15 @@ fn roadmap(url: &Url) -> Document {
                 subtitle: "A capability ladder, not a fake launch date.".into(),
             },
             Block::List(vec![
-                "A Foundation — identity, crates, constitution".into(),
-                "B Chrome — black/yellow, containers, blocker, wipe".into(),
-                "C Network OPSEC — rustls, Tor fail-closed, safe downloads".into(),
-                "D Engine — HTML/CSS/layout (in progress)".into(),
-                "E Isolation — process split, Linux sandbox".into(),
-                "F Linux homes — Arch, Cachy, Fedora, Mint, Tails, Qubes".into(),
-                "G Script — last; fingerprint APIs stay denied".into(),
-                "H Other OS — Windows, macOS, Android after Linux is real".into(),
-                "I Depth — media, i18n, print, extension runtime".into(),
+                "A Foundation — closed (v0.1.0)".into(),
+                "B Chrome — closed".into(),
+                "C Network OPSEC — closed".into(),
+                "D Engine — open".into(),
+                "E Isolation — open".into(),
+                "F Linux homes — open".into(),
+                "G Script — refuse-only".into(),
+                "H Other OS — parked".into(),
+                "I Depth — parked".into(),
             ]),
             Block::Paragraph(
                 "The full plan, success criteria, and time ranges live in ROADMAP.md \

@@ -53,25 +53,29 @@ sites Frihart claims at that time.
 
 ## Campaigns (the new plan)
 
-| Campaign | Crate phases | Goal |
-| --- | --- | --- |
-| **A Foundation** | 0 | Identity, license, crates, constitution |
-| **B Chrome** | 1 | Black/yellow shell. Containers, blocker, wipe. LibreWolf stance |
-| **C Network OPSEC** | 2 | rustls, partitioned cookies, Tor fail-closed, safe downloads |
-| **D Engine** | 3–5, 12 | HTML/CSS/layout/forms. Documents, not webapps |
-| **E Isolation** | 6 | Process split, seccomp, landlock. A tab cannot own the profile |
-| **F Linux homes** | packaging | Arch, Cachy, Fedora, Mint, then Tails and Qubes |
-| **G Script** | 7 | Last. Default conservative. Fingerprint APIs stay denied |
-| **H Other OS** | 8–10 | **Parked.** Windows, macOS, Android after Linux is real |
-| **I Depth** | 11, 13–15 | **Parked.** Media, i18n, print, extension runtime |
+| Campaign | Crate phases | Status | Goal |
+| --- | --- | --- | --- |
+| **A Foundation** | 0 | **Closed** (tag v0.1.0) | Identity, license, crates, constitution |
+| **B Chrome** | 1 | **Closed** | Black/yellow shell. Containers, blocker, wipe |
+| **C Network OPSEC** | 2 | **Closed** | rustls, cookies, Tor fail-closed, safe downloads |
+| **D Engine** | 3–5, 12 | **Open** — next | HTML/CSS/layout/forms. Documents, not webapps |
+| **E Isolation** | 6 | **Open** | Process split, seccomp, landlock |
+| **F Linux homes** | packaging | **Open** | Arch, Cachy, Fedora, Mint, Tails, Qubes |
+| **G Script** | 7 | **Open** (refuse-only) | Last. Fingerprint APIs stay denied |
+| **H Other OS** | 8–10 | **Parked** | Windows, macOS, Android |
+| **I Depth** | 11, 13–15 | **Parked** | Media, i18n, print, extension runtime |
 
-Work now is **A–G only**. Standing OPSEC: [docs/opsec.md](docs/opsec.md).
+**Closed today:** A, B, C (crate phases 0–2). Leftovers (multi-window, HTTP/2) do not block close.
+
+Next session: **D + E**. Standing OPSEC: [docs/opsec.md](docs/opsec.md).
+Handoff: [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ---
 
 ## Phase 0 — Identity and foundation
 
-**When:** weeks 1–4 (started in this repository)
+**Status: closed.** Tag `v0.1.0`.
+**When:** weeks 1–4
 **Goal:** a project that can be worked on for years without being rewritten.
 
 ### Technical tasks
@@ -108,6 +112,7 @@ Work now is **A–G only**. Standing OPSEC: [docs/opsec.md](docs/opsec.md).
 
 ## Phase 1 — Linux browser shell
 
+**Status: closed.** Multi-window is leftover polish, not a close blocker.
 **When:** months 1–3
 **Goal:** the chrome is a real home. You change settings here. You keep
 bookmarks here. You are not waiting on an engine to have a browser.
@@ -151,6 +156,7 @@ bookmarks here. You are not waiting on an engine to have a browser.
 
 ## Phase 2 — Sovereign network stack
 
+**Status: closed.** HTTP/2 and a partitioned cache are leftovers.
 **When:** months 3–6
 **Goal:** Frihart can talk to the network the way a privacy browser must,
 before it can paint a page.
@@ -544,7 +550,7 @@ A sustainable rhythm for a long project:
 - **Friday is delete-code day** when the design got ahead of the tests
 - **Engine work in the morning, chrome polish when tired** — chrome bugs
   are user-visible and tempting; the engine is the long pole
-- **Tag 0.1.0** when Phase 1 success criteria are met, not before
+- **Tag 0.1.0** when Phase 1 success criteria are met — done. Next tag is 0.2.0 when campaign D can paint a named list of simple sites.
 
 ## Near-term checklist (the only items that matter this month)
 

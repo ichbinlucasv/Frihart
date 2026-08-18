@@ -63,19 +63,21 @@ See [docs/pricing.md](docs/pricing.md).
 | Arch, CachyOS | Reference. `packaging/arch/PKGBUILD` |
 | Fedora | `packaging/fedora/frihart.spec` |
 | Mint (Debian/Ubuntu) | `packaging/debian/` |
-| Tails | Planned: amnesic default, use Tails Tor, `.deb` |
-| Qubes OS | Planned: AppVM / DisposableVM, Fedora & Debian templates |
+| Tails | Amnesic default (`--private` unless `--profile`). Use Tails Tor |
+| Qubes OS | DisposableVM = private profile. Fedora & Debian template notes |
 | Other Linux | Same binary. Wayland first, X11 while it lasts |
 
 Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.md).
 
 ## Current status
 
-Campaigns **A–G** are in progress. **H** (other OS) and **I** (media,
-i18n, print, extension runtime) are parked.
+**v0.1.0.** Campaigns **A, B, C** (crate phases 0–2) are **closed**.
+**D + E** are the open pole. **H** and **I** are parked.
 
 On Linux, `cargo run` opens a real window. `https://` fetches over rustls
 and paints the subset. JS is off. Tor tabs dial SOCKS only.
+
+Next session: [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ## Build
 
@@ -125,6 +127,7 @@ Private windows use memory only. Files are `0600` / dirs `0700`.
 | --- | --- |
 | [PHILOSOPHY.md](PHILOSOPHY.md) | Constitution. Libertarian, LibreWolf stance |
 | [ROADMAP.md](ROADMAP.md) | Campaigns A–I and crate phases 0–15 |
+| [docs/HANDOFF.md](docs/HANDOFF.md) | Where to continue (A–C closed) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate map |
 | [docs/opsec.md](docs/opsec.md) | Standing OPSEC rules |
 | [docs/distros.md](docs/distros.md) | Arch, Cachy, Fedora, Mint, Tails, Qubes |
