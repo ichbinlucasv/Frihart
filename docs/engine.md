@@ -39,7 +39,8 @@ not mutate it.
 
 ## What is off
 
-- JavaScript (`frihart-js` refuses; `javascript:` URLs refused)
+- JavaScript (`frihart-js` refuses; `javascript:` URLs refused). If G
+  starts, it is a Frihart interpreter in Rust — not an embed.
 - Image decode (`frihart-media` sniffs only; img is a box)
 - Flex/grid, SVG
 - WebExtensions execution (install/audit only)

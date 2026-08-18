@@ -14,7 +14,9 @@ before writing code. Linux homes are listed in [docs/distros.md](docs/distros.md
 3. Changing a default requires an update to `docs/defaults.md`.
 4. Policy decisions belong in `frihart-privacy`, not in an `if` next to
    a socket.
-5. Do not vendor Gecko, Blink, WebKit, Servo, or CEF.
+5. Do not vendor Gecko, Blink, WebKit, Servo, or CEF. Do not embed
+   V8, SpiderMonkey, JavaScriptCore, or QuickJS. The engine is Frihart
+   in Rust.
 6. Do not add a GUI framework that would own the chrome.
 
 ## Workflow

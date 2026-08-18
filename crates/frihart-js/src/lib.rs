@@ -1,4 +1,5 @@
 //! JS types. Execution stays off. Campaign G is refuse-first.
+//! If G starts, it is a Frihart interpreter in Rust — not an embed.
 
 #![forbid(unsafe_code)]
 

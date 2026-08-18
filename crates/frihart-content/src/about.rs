@@ -742,9 +742,9 @@ fn script_page(url: &Url, prefs: &Prefs) -> Document {
                     .collect(),
             ),
             Block::Note(
-                "A JS engine can be written in Rust. We have not started one. \
-                 Campaign G, if it ever starts, is a small Frihart interpreter \
-                 — not V8, not SpiderMonkey, not a Firefox embed. Until then \
+                "Locked: the engine is Frihart, in Rust. We will not embed V8, \
+                 SpiderMonkey, or another browser's runtime. Campaign G, if it \
+                 ever starts, is a small interpreter we write here. Until then \
                  flipping the pref does not execute, and javascript: is refused."
                     .into(),
             ),

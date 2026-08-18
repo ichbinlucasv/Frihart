@@ -351,12 +351,12 @@ a generic exploit runtime.
 
 ### Technical tasks
 
-- Decision document: subset interpreter vs. embedding a JS engine
-  (the product remains Frihart; an embedded engine is a component, not a
-  fork of a browser)
+- **Locked:** no embed. If G starts, it is a small Frihart interpreter
+  in Rust — not V8, SpiderMonkey, JavaScriptCore, or QuickJS. Decision
+  document is closed.
 - WebExtensions host: execute sideloaded Firefox add-ons against the
   subset of `browser.*` we have implemented (see docs/extensions.md)
-- Start with no JIT if we embed; JIT is an opt-in later
+- No JIT in the first interpreter. JIT is an opt-in later, still ours.
 - Bindings: DOM read, simple mutation, events (`click`, `submit`,
   `DOMContentLoaded`)
 - `fetch` / `XMLHttpRequest` go through `frihart-net` + policy

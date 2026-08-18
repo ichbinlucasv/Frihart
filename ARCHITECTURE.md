@@ -37,7 +37,9 @@ script all receive a `Policy` and must be able to explain a denial.
 ## Non-negotiable constraints
 
 1. **Original product.** Frihart is not Gecko, Blink, WebKit, or Servo
-   with a different chrome. Engine crates are written here.
+   with a different chrome. Engine crates are written here. Do not
+   embed V8, SpiderMonkey, JavaScriptCore, or QuickJS. Script, if it
+   ever exists, is a Frihart interpreter in Rust.
 2. **No telemetry pathway.** There is no `frihart-telemetry` crate, no
    analytics URL constant, and no "phone home later" hook.
 3. **Policy before I/O.** A network request, storage write, permission

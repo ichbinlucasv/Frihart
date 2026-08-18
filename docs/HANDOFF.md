@@ -42,7 +42,8 @@ own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
 **GNU philosophy**, **kernel.org**, **docs.kernel.org**,
 **ietf.org**, and **rfc-editor.org** (the index) are claimed.
 Settings is the LibreWolf-stance page (native prefs, black/yellow).
-JS stays off. A future engine, if any, would be Rust — not started.
+JS stays off. **The engine is Frihart in Rust** (locked). If G ever
+starts it is our interpreter — not V8/SpiderMonkey/an embed. Not started.
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -55,6 +56,7 @@ not published.
 
 **G Script**  
 Refuse-only. Pref flip is not a grant. `javascript:` refused.
+**Locked:** no foreign JS engine. A future G is Frihart Rust only.
 
 ## Plan to finish (honest)
 
@@ -109,8 +111,9 @@ Not Chrome. Not Wikipedia. Not mail.
     claimed (**8 already**: example.com, RFC 1918, suckless, GNU
     philosophy, kernel.org, docs.kernel.org, ietf.org, rfc-editor.org), worker sandbox is on, `cargo test --workspace` green,
     Linux package files install on one reference distro.
-18. Then — and only then — discuss G (a tiny interpreter) or stay
-    refuse-only another year. Recommendation: **stay refuse**.
+18. Then — and only then — discuss G (a tiny **Frihart** interpreter in
+    Rust) or stay refuse-only another year. Recommendation: **stay
+    refuse**. Embedding V8/SpiderMonkey is off the table.
 
 ### Parked until Linux is a daily driver
 
@@ -123,7 +126,8 @@ Not Chrome. Not Wikipedia. Not mail.
 1. **One crate-visible slice per session.** Engine morning, chrome
    only if something is unreadable.
 2. **Claim sites by opening them**, not by adding URLs to a list.
-3. **Do not start a JS engine.** It will eat a year and leak.
+3. **Do not start a JS engine this session.** When G starts, it is
+   Frihart Rust — not an embed. It will eat a year and leak.
 4. **Do not split the network process** until three sites are claimed.
    Isolation theater is worse than a documented in-process rustls.
 5. **Do not publish Tails/Qubes packages** until Arch/Fedora/Debian
@@ -138,8 +142,8 @@ Not Chrome. Not Wikipedia. Not mail.
 
 **D: fetch live `https://www.w3.org/` (or another unclaimed static
 document), lay out those bytes, claim only if readable.** Eight
-public sites are claimed. Do not start a JS engine (Rust can host
-one later; G stays refuse). Do not start H/I.
+public sites are claimed. Do not start a JS engine. The engine stays
+Frihart in Rust; G stays refuse. Do not start H/I.
 
 ## Commands
 

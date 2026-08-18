@@ -160,6 +160,11 @@ Those are solved problems. Using `rustls`, system fonts, and similar
 libraries is correct engineering. Using Gecko, Blink, WebKit, or Servo as
 the product is not.
 
+**The engine is Frihart, in Rust.** HTML, CSS, layout, and — if Campaign
+G ever starts — script are written in this tree. We will not embed V8,
+SpiderMonkey, JavaScriptCore, QuickJS, or another browser's engine to
+look finished. A missing site is better than someone else's runtime.
+
 Every third-party crate must be justified. A crate that phones home, pulls
 in a telemetry SDK, or makes the supply chain absurd is rejected.
 

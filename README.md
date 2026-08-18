@@ -84,7 +84,8 @@ suckless.org, GNU philosophy, kernel.org, docs.kernel.org, ietf.org, and
 the RFC Editor index. `about:settings` is the LibreWolf-stance page.
 Tracking query keys are stripped. Private-IP redirects are refused.
 Content width follows the window up to 2400 CSS px (G9-class). JS is off
-on purpose; a future engine would be Rust, and has not been started.
+on purpose. The engine is Frihart in Rust; we will not embed another
+browser's runtime. A script interpreter has not been started.
 
 Next session: [docs/HANDOFF.md](docs/HANDOFF.md).
 
