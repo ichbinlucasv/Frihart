@@ -5,12 +5,16 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "Network stack interfaces (implementation is Phase 2)"
+description = "Sovereign HTTP(S) stack (rustls, partitioned cookies)"
 publish.workspace = true
 
 [dependencies]
+frihart-blocker.workspace = true
 frihart-core.workspace = true
 frihart-privacy.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ureq.workspace = true
 url.workspace = true
 
 [dev-dependencies]

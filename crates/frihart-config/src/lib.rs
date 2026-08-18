@@ -9,7 +9,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use frihart_core::{FROZEN_USER_AGENT, FrihartError, Result};
+use frihart_core::{FROZEN_USER_AGENT, FrihartError, Result, write_private_str};
 
 /// How much of a referrer Frihart is willing to send.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -283,10 +283,7 @@ impl Prefs {
             fs::create_dir_all(parent)?;
         }
         let text = self.to_toml()?;
-        let tmp = path.with_extension("toml.tmp");
-        fs::write(&tmp, text)?;
-        fs::rename(&tmp, path)?;
-        Ok(())
+        write_private_str(path, &text)
     }
 }
 

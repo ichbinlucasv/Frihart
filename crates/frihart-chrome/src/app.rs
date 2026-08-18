@@ -60,31 +60,25 @@ impl Handler {
             .with_inner_size(winit::dpi::LogicalSize::new(1120.0, 780.0));
         let window = match event_loop.create_window(attrs) {
             Ok(w) => Arc::new(w),
-            Err(err) => {
-                tracing::error!("could not create window: {err}");
+            Err(_) => {
                 event_loop.exit();
                 return;
             }
         };
         let context = match softbuffer::Context::new(window.clone()) {
             Ok(c) => c,
-            Err(err) => {
-                tracing::error!("softbuffer context: {err}");
+            Err(_) => {
                 event_loop.exit();
                 return;
             }
         };
         let surface = match softbuffer::Surface::new(&context, window.clone()) {
             Ok(s) => s,
-            Err(err) => {
-                tracing::error!("softbuffer surface: {err}");
+            Err(_) => {
                 event_loop.exit();
                 return;
             }
         };
-        // Context must stay alive; Surface holds what it needs via the window.
-        // Keep the window + surface. Dropping context is OK for softbuffer 0.4
-        // once the surface exists — if not, the compiler will tell us.
         let _ = context;
         self.window = Some(WindowSurface { window, surface });
         if let Some(ws) = &self.window {
@@ -226,7 +220,7 @@ impl Handler {
                         self.browser.focus_url();
                         self.browser.url_text.clear();
                         self.browser.url_cursor = 0;
-                        self.browser.status = "Search.".into();
+                        self.browser.status.clear();
                         self.request_redraw();
                         return;
                     }

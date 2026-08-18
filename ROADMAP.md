@@ -478,4 +478,6 @@ A sustainable rhythm for a long project:
 - [x] Find in page, bookmark shortcut, PKGBUILD
 - [ ] HiDPI and multi-window (Phase 1)
 - [ ] Bookmarks / history UI beyond the store (Phase 1)
-- [ ] rustls fetch + view-source (Phase 2)
+- [x] rustls fetch + view-source (Phase 2)
+- [x] First-party partitioned cookies, 0600 profile files
+- [x] Tor tabs refuse clearnet (no silent fallback)

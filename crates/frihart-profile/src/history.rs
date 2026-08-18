@@ -1,11 +1,11 @@
-use std::fs::{self, OpenOptions};
-use std::io::{BufRead, BufReader, Write};
+use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use frihart_core::Result;
+use frihart_core::{Result, write_private_str};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HistoryEntry {
@@ -40,19 +40,14 @@ impl HistoryStore {
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        let mut file = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .open(path)?;
+        let mut text = String::new();
         for entry in &self.entries {
-            let line = serde_json::to_string(entry).unwrap_or_default();
-            writeln!(file, "{line}")?;
+            if let Ok(line) = serde_json::to_string(entry) {
+                text.push_str(&line);
+                text.push('\n');
+            }
         }
-        Ok(())
+        write_private_str(path, &text)
     }
 
     pub fn record(&mut self, url: &str, title: &str) {

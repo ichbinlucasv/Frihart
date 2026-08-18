@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use frihart_core::{FrihartError, Result};
+use frihart_core::{FrihartError, Result, write_private_str};
 
 use crate::compat::{self, ApiSupport};
 use crate::manifest::Manifest;
@@ -68,13 +68,9 @@ impl AddonStore {
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
         let text =
             toml::to_string_pretty(self).map_err(|e| FrihartError::profile(e.to_string()))?;
-        fs::write(path, text)?;
-        Ok(())
+        write_private_str(path, &text)
     }
 
     pub fn get(&self, id: &str) -> Option<&InstalledAddon> {

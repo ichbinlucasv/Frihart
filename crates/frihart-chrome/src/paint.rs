@@ -355,6 +355,20 @@ fn paint_content(
                 },
             );
         }
+        Document::Source { text: body, .. } => {
+            draw_wrapped(
+                fb,
+                text,
+                body,
+                (
+                    rect.x + m.content_pad(),
+                    rect.y + m.pad() - tab.scroll_y as i32,
+                ),
+                (rect.w - m.content_pad() * 2).max(40),
+                m,
+                TEXT_CONTENT,
+            );
+        }
         Document::Unavailable { url, reason } => {
             paint_internal_blocks(
                 fb,

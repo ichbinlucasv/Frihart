@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use frihart_core::{FrihartError, Result};
+use frihart_core::{FrihartError, Result, write_private_str};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Bookmark {
@@ -60,8 +60,7 @@ impl BookmarkStore {
         }
         let text =
             toml::to_string_pretty(self).map_err(|e| FrihartError::profile(e.to_string()))?;
-        fs::write(path, text)?;
-        Ok(())
+        write_private_str(path, &text)
     }
 
     pub fn add(&mut self, title: impl Into<String>, url: impl Into<String>) {

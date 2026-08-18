@@ -1114,8 +1114,12 @@ fn history(url: &Url, profile: &Profile) -> Document {
         },
     }];
     let recent = profile.history().recent(50);
+    blocks.push(Block::Link {
+        label: "wipe".into(),
+        href: "frihart:wipe-history".into(),
+    });
     if recent.is_empty() {
-        blocks.push(Block::Paragraph("No visits recorded.".into()));
+        blocks.push(Block::Paragraph("empty".into()));
     } else {
         for entry in recent {
             blocks.push(Block::Link {

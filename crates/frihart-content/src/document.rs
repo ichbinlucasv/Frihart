@@ -7,7 +7,15 @@ use crate::about::PrefToggle;
 pub enum Document {
     Blank,
     Internal(InternalPage),
-    Unavailable { url: Url, reason: String },
+    Source {
+        url: Url,
+        title: String,
+        text: String,
+    },
+    Unavailable {
+        url: Url,
+        reason: String,
+    },
 }
 
 impl Document {
@@ -26,6 +34,7 @@ impl Document {
         match self {
             Self::Blank => "Blank",
             Self::Internal(page) => &page.title,
+            Self::Source { title, .. } => title,
             Self::Unavailable { .. } => "Unavailable",
         }
     }
@@ -34,7 +43,7 @@ impl Document {
         match self {
             Self::Blank => None,
             Self::Internal(page) => Some(&page.url),
-            Self::Unavailable { url, .. } => Some(url),
+            Self::Source { url, .. } | Self::Unavailable { url, .. } => Some(url),
         }
     }
 
@@ -42,7 +51,8 @@ impl Document {
     pub fn searchable_text(&self) -> String {
         match self {
             Self::Blank => "about:blank".into(),
-            Self::Unavailable { url, reason } => format!("{url} {reason}"),
+            Self::Source { text, .. } => text.clone(),
+            Self::Unavailable { reason, .. } => reason.clone(),
             Self::Internal(page) => {
                 let mut out = page.title.clone();
                 for block in &page.blocks {

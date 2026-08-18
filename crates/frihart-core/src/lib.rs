@@ -7,10 +7,12 @@
 
 mod error;
 mod ids;
+mod opsec;
 mod urls;
 
 pub use error::{FrihartError, Result};
 pub use ids::{ContainerId, DocumentId, IsolationKey, TabId, WindowId};
+pub use opsec::{ensure_private_dir, safe_host, sanitize_error, write_private, write_private_str};
 pub use urls::{
     UrlKind, about_page, classify_url, display_url, looks_like_destination, parse_user_input,
     try_parse_user_input,

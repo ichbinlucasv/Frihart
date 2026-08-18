@@ -1,7 +1,9 @@
 //! Browser session state: tabs, URL bar, navigation.
 
-use frihart_content::{Document, PrefToggle, SessionHistory, load};
+use frihart_blocker::FilterEngine;
+use frihart_content::{Document, FetchRequest, PrefToggle, SessionHistory, fetch, load};
 use frihart_core::{ContainerId, TabId, display_url, looks_like_destination, parse_user_input};
+use frihart_net::{CookieJar, FetchMode, RustlsClient};
 use frihart_profile::Profile;
 use frihart_search::{by_id, primary, resolve};
 use url::Url;
@@ -84,18 +86,27 @@ pub struct Browser {
     pub find_focused: bool,
     pub find_text: String,
     pub find_status: String,
+    client: RustlsClient,
+    jar: CookieJar,
+    blocker: FilterEngine,
 }
 
 impl Browser {
     pub fn new(mut profile: Profile, initial: Option<String>, tor: bool) -> Self {
         let start = initial.unwrap_or_else(|| profile.prefs().general.homepage.clone());
         let mut tab = open_tab(&mut profile, &start);
-        if tor || profile.is_ephemeral() && tor {
+        if tor {
             tab.circuit = Circuit::Tor;
         } else if profile.is_ephemeral() {
             tab.circuit = Circuit::Private;
         }
         let url_text = tab.url_display();
+        let enabled = profile.prefs().privacy.blocker;
+        let jar = if profile.is_ephemeral() || !profile.prefs().privacy.persist_cookies {
+            CookieJar::default()
+        } else {
+            CookieJar::load(&profile.root().join("cookies.json")).unwrap_or_default()
+        };
         Self {
             profile,
             tabs: vec![tab],
@@ -105,11 +116,14 @@ impl Browser {
             url_cursor: 0,
             hover: None,
             cursor: (0.0, 0.0),
-            status: "Ready.".into(),
+            status: String::new(),
             find_open: false,
             find_focused: false,
             find_text: String::new(),
             find_status: String::new(),
+            client: RustlsClient::new(),
+            jar,
+            blocker: FilterEngine::new(enabled),
         }
     }
 
@@ -140,7 +154,7 @@ impl Browser {
         self.active = self.tabs.len() - 1;
         self.sync_url_bar();
         self.url_focused = false;
-        self.status = format!("New tab · {}", container.slug());
+        self.status.clear();
     }
 
     pub fn close_tab(&mut self, index: usize) -> bool {
@@ -186,7 +200,7 @@ impl Browser {
         self.sync_url_bar();
         self.url_cursor = self.url_text.len();
         self.url_focused = true;
-        self.status = "Location.".into();
+        self.status.clear();
     }
 
     pub fn blur_url(&mut self) {
@@ -257,7 +271,7 @@ impl Browser {
         }
         match parse_user_input(&raw) {
             Ok(url) => self.navigate(url),
-            Err(_) => self.status = format!("Could not parse “{raw}”."),
+            Err(_) => self.status = "err".into(),
         }
         self.url_focused = false;
     }
@@ -283,10 +297,10 @@ impl Browser {
         };
         match url {
             Some(url) => {
-                self.status = format!("Search · {}", self.profile.prefs().search.primary);
+                self.status.clear();
                 self.navigate(url);
             }
-            None => self.status = "No search engine configured.".into(),
+            None => self.status = "err".into(),
         }
     }
 
@@ -300,12 +314,12 @@ impl Browser {
         self.active = self.tabs.len() - 1;
         self.sync_url_bar();
         self.url_focused = false;
-        self.status = "Tor tab. Traffic will use the system Tor SOCKS port.".into();
+        self.status = "tor".into();
     }
 
     pub fn cycle_container(&mut self) {
         if !self.profile.prefs().privacy.containers {
-            self.status = "Containers are off.".into();
+            self.status = "off".into();
             return;
         }
         let next = self.profile.containers().cycle(self.active_tab().container);
@@ -315,13 +329,13 @@ impl Browser {
             .container(next)
             .map(|c| c.name.clone())
             .unwrap_or_else(|| next.slug().to_string());
-        self.status = format!("Container: {name}");
+        self.status = name;
     }
 
     pub fn assign_container(&mut self, slug: &str) {
         if let Some(id) = ContainerId::from_slug(slug) {
             self.active_tab_mut().container = id;
-            self.status = format!("Container: {}", id.slug());
+            self.status = id.slug().into();
         }
     }
 
@@ -329,18 +343,18 @@ impl Browser {
         let url = self.active_tab().url_display();
         let title = self.active_tab().title();
         self.profile.bookmarks_mut().add(title, url);
-        if let Err(err) = self.profile.save_bookmarks() {
-            self.status = format!("Could not save bookmark: {err}");
+        if self.profile.save_bookmarks().is_err() {
+            self.status = "err".into();
             return;
         }
-        self.status = "Bookmarked.".into();
+        self.status.clear();
     }
 
     pub fn open_find(&mut self) {
         self.find_open = true;
         self.find_focused = true;
         self.url_focused = false;
-        self.status = "Find.".into();
+        self.status.clear();
     }
 
     pub fn close_find(&mut self) {
@@ -368,10 +382,10 @@ impl Browser {
         let needle = self.find_text.to_ascii_lowercase();
         let hay_l = hay.to_ascii_lowercase();
         if let Some(pos) = hay_l.find(&needle) {
-            self.find_status = format!("found at {pos}");
+            self.find_status = "ok".into();
             self.active_tab_mut().scroll_y = (pos as f32 * 0.15).min(2000.0);
         } else {
-            self.find_status = "no matches".into();
+            self.find_status = "none".into();
         }
     }
 
@@ -382,8 +396,13 @@ impl Browser {
                 self.assign_container(slug);
                 return;
             }
+            if spec == "wipe-history" {
+                let _ = self.profile.clear_history();
+                self.status.clear();
+                return;
+            }
         }
-        let doc = load(&url, &self.profile);
+        let doc = self.open_url(&url);
         let title = doc.title().to_string();
         if self.active_tab().circuit == Circuit::Direct {
             let _ = self.profile.record_visit(url.as_str(), &title);
@@ -395,12 +414,13 @@ impl Browser {
             tab.scroll_y = 0.0;
         }
         self.sync_url_bar();
-        self.status = "Ready.".into();
+        self.persist_jar();
+        self.status.clear();
     }
 
     pub fn reload(&mut self) {
         let url = self.active_tab().url();
-        let doc = load(&url, &self.profile);
+        let doc = self.open_url(&url);
         let title = doc.title().to_string();
         {
             let tab = self.active_tab_mut();
@@ -408,7 +428,36 @@ impl Browser {
             tab.document = doc;
         }
         self.sync_url_bar();
-        self.status = "Reloaded.".into();
+        self.persist_jar();
+        self.status.clear();
+    }
+
+    fn open_url(&mut self, url: &Url) -> Document {
+        let (target, _view_source) = strip_view_source(url);
+        if target.scheme() == "about" {
+            return load(&target, &self.profile);
+        }
+        let mode = match self.active_tab().circuit {
+            Circuit::Tor => FetchMode::Tor,
+            _ => FetchMode::Direct,
+        };
+        let container = self.active_tab().container;
+        fetch(FetchRequest {
+            url: &target,
+            profile: &self.profile,
+            client: &self.client,
+            jar: &mut self.jar,
+            blocker: &self.blocker,
+            container,
+            mode,
+        })
+    }
+
+    fn persist_jar(&self) {
+        if self.profile.is_ephemeral() || !self.profile.prefs().privacy.persist_cookies {
+            return;
+        }
+        let _ = self.jar.save(&self.profile.root().join("cookies.json"));
     }
 
     pub fn go_back(&mut self) {
@@ -418,7 +467,7 @@ impl Browser {
             match tab.session.back() {
                 Some(entry) => entry.url.clone(),
                 None => {
-                    self.status = "No previous page.".into();
+                    self.status.clear();
                     return;
                 }
             }
@@ -433,7 +482,7 @@ impl Browser {
             match tab.session.forward() {
                 Some(entry) => entry.url.clone(),
                 None => {
-                    self.status = "No next page.".into();
+                    self.status.clear();
                     return;
                 }
             }
@@ -442,28 +491,40 @@ impl Browser {
     }
 
     fn restore(&mut self, url: &Url) {
-        let doc = load(url, &self.profile);
+        let doc = self.open_url(url);
         let scroll = self.active_tab().session.current().scroll_y;
         let tab = self.active_tab_mut();
         tab.document = doc;
         tab.scroll_y = scroll;
         self.sync_url_bar();
-        self.status = "Ready.".into();
+        self.status.clear();
     }
 
     pub fn apply_toggle(&mut self, toggle: PrefToggle) {
         toggle.apply(self.profile.prefs_mut());
-        if let Err(err) = self.profile.save_prefs() {
-            self.status = format!("Could not save prefs: {err}");
+        if self.profile.save_prefs().is_err() {
+            self.status = "err".into();
             return;
         }
+        self.blocker = FilterEngine::new(self.profile.prefs().privacy.blocker);
         self.reload();
-        self.status = "Preference saved.".into();
+        self.status.clear();
     }
 
     pub fn scroll(&mut self, delta: f32) {
         let tab = self.active_tab_mut();
         tab.scroll_y = (tab.scroll_y + delta).max(0.0);
+    }
+}
+
+fn strip_view_source(url: &Url) -> (Url, bool) {
+    if url.scheme() != "view-source" {
+        return (url.clone(), false);
+    }
+    let inner = url.as_str().trim_start_matches("view-source:");
+    match Url::parse(inner) {
+        Ok(u) => (u, true),
+        Err(_) => (url.clone(), true),
     }
 }
 

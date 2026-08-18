@@ -97,7 +97,15 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
 fn is_known_scheme(scheme: &str) -> bool {
     matches!(
         scheme,
-        "about" | "https" | "http" | "file" | "data" | "blob" | "frihart" | "container"
+        "about"
+            | "https"
+            | "http"
+            | "file"
+            | "data"
+            | "blob"
+            | "frihart"
+            | "container"
+            | "view-source"
     )
 }
 

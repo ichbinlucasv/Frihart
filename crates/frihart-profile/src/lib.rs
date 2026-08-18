@@ -7,7 +7,6 @@ mod containers;
 mod history;
 mod lock;
 
-use std::fs;
 use std::path::{Path, PathBuf};
 
 use frihart_config::Prefs;
@@ -76,7 +75,7 @@ impl Profile {
 
     fn open_path(root: PathBuf, name: &str, ephemeral: bool) -> Result<Self> {
         if !ephemeral {
-            fs::create_dir_all(&root)?;
+            frihart_core::ensure_private_dir(&root)?;
         }
         let lock = if ephemeral {
             None
@@ -229,6 +228,7 @@ fn sanitize_name(name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]

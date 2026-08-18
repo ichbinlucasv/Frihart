@@ -13,6 +13,7 @@ frihart-blocker.workspace = true
 frihart-extensions.workspace = true
 frihart-config.workspace = true
 frihart-core.workspace = true
+frihart-net.workspace = true
 frihart-privacy.workspace = true
 frihart-platform.workspace = true
 frihart-profile.workspace = true

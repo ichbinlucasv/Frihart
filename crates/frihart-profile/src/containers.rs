@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use frihart_core::{ContainerId, FrihartError, Result};
+use frihart_core::{ContainerId, FrihartError, Result, write_private_str};
 
 /// A user-facing identity container. Tabs belong to one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,13 +75,9 @@ impl ContainerStore {
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
         let text =
             toml::to_string_pretty(self).map_err(|e| FrihartError::profile(e.to_string()))?;
-        fs::write(path, text)?;
-        Ok(())
+        write_private_str(path, &text)
     }
 
     pub fn get(&self, id: ContainerId) -> Option<&Container> {
