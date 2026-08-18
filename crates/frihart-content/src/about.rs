@@ -589,7 +589,7 @@ fn campaigns_page(url: &Url) -> Document {
                 "A Foundation — closed".into(),
                 "B Chrome — closed".into(),
                 "C Network OPSEC — closed".into(),
-                "D Engine — open (em/rem, weight, border, sites list)".into(),
+                "D Engine — open (example.com claimed; strong/inline)".into(),
                 "E Isolation — open (nnp + landlock + seccomp + rlimits)".into(),
                 "F Linux homes — open (detect + Tails/Qubes private default)".into(),
                 "G Script — refuse-only (pref flip is not a grant)".into(),
@@ -614,11 +614,11 @@ fn sites_page(url: &Url) -> Document {
             subtitle: "Compatibility is claimed per document, not \"the web\".".into(),
         },
         Block::Paragraph(format!(
-            "{} internal pages are readable. A host moves from target to \
-             claimed only after a person has read it in Frihart without \
-             JavaScript. Nothing on the public internet is claimed yet. \
-             See docs/sites.md.",
-            crate::sites::claimed_count()
+            "{} listed as readable ({} public). A host moves from target \
+             to claimed only after its live HTML has been laid out in this \
+             tree without JavaScript. See docs/sites.md.",
+            crate::sites::claimed_count(),
+            crate::sites::public_claimed()
         )),
     ];
     for site in crate::sites::claims() {
@@ -1020,7 +1020,7 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
         });
     }
     blocks.extend([
-        Block::Heading("Identity we will send (Phase 2)".into()),
+        Block::Heading("Identity we send".into()),
         Block::KeyValue {
             key: "User-Agent".into(),
             value: policy.user_agent().into(),

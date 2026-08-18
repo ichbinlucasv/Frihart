@@ -151,6 +151,7 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
         match block {
             frihart_html::Block::Heading(l, t) => items.push(PageItem::Heading(l, t)),
             frihart_html::Block::Text(t)
+            | frihart_html::Block::Inline(t)
             | frihart_html::Block::Pre(t)
             | frihart_html::Block::Quote(t)
             | frihart_html::Block::Caption(t) => items.push(PageItem::Text(t)),
@@ -159,7 +160,7 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
             frihart_html::Block::Image { alt, src } => {
                 items.push(PageItem::Text(if alt.is_empty() { src } else { alt }));
             }
-            frihart_html::Block::TableRow { cells } => {
+            frihart_html::Block::TableRow { cells, .. } => {
                 items.push(PageItem::Text(cells.join("  ·  ")));
             }
             frihart_html::Block::Link { text, href } => items.push(PageItem::Link { text, href }),

@@ -94,6 +94,35 @@ pub fn measure_wrapped(
     })
 }
 
+pub fn measure_advance(text: &str, font_size: f32, line_height: f32, weight: u16) -> f32 {
+    if text.is_empty() {
+        return 0.0;
+    }
+    FONTS.with(|fonts| {
+        let mut fs = fonts.borrow_mut();
+        let metrics = CosmicMetrics::new(font_size.max(1.0), line_height.max(1.0));
+        let mut buffer = Buffer::new(&mut fs, metrics);
+        buffer.set_wrap(&mut fs, Wrap::None);
+        buffer.set_size(&mut fs, None, None);
+        let attrs = Attrs::new()
+            .family(Family::SansSerif)
+            .weight(Weight(weight.max(1)));
+        buffer.set_text(&mut fs, text, &attrs, Shaping::Advanced);
+        buffer.shape_until_scroll(&mut fs, false);
+        buffer
+            .layout_runs()
+            .map(|r| r.line_w)
+            .fold(0.0_f32, f32::max)
+    })
+}
+
+fn is_inline(item: &FlowItem) -> bool {
+    matches!(item.style.display, Display::Inline)
+        && item.cells.is_empty()
+        && !item.rule
+        && item.field.is_none()
+}
+
 pub fn block_flow(items: &[FlowItem], viewport_w: f32, origin_y: f32) -> Vec<LayoutBox> {
     let mut y = origin_y;
     let mut out = Vec::new();
@@ -117,12 +146,81 @@ pub fn block_flow(items: &[FlowItem], viewport_w: f32, origin_y: f32) -> Vec<Lay
             y = next_y;
             continue;
         }
+        if is_inline(&items[i]) {
+            let start = i;
+            while i < items.len() && is_inline(&items[i]) {
+                i += 1;
+            }
+            let (boxes, next_y) = layout_inlines(&items[start..i], vw, y);
+            out.extend(boxes);
+            y = next_y;
+            continue;
+        }
         out.push(layout_block(&items[i], vw, y));
         let last = out.last().expect("just pushed");
         y = last.y + last.h + items[i].style.margin;
         i += 1;
     }
     out
+}
+
+fn layout_inlines(items: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f32) {
+    let mut out = Vec::new();
+    let mut x = 0.0;
+    let mut line_h = 0.0;
+    for item in items {
+        let lh = item.style.line_height();
+        let advance = measure_advance(&item.text, item.style.font_size, lh, item.style.font_weight);
+        if x > 0.0 && x + advance > vw {
+            y += line_h;
+            x = 0.0;
+            line_h = 0.0;
+        }
+        if advance > vw && x == 0.0 {
+            let h = measure_wrapped(
+                &item.text,
+                item.style.font_size,
+                lh,
+                vw,
+                !item.preserve,
+                item.style.font_weight,
+            );
+            out.push(box_from(item, 0.0, y, vw, h));
+            y += h + item.style.margin;
+            line_h = 0.0;
+            continue;
+        }
+        let h = lh.max(1.0);
+        out.push(box_from(item, x, y, advance.max(1.0), h));
+        x += advance.max(1.0);
+        line_h = line_h.max(h);
+    }
+    y += line_h;
+    if let Some(m) = items
+        .iter()
+        .map(|i| i.style.margin)
+        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+    {
+        y += m;
+    }
+    (out, y)
+}
+
+fn box_from(item: &FlowItem, x: f32, y: f32, w: f32, h: f32) -> LayoutBox {
+    LayoutBox {
+        x,
+        y,
+        w,
+        h,
+        text: item.text.clone(),
+        style: item.style.clone(),
+        href: item.href.clone(),
+        preserve: item.preserve,
+        image: item.image,
+        rule: item.rule,
+        cell: false,
+        field: item.field.clone(),
+    }
 }
 
 fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
@@ -276,5 +374,17 @@ mod tests {
         assert!(boxes[2].y > boxes[0].y);
         assert_eq!(boxes[0].text, "left");
         assert_eq!(boxes[1].text, "right");
+    }
+
+    #[test]
+    fn inlines_sit_on_one_line() {
+        let mut hello = FlowItem::text("hello ", ua_style("p"));
+        hello.style.display = Display::Inline;
+        let bold = FlowItem::text("bold", ua_style("strong"));
+        let boxes = block_flow(&[hello, bold], 400.0, 0.0);
+        assert_eq!(boxes.len(), 2);
+        assert!(boxes[1].x > boxes[0].x);
+        assert!((boxes[0].y - boxes[1].y).abs() < 0.5);
+        assert_eq!(boxes[1].style.font_weight, 700);
     }
 }

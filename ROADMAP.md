@@ -586,6 +586,8 @@ A sustainable rhythm for a long project:
 - [x] `hr`, caption, definition lists
 - [x] Honest `about:sites` claim list
 - [x] CSS `em`/`rem`, `font-weight`, `border`, `height`
+- [x] Nested `<strong>` fragments + inline line boxes
+- [x] `:link` / `vw`/`vh` / body column; example.com claimed
 - [x] Content-worker rlimits (as / nofile / nproc / core)
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages published (spec/debian exist)

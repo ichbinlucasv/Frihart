@@ -2,11 +2,9 @@
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ClaimStatus {
-    /// Internal about: pages. Always readable.
     Internal,
-    /// We intend to claim this once a person has opened it in Frihart.
+    Claimed,
     Target,
-    /// JS app. Do not claim until campaign G is a real engine.
     NeedsJs,
 }
 
@@ -22,15 +20,13 @@ impl ClaimStatus {
     pub fn label(self) -> &'static str {
         match self {
             Self::Internal => "internal",
+            Self::Claimed => "claimed",
             Self::Target => "target",
             Self::NeedsJs => "needs JS — not claimed",
         }
     }
 }
 
-/// Named pages. A host moves from Target to Claimed only after a human
-/// has read it in Frihart without JS. Nothing on the public internet is
-/// claimed yet.
 pub fn claims() -> &'static [SiteClaim] {
     &[
         SiteClaim {
@@ -48,8 +44,8 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://example.com/",
             name: "example.com",
-            status: ClaimStatus::Target,
-            note: "trivial static HTML",
+            status: ClaimStatus::Claimed,
+            note: "h1 1.5em, two paragraphs, IANA :link; live HTML 2026-08-18",
         },
         SiteClaim {
             url: "https://www.rfc-editor.org/rfc/rfc1918.html",
@@ -99,7 +95,14 @@ pub fn claims() -> &'static [SiteClaim] {
 pub fn claimed_count() -> usize {
     claims()
         .iter()
-        .filter(|s| matches!(s.status, ClaimStatus::Internal))
+        .filter(|s| matches!(s.status, ClaimStatus::Internal | ClaimStatus::Claimed))
+        .count()
+}
+
+pub fn public_claimed() -> usize {
+    claims()
+        .iter()
+        .filter(|s| matches!(s.status, ClaimStatus::Claimed))
         .count()
 }
 
@@ -109,7 +112,8 @@ mod tests {
 
     #[test]
     fn list_is_honest() {
-        assert!(claimed_count() >= 2);
+        assert!(claimed_count() >= 3);
+        assert_eq!(public_claimed(), 1);
         assert!(
             claims()
                 .iter()
@@ -118,7 +122,7 @@ mod tests {
         assert!(
             claims()
                 .iter()
-                .any(|s| s.status == ClaimStatus::Target && s.url.contains("example.com"))
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("example.com"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

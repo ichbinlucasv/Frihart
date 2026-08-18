@@ -1,4 +1,4 @@
-//! Typed IPC. In-process now; process split later (Phase 6).
+//! Typed IPC. In-process now; same types after a process split.
 
 #![forbid(unsafe_code)]
 

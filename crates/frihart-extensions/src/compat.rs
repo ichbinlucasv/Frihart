@@ -48,7 +48,7 @@ pub fn classify(permission: &str) -> ApiSupport {
 /// One-line reason an add-on is dormant even if installed.
 pub fn dormant_reason(needs_javascript: bool) -> &'static str {
     if needs_javascript {
-        "installed, not executed: Frihart has no JS engine yet (Phase 7)"
+        "installed, not executed: no JS engine"
     } else {
         "installed, waiting on the matching native API"
     }

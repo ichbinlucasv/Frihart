@@ -1,9 +1,4 @@
-//! WebExtensions compatibility host.
-//!
-//! Frihart is not a Firefox fork. It can still *read* Firefox add-ons
-//! (`.xpi` / unpacked `manifest.json`) and, over time, implement the
-//! `browser.*` APIs on its own engine. Installed add-ons are dormant
-//! until Phase 7 (JS). That is honest, not a fake runtime.
+//! WebExtensions host. Install and audit only. No JS execution.
 
 #![forbid(unsafe_code)]
 
@@ -17,7 +12,7 @@ pub use manifest::Manifest;
 pub use store::{AddonStore, InstalledAddon};
 pub use xpi::{materialize, read_manifest_from_path};
 
-/// Phase 15: execute sideloaded add-ons. Off until JS + isolation exist.
+/// Execute sideloaded add-ons. Off until JS + isolation exist.
 #[derive(Clone, Debug, Default)]
 pub struct Runtime {
     pub enabled: bool,

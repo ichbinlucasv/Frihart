@@ -26,6 +26,7 @@ pub enum Simple {
     Type(String),
     Class(String),
     Id(String),
+    Pseudo(String),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -175,7 +176,19 @@ fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
                 simples.push(Simple::Id(name));
                 i = n;
             }
-            b':' | b'[' => return None,
+            b':' => {
+                i += 1;
+                if i < bytes.len() && bytes[i] == b':' {
+                    return None;
+                }
+                let (name, n) = read_ident(s, i);
+                if !matches!(name.as_str(), "link" | "visited") {
+                    return None;
+                }
+                simples.push(Simple::Pseudo(name));
+                i = n;
+            }
+            b'[' => return None,
             _ => break,
         }
     }
@@ -255,5 +268,14 @@ mod tests {
                 .any(|p| matches!(p, Simple::Class(c) if c == "lead"))
         );
         assert!(parse_selector(".nav > a").is_some());
+        let link = parse_selector("a:link").unwrap();
+        assert!(
+            link.parts[0]
+                .1
+                .simples
+                .iter()
+                .any(|s| matches!(s, Simple::Pseudo(p) if p == "link"))
+        );
+        assert!(parse_selector("a:hover").is_none());
     }
 }

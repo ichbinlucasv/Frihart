@@ -14,14 +14,6 @@ pub enum UrlKind {
 }
 
 /// Parse what the user typed into the URL bar.
-///
-/// Rules:
-/// - empty → `about:blank`
-/// - already a URL with a scheme → parse as-is
-/// - `about:foo` → accepted
-/// - looks like a host (`example.com`, `localhost:8000`) → `https://…`
-/// - otherwise treat as `https://` + the input (Phase 2 will search if
-///   the user configured a search URL; we do not invent a search engine)
 pub fn parse_user_input(input: &str) -> Result<Url> {
     try_parse_user_input(input).ok_or_else(|| FrihartError::InvalidUrl(input.to_string()))
 }

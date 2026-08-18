@@ -1,8 +1,4 @@
-//! Privacy-focused search catalog.
-//!
-//! Defaults chosen by the project: Swisscows first, DuckDuckGo second.
-//! Other engines are available. No search-deal telemetry. Queries go to
-//! the engine the user picked, and only when they search.
+//! Privacy-focused search catalog. Swisscows first, DuckDuckGo second.
 
 #![forbid(unsafe_code)]
 

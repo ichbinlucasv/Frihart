@@ -4,8 +4,40 @@
 
 use frihart_css::{Combinator, Compound, Declaration, Selector, Simple, Stylesheet};
 
-/// Root `em` size. `rem` is this many CSS pixels.
 pub const REM_PX: f32 = 16.0;
+
+#[derive(Clone, Copy, Debug)]
+pub struct LengthCtx {
+    pub em: f32,
+    pub parent_em: f32,
+    pub vw: f32,
+    pub vh: f32,
+}
+
+impl LengthCtx {
+    pub fn page(vw: f32, vh: f32) -> Self {
+        Self {
+            em: REM_PX,
+            parent_em: REM_PX,
+            vw: vw.max(1.0),
+            vh: vh.max(1.0),
+        }
+    }
+
+    pub fn for_element(el: &Element, vw: f32, vh: f32) -> Self {
+        let parent_em = el
+            .ancestors
+            .last()
+            .map(|a| ua_style(&a.tag).font_size)
+            .unwrap_or(REM_PX);
+        Self {
+            em: ua_style(&el.tag).font_size,
+            parent_em,
+            vw: vw.max(1.0),
+            vh: vh.max(1.0),
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Computed {
@@ -114,10 +146,17 @@ pub fn ua_style(tag: &str) -> Computed {
             c.padding = 8.0;
             c.color = 0x00C8C8C8;
         }
-        "pre" | "code" => {
+        "pre" => {
             c.font_size = 14.0;
             c.padding = 8.0;
             c.background = 0x00181818;
+        }
+        "code" => {
+            c.display = Display::Inline;
+            c.font_size = 14.0;
+        }
+        "th" => {
+            c.font_weight = 700;
         }
         "li" => {
             c.margin = 2.0;
@@ -152,6 +191,10 @@ pub fn ua_style(tag: &str) -> Computed {
 }
 
 pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
+    apply_in(computed, decls, LengthCtx::page(800.0, 600.0));
+}
+
+pub fn apply_in(computed: &mut Computed, decls: &[Declaration], mut ctx: LengthCtx) {
     for d in decls {
         match d.name.as_str() {
             "color" => {
@@ -168,10 +211,9 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
             "display" if d.value == "inline" => computed.display = Display::Inline,
             "display" if d.value == "block" => computed.display = Display::Block,
             "font-size" => {
-                if let Some(n) =
-                    parse_length(&d.value, computed.font_size, Some(computed.font_size))
-                {
+                if let Some(n) = parse_length(&d.value, ctx.parent_em, Some(ctx.parent_em), ctx) {
                     computed.font_size = n.max(1.0);
+                    ctx.em = computed.font_size;
                 }
             }
             "font-weight" => {
@@ -180,21 +222,19 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
                 }
             }
             "margin" | "margin-top" | "margin-bottom" => {
-                if let Some(n) = parse_length(&d.value, computed.font_size, None) {
-                    computed.margin = n;
-                }
+                apply_margin(computed, &d.value, ctx);
             }
             "padding" => {
-                if let Some(n) = parse_length(&d.value, computed.font_size, None) {
+                if let Some(n) = parse_length(&d.value, ctx.em, None, ctx) {
                     computed.padding = n;
                 }
             }
-            "width" => computed.width = parse_length(&d.value, computed.font_size, None),
-            "max-width" => computed.max_width = parse_length(&d.value, computed.font_size, None),
-            "height" => computed.height = parse_length(&d.value, computed.font_size, None),
-            "border" => apply_border(computed, &d.value),
+            "width" => computed.width = parse_length(&d.value, ctx.em, Some(ctx.vw), ctx),
+            "max-width" => computed.max_width = parse_length(&d.value, ctx.em, Some(ctx.vw), ctx),
+            "height" => computed.height = parse_length(&d.value, ctx.em, Some(ctx.vh), ctx),
+            "border" => apply_border(computed, &d.value, ctx),
             "border-width" => {
-                if let Some(n) = parse_length(&d.value, computed.font_size, None) {
+                if let Some(n) = parse_length(&d.value, ctx.em, None, ctx) {
                     computed.border_width = n;
                 }
             }
@@ -203,7 +243,7 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
                     computed.border_color = c;
                 }
             }
-            "line-height" => apply_line_height(computed, &d.value),
+            "line-height" => apply_line_height(computed, &d.value, ctx),
             "text-align" => {
                 computed.text_align = match d.value.as_str() {
                     "center" => Align::Center,
@@ -216,14 +256,14 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
     }
 }
 
-fn apply_line_height(computed: &mut Computed, value: &str) {
+fn apply_line_height(computed: &mut Computed, value: &str, ctx: LengthCtx) {
     let v = value.trim();
     if v.eq_ignore_ascii_case("normal") {
         computed.line_height_mult = None;
         computed.line_height_px = None;
         return;
     }
-    if let Some(px) = parse_length(v, computed.font_size, None) {
+    if let Some(px) = parse_length(v, ctx.em, None, ctx) {
         computed.line_height_px = Some(px);
         computed.line_height_mult = None;
         return;
@@ -241,16 +281,27 @@ pub fn style_tag(tag: &str, author: &Stylesheet) -> Computed {
 }
 
 pub fn style_element(el: &Element, user: &Stylesheet, author: &Stylesheet) -> Computed {
+    style_in(el, user, author, 800.0, 600.0)
+}
+
+pub fn style_in(
+    el: &Element,
+    user: &Stylesheet,
+    author: &Stylesheet,
+    vw: f32,
+    vh: f32,
+) -> Computed {
+    let ctx = LengthCtx::for_element(el, vw, vh);
     let mut c = ua_style(&el.tag);
-    apply_matching(&mut c, user, el);
-    apply_matching(&mut c, author, el);
+    apply_matching(&mut c, user, el, ctx);
+    apply_matching(&mut c, author, el, ctx);
     c
 }
 
-fn apply_matching(computed: &mut Computed, sheet: &Stylesheet, el: &Element) {
+fn apply_matching(computed: &mut Computed, sheet: &Stylesheet, el: &Element, ctx: LengthCtx) {
     for rule in &sheet.rules {
         if rule_matches(rule, el) {
-            apply(computed, &rule.declarations);
+            apply_in(computed, &rule.declarations, ctx);
         }
     }
 }
@@ -311,6 +362,24 @@ fn simple_matches(simple: &Simple, el: &Element) -> bool {
         Simple::Type(t) => el.tag.eq_ignore_ascii_case(t),
         Simple::Class(c) => el.classes.iter().any(|have| have.eq_ignore_ascii_case(c)),
         Simple::Id(id) => el.id.eq_ignore_ascii_case(id),
+        Simple::Pseudo(p) => {
+            matches!(p.as_str(), "link" | "visited") && el.tag.eq_ignore_ascii_case("a")
+        }
+    }
+}
+
+pub fn is_light(color: u32) -> bool {
+    let r = ((color >> 16) & 0xff) as f32;
+    let g = ((color >> 8) & 0xff) as f32;
+    let b = (color & 0xff) as f32;
+    0.2126 * r + 0.7152 * g + 0.0722 * b > 180.0
+}
+
+pub fn contrast_on(canvas: u32, ink: u32) -> u32 {
+    if canvas != 0 && is_light(canvas) && is_light(ink) {
+        0x00222222
+    } else {
+        ink
     }
 }
 
@@ -340,17 +409,22 @@ fn parse_hex(hex: &str) -> Option<u32> {
     }
 }
 
-/// `px`, `em`, `rem`, `0`. `%` only when `percent_of` is set (font-size).
-pub fn parse_length(value: &str, em: f32, percent_of: Option<f32>) -> Option<f32> {
+pub fn parse_length(value: &str, em: f32, percent_of: Option<f32>, ctx: LengthCtx) -> Option<f32> {
     let v = value.trim();
-    if v == "0" {
-        return Some(0.0);
+    if v == "0" || v.eq_ignore_ascii_case("auto") {
+        return if v == "0" { Some(0.0) } else { None };
     }
     if let Some(n) = v.strip_suffix("rem") {
         return n.trim().parse::<f32>().ok().map(|x| x * REM_PX);
     }
     if let Some(n) = v.strip_suffix("em") {
         return n.trim().parse::<f32>().ok().map(|x| x * em);
+    }
+    if let Some(n) = v.strip_suffix("vw") {
+        return n.trim().parse::<f32>().ok().map(|x| ctx.vw * x / 100.0);
+    }
+    if let Some(n) = v.strip_suffix("vh") {
+        return n.trim().parse::<f32>().ok().map(|x| ctx.vh * x / 100.0);
     }
     if let Some(n) = v.strip_suffix("px") {
         return n.trim().parse().ok();
@@ -360,6 +434,19 @@ pub fn parse_length(value: &str, em: f32, percent_of: Option<f32>) -> Option<f32
         return percent_of.map(|base| base * p / 100.0);
     }
     None
+}
+
+fn apply_margin(computed: &mut Computed, value: &str, ctx: LengthCtx) {
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    if parts.iter().any(|p| p.eq_ignore_ascii_case("auto")) {
+        computed.text_align = Align::Center;
+    }
+    for p in &parts {
+        if let Some(n) = parse_length(p, ctx.em, None, ctx) {
+            computed.margin = n;
+            return;
+        }
+    }
 }
 
 fn parse_weight(value: &str) -> Option<u16> {
@@ -377,7 +464,7 @@ fn parse_weight(value: &str) -> Option<u16> {
     }
 }
 
-fn apply_border(computed: &mut Computed, value: &str) {
+fn apply_border(computed: &mut Computed, value: &str, ctx: LengthCtx) {
     let v = value.trim();
     if v.eq_ignore_ascii_case("none") || v == "0" {
         computed.border_width = 0.0;
@@ -393,7 +480,7 @@ fn apply_border(computed: &mut Computed, value: &str) {
             }
             continue;
         }
-        if let Some(n) = parse_length(token, computed.font_size, None) {
+        if let Some(n) = parse_length(token, ctx.em, None, ctx) {
             computed.border_width = n;
             continue;
         }
@@ -474,5 +561,42 @@ mod tests {
         assert_eq!(c.border_color, 0x00334455);
         let pct = parse_stylesheet("p { font-size: 150% }");
         assert_eq!(style_tag("p", &pct).font_size, 24.0);
+    }
+
+    #[test]
+    fn em_font_size_uses_parent_not_self() {
+        let sheet = parse_stylesheet("h1 { font-size: 1.5em }");
+        let el = Element {
+            tag: "h1".into(),
+            ancestors: vec![Element::tag("div")],
+            ..Element::default()
+        };
+        let c = style_element(&el, &Stylesheet::default(), &sheet);
+        assert!((c.font_size - 24.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn vw_and_link_pseudo() {
+        let sheet = parse_stylesheet(
+            "body { width: 60vw; margin: 15vh auto } a:link, a:visited { color: #348 }",
+        );
+        let body = style_in(
+            &Element::tag("body"),
+            &Stylesheet::default(),
+            &sheet,
+            1000.0,
+            800.0,
+        );
+        assert!((body.width.unwrap() - 600.0).abs() < 0.5);
+        assert!((body.margin - 120.0).abs() < 0.5);
+        assert_eq!(body.text_align, Align::Center);
+        let a = style_in(
+            &Element::tag("a"),
+            &Stylesheet::default(),
+            &sheet,
+            1000.0,
+            800.0,
+        );
+        assert_eq!(a.color, 0x00334488);
     }
 }

@@ -22,7 +22,8 @@ not mutate it.
 
 - Headings, paragraphs, lists, definition lists, pre/code, blockquote,
   `hr`, br, img boxes (alt only)
-- CSS: `em`/`rem`/`%` font-size, `font-weight`, `border`, `height`
+- CSS: `em`/`rem`/`vw`/`vh`/`%`, `font-weight`, `border`, `height`, `:link`
+- Nested `<strong>`/`<em>`/`<code>` as their own fragments (UA bold paints)
 - Tables as a column grid, including `<caption>`
 - Links: one display-list path, clickable
 - Form fields on the display list (GET submit)

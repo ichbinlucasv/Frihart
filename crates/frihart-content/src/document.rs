@@ -3,7 +3,7 @@ use url::Url;
 
 use crate::about::PrefToggle;
 
-/// A loaded document. HTML arrives in Phase 3.
+/// A loaded document.
 #[derive(Clone, Debug)]
 pub enum Document {
     Blank,

@@ -1,13 +1,4 @@
-//! Native content blocker, inspired by uBlock Origin.
-//!
-//! This is not the uBlock Origin extension and not a WebExtension host.
-//! Frihart is not Firefox. The *stance* is the same: a strong filter
-//! engine is part of the browser, on by default, with lists the user
-//! can replace. The *code* is ours.
-//!
-//! Phase 1 ships a host-level engine plus a built-in tracker seed.
-//! Phase 2 will ingest EasyList / EasyPrivacy / uBlock filter syntax
-//! from local files. Lists are never fetched from Frihart servers.
+//! Native content blocker. Not uBlock Origin. Lists stay local.
 
 #![forbid(unsafe_code)]
 

@@ -36,6 +36,7 @@ pub struct Fragment {
 pub enum Block {
     Heading(u8, String),
     Text(String),
+    Inline(String),
     Link {
         text: String,
         href: String,
@@ -54,6 +55,7 @@ pub enum Block {
     },
     TableRow {
         cells: Vec<String>,
+        header: bool,
     },
     Caption(String),
     Rule,
@@ -290,6 +292,13 @@ fn walk_inlines(node: &Node, ancs: &[Qual], container: &Qual, out: &mut Vec<Frag
         }
         match child.name.as_str() {
             "br" => buf.push('\n'),
+            "strong" | "b" | "em" | "i" | "code" | "mark" | "small" | "u" => {
+                flush_text(&mut buf, container, ancs, out);
+                let t = child.text_content();
+                if !t.is_empty() {
+                    push_frag(out, qual_of(child), ancs, Block::Inline(t));
+                }
+            }
             "a" => {
                 flush_text(&mut buf, container, ancs, out);
                 let t = child.text_content();
@@ -352,18 +361,32 @@ fn flush_text(buf: &mut String, container: &Qual, ancs: &[Qual], out: &mut Vec<F
     if t.is_empty() {
         return;
     }
-    push_frag(out, container.clone(), ancs, Block::Text(t));
+    push_frag(out, container.clone(), ancs, Block::Inline(t));
 }
 
 fn append_collapsed(buf: &mut String, text: &str) {
     let piece = text.split_whitespace().collect::<Vec<_>>().join(" ");
     if piece.is_empty() {
+        if text.chars().any(char::is_whitespace)
+            && !buf.is_empty()
+            && !buf.ends_with(' ')
+            && !buf.ends_with('\n')
+        {
+            buf.push(' ');
+        }
         return;
     }
-    if !buf.is_empty() && !buf.ends_with('\n') && !buf.ends_with(' ') {
+    if (text.starts_with(char::is_whitespace) || (!buf.is_empty() && !buf.ends_with('\n')))
+        && !buf.is_empty()
+        && !buf.ends_with(' ')
+        && !buf.ends_with('\n')
+    {
         buf.push(' ');
     }
     buf.push_str(&piece);
+    if text.ends_with(char::is_whitespace) {
+        buf.push(' ');
+    }
 }
 
 fn collapse_keep_newlines(s: &str) -> String {
@@ -440,7 +463,8 @@ fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     if cells.iter().all(|t| t.is_empty()) {
         return;
     }
-    push_frag(out, qual_of(tr), ancs, Block::TableRow { cells });
+    let header = tr.children.iter().any(|c| c.name == "th");
+    push_frag(out, qual_of(tr), ancs, Block::TableRow { cells, header });
 }
 
 fn is_block(name: &str) -> bool {
@@ -589,7 +613,7 @@ line2</pre>
         );
         assert!(
             frags.iter().any(
-                |f| matches!(&f.kind, Block::Text(t) if t.contains("hello") && t.contains('\n'))
+                |f| matches!(&f.kind, Block::Inline(t) | Block::Text(t) if t.contains("hello") && t.contains('\n'))
             )
         );
         assert!(frags.iter().any(|f| {
@@ -610,12 +634,12 @@ line2</pre>
         assert!(
             blocks
                 .iter()
-                .any(|b| matches!(b, Block::TableRow { cells } if cells.as_slice() == ["A", "B"]))
+                .any(|b| matches!(b, Block::TableRow { cells, header: true } if cells.as_slice() == ["A", "B"]))
         );
         assert!(
             blocks
                 .iter()
-                .any(|b| matches!(b, Block::TableRow { cells } if cells.first().map(String::as_str) == Some("1")))
+                .any(|b| matches!(b, Block::TableRow { cells, header: false } if cells.first().map(String::as_str) == Some("1")))
         );
     }
 
@@ -628,6 +652,26 @@ line2</pre>
             blocks
                 .iter()
                 .any(|b| matches!(b, Block::Caption(t) if t == "nums"))
+        );
+    }
+
+    #[test]
+    fn nested_strong_is_its_own_fragment() {
+        let html = "<p>hello <strong>bold</strong> world</p>";
+        let frags = visible_fragments(&parse(html));
+        let kinds: Vec<_> = frags.iter().map(|f| f.kind.clone()).collect();
+        assert!(
+            kinds
+                .iter()
+                .any(|k| matches!(k, Block::Inline(t) if t.trim() == "hello"))
+        );
+        assert!(frags.iter().any(|f| {
+            matches!(&f.kind, Block::Inline(t) if t == "bold") && f.qual.tag == "strong"
+        }));
+        assert!(
+            kinds
+                .iter()
+                .any(|k| matches!(k, Block::Inline(t) if t.trim() == "world"))
         );
     }
 

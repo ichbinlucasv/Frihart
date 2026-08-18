@@ -35,10 +35,11 @@ Leftovers that did **not** block close: multi-window, HTTP/2, partitioned HTTP c
 
 **D Engine (long pole)**  
 HTML → CSS → style → layout → display list → chrome paint. Tables are
-a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`%`
-font-size, `font-weight`, `border`, `height`. Forms GET/POST (secrets
-skipped). JS off. Img is a box. `about:sites` is honest: **no public
-site is claimed yet**.
+a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`vw`/
+`vh`/`%`, `font-weight`, `border`, `:link`. Nested `<strong>` is its
+own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
+`about:sites`: **https://example.com/ is claimed** (live HTML
+2026-08-18). Other public hosts are still targets.
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -58,14 +59,12 @@ A general-purpose engine is a decade. “Finish” here means **v0.2:
 Linux daily-driver for an honest, named list of static documents**.
 Not Chrome. Not Wikipedia. Not mail.
 
-### Milestone 1 — first claimed public site (this is next)
+### Milestone 1 — first claimed public site
 
-1. Open `https://example.com/` in Frihart (real fetch).
-2. Fix whatever the subset mangles.
-3. If readable, move it from Target → Claimed on `about:sites` and
-   `docs/sites.md`. Write *why* it works.
-4. Repeat for one RFC HTML and one GNU/suckless page.
-5. Do **not** claim a site you have not opened.
+1. ~~Open `https://example.com/`~~ **done** (live HTML laid out;
+   claimed).
+2. Repeat for one RFC HTML and one GNU/suckless page.
+3. Do **not** claim a site you have not opened.
 
 ### Milestone 2 — document CSS (still D)
 
@@ -125,9 +124,9 @@ Not Chrome. Not Wikipedia. Not mail.
 
 ## Next session — start here
 
-**D: open `https://example.com/` and fix layout until it is honest
-enough to claim.** If that is already fine, do nested `<strong>` as
-its own fragment (UA bold that actually paints). Do not start H/I.
+**D: open `https://www.rfc-editor.org/rfc/rfc1918.html` (or
+suckless.org), lay out the live HTML, fix what the subset mangles,
+claim only if readable.** Do not start H/I. JS stays off.
 
 ## Commands
 
