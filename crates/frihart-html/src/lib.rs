@@ -174,7 +174,18 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     }
     if let Some(level) = heading_level(name) {
         let t = heading_text(node);
-        if !t.is_empty() {
+        let links = collect_links(node);
+        if links.len() == 1 && t.trim() == links[0].0.trim() {
+            push_frag(
+                out,
+                qual_of(node.children.iter().find(|c| c.name == "a").unwrap_or(node)),
+                ancs,
+                Block::Link {
+                    text: t,
+                    href: links[0].1.clone(),
+                },
+            );
+        } else if !t.is_empty() {
             push_frag(out, qual, ancs, Block::Heading(level, t));
         }
         return;
@@ -455,6 +466,12 @@ fn is_phrasing(name: &str) -> bool {
 }
 
 fn emit_list_item(li: &Node, ordered: bool, index: usize, ancs: &[Qual], out: &mut Vec<Fragment>) {
+    if has_block_child(li) {
+        for child in &li.children {
+            walk(child, ancs, out);
+        }
+        return;
+    }
     let t = li.text_content();
     let links = collect_links(li);
     if links.len() == 1 && t.trim() == links[0].0.trim() {
@@ -769,6 +786,17 @@ line2</pre>
                 .iter()
                 .any(|a| a.tag == "article" && a.id == "main")
         }));
+    }
+
+    #[test]
+    fn heading_that_is_a_link() {
+        let html = r#"<h3><a href="/meeting/127/">IETF 127 San Francisco</a></h3>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Link { text, href }
+                if text.contains("IETF 127") && href.contains("/meeting/127")
+        )));
     }
 
     #[test]

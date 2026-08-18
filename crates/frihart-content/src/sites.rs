@@ -80,8 +80,14 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.ietf.org/",
             name: "ietf.org",
+            status: ClaimStatus::Claimed,
+            note: "Welcome, IETF 126/127, standards copy; live HTML 2026-08-18",
+        },
+        SiteClaim {
+            url: "https://www.rfc-editor.org/",
+            name: "rfc-editor.org",
             status: ClaimStatus::Target,
-            note: "standards landing — not opened yet",
+            note: "RFC index landing — not opened yet",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -125,7 +131,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 6);
+        assert_eq!(public_claimed(), 7);
         assert!(
             claims()
                 .iter()
@@ -160,6 +166,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("docs.kernel.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("www.ietf.org"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

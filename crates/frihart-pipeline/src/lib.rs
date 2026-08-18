@@ -499,4 +499,27 @@ mod tests {
         let wide = layout_html_ex(html, "", 5120.0, 1440.0);
         assert!(wide.title.contains("Linux Kernel documentation"));
     }
+
+    #[test]
+    fn ietf_org_is_readable() {
+        let html = include_str!("../testdata/ietf.org.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("IETF"));
+        assert!(f.title.contains("Internet Engineering Task Force"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Welcome to the IETF") || blob.contains("IETF 126"));
+        assert!(blob.contains("San Francisco"));
+        assert!(
+            blob.contains("standards")
+                || blob.contains("Internet standards")
+                || blob.contains("open standards")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/meeting/127") || h.contains("/live/") || h.contains("/meeting/")
+            })
+        }));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("IETF"));
+    }
 }
