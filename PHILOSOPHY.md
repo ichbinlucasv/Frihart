@@ -2,8 +2,30 @@
 
 Frihart is a web browser built for people who consider their computer
 their own. The project is original software. It is not a fork of Firefox,
-LibreWolf, Chromium, or any other browser. It will grow slowly, in public,
+LibreWolf, Chromium, or any other browser. **LibreWolf is the
+inspiration** — its stance, not its code. It will grow slowly, in public,
 with boring engineering discipline.
+
+## Inspiration
+
+LibreWolf is a Firefox fork that strips telemetry, tightens
+fingerprinting resistance, and refuses Mozilla's commercial defaults.
+That is the product ethic Frihart exists to honour.
+
+Frihart is not LibreWolf and does not vendor Gecko. We take the ethic
+further, as native features rather than add-ons:
+
+- Identity **containers** are first-class tabs, not a Multi-Account
+  Containers extension.
+- A **uBlock-class blocker** is built into the browser. We do not ship
+  the uBlock Origin WebExtension, because we are not Firefox. We ship
+  the same job: on by default, lists the user can replace, no store.
+- A **translator** lives in chrome. It does not call Google. A network
+  backend is a URL the user typed.
+- **Dark mode** is the product look: black chrome, yellow accents.
+
+If LibreWolf is "Firefox with the bad parts cut out," Frihart is a
+browser that never had those parts.
 
 This file is the constitution. Feature work that contradicts it is out of
 scope, even if it would make the browser more popular.

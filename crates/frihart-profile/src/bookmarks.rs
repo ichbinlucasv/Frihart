@@ -32,6 +32,14 @@ impl BookmarkStore {
                     title: "Privacy".into(),
                     url: "about:privacy".into(),
                 },
+                Bookmark {
+                    title: "Containers".into(),
+                    url: "about:containers".into(),
+                },
+                Bookmark {
+                    title: "Blocker".into(),
+                    url: "about:blocker".into(),
+                },
             ],
         }
     }

@@ -37,6 +37,22 @@ impl Document {
             Self::Unavailable { url, .. } => Some(url),
         }
     }
+
+    /// Concatenated visible text, for find-in-page.
+    pub fn searchable_text(&self) -> String {
+        match self {
+            Self::Blank => "about:blank".into(),
+            Self::Unavailable { url, reason } => format!("{url} {reason}"),
+            Self::Internal(page) => {
+                let mut out = page.title.clone();
+                for block in &page.blocks {
+                    out.push('\n');
+                    out.push_str(&block.searchable());
+                }
+                out
+            }
+        }
+    }
 }
 
 /// Structured internal page. Chrome renders this; there is no HTML here.
@@ -73,4 +89,20 @@ pub enum Block {
         href: String,
     },
     List(Vec<String>),
+}
+
+impl Block {
+    pub fn searchable(&self) -> String {
+        match self {
+            Self::Hero { title, subtitle } => format!("{title} {subtitle}"),
+            Self::Heading(s) | Self::Paragraph(s) | Self::Note(s) => s.clone(),
+            Self::Divider => String::new(),
+            Self::KeyValue { key, value } => format!("{key} {value}"),
+            Self::Toggle {
+                label, description, ..
+            } => format!("{label} {description}"),
+            Self::Link { label, href } => format!("{label} {href}"),
+            Self::List(items) => items.join(" "),
+        }
+    }
 }

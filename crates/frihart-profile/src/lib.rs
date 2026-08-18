@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 mod bookmarks;
+mod containers;
 mod history;
 mod lock;
 
@@ -10,10 +11,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use frihart_config::Prefs;
-use frihart_core::{DEFAULT_PROFILE_NAME, Result};
+use frihart_core::{ContainerId, DEFAULT_PROFILE_NAME, Result};
 use frihart_platform::profiles_dir;
 
 pub use bookmarks::{Bookmark, BookmarkStore};
+pub use containers::{Container, ContainerStore};
 pub use history::{HistoryEntry, HistoryStore};
 
 use lock::ProfileLock;
@@ -26,6 +28,7 @@ pub struct Profile {
     prefs: Prefs,
     bookmarks: BookmarkStore,
     history: HistoryStore,
+    containers: ContainerStore,
     _lock: Option<ProfileLock>,
 }
 
@@ -60,6 +63,7 @@ impl Profile {
             prefs: Prefs::default(),
             bookmarks: BookmarkStore::defaults(),
             history: HistoryStore::default(),
+            containers: ContainerStore::defaults(),
             _lock: None,
         };
         profile.prefs.privacy.persist_history = false;
@@ -91,6 +95,11 @@ impl Profile {
         } else {
             HistoryStore::load(&root.join("history.jsonl"))?
         };
+        let containers = if ephemeral {
+            ContainerStore::defaults()
+        } else {
+            ContainerStore::load(&root.join("containers.toml"))?
+        };
         Ok(Self {
             root,
             name: name.to_string(),
@@ -98,6 +107,7 @@ impl Profile {
             prefs,
             bookmarks,
             history,
+            containers,
             _lock: lock,
         })
     }
@@ -146,6 +156,14 @@ impl Profile {
 
     pub fn history(&self) -> &HistoryStore {
         &self.history
+    }
+
+    pub fn containers(&self) -> &ContainerStore {
+        &self.containers
+    }
+
+    pub fn container(&self, id: ContainerId) -> Option<&Container> {
+        self.containers.get(id)
     }
 
     pub fn record_visit(&mut self, url: &str, title: &str) -> Result<()> {

@@ -41,6 +41,7 @@ pub struct Prefs {
     pub privacy: PrivacyPrefs,
     pub network: NetworkPrefs,
     pub content: ContentPrefs,
+    pub translate: TranslatePrefs,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -82,6 +83,10 @@ pub struct PrivacyPrefs {
     pub javascript: bool,
     pub timezone: TimezonePref,
     pub language: String,
+    /// Native identity containers (LibreWolf/Firefox Multi-Account inspired).
+    pub containers: bool,
+    /// Native uBlock-inspired blocker. On by default. Not an add-on.
+    pub blocker: bool,
 }
 
 impl Default for PrivacyPrefs {
@@ -100,6 +105,8 @@ impl Default for PrivacyPrefs {
             javascript: false,
             timezone: TimezonePref::Utc,
             language: "en".into(),
+            containers: true,
+            blocker: true,
         }
     }
 }
@@ -136,6 +143,8 @@ pub struct ContentPrefs {
     pub media: bool,
     pub webgl: bool,
     pub canvas: bool,
+    /// Dark pages and chrome. The product look is black and yellow.
+    pub dark_mode: bool,
 }
 
 impl Default for ContentPrefs {
@@ -145,6 +154,30 @@ impl Default for ContentPrefs {
             media: false,
             webgl: false,
             canvas: false,
+            dark_mode: true,
+        }
+    }
+}
+
+/// Built-in translator. No Google. No DeepL unless the user types that URL.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TranslatePrefs {
+    pub enabled: bool,
+    /// Empty: translator UI is local-only and does not call a network.
+    /// Set to a LibreTranslate-compatible endpoint the user hosts.
+    pub endpoint: String,
+    pub source: String,
+    pub target: String,
+}
+
+impl Default for TranslatePrefs {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            endpoint: String::new(),
+            source: "auto".into(),
+            target: "en".into(),
         }
     }
 }
@@ -204,6 +237,11 @@ mod tests {
         assert!(!p.general.restore_session);
         assert!(!p.content.webgl);
         assert!(!p.content.canvas);
+        assert!(p.content.dark_mode);
+        assert!(p.privacy.blocker);
+        assert!(p.privacy.containers);
+        assert!(p.translate.enabled);
+        assert!(p.translate.endpoint.is_empty());
     }
 
     #[test]

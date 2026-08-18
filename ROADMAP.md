@@ -87,6 +87,10 @@ bookmarks here. You are not waiting on an engine to have a browser.
 ### Technical tasks
 
 - Polish tab strip, keyboard, focus, scrolling, HiDPI
+- Black / yellow dark chrome as the product look
+- First-class **containers** (tab assignment, isolation keys)
+- Native **uBlock-class blocker** (host engine + built-in seed)
+- Built-in **translator** chrome (`about:translate`, no default cloud)
 - Multiple windows
 - Bookmarks manager as `about:bookmarks` (create, delete, persist)
 - History viewer as `about:history` with wipe / disable
@@ -104,6 +108,9 @@ bookmarks here. You are not waiting on an engine to have a browser.
 - Internal pages stay structured data until the HTML engine can replace
   them *without* changing prefs or policy
 - No GUI toolkit takeover. We keep the widget set small and ours.
+- Containers are a profile object, not an extension.
+- The blocker is a crate (`frihart-blocker`), not a WebExtension host.
+- LibreWolf is inspiration. Gecko is not a dependency.
 
 ### Success criteria
 
@@ -462,7 +469,11 @@ A sustainable rhythm for a long project:
 - [x] Repository, license, philosophy, architecture, roadmap
 - [x] Workspace and Phase 0/1 crates
 - [x] Linux window and `about:` chrome
+- [x] Black / yellow dark chrome
+- [x] Native containers + about:containers
+- [x] Native blocker seed + about:blocker
+- [x] Translator prefs + about:translate
+- [x] Find in page, bookmark shortcut, PKGBUILD
 - [ ] HiDPI and multi-window (Phase 1)
-- [ ] `PKGBUILD` (Phase 1)
 - [ ] Bookmarks / history UI beyond the store (Phase 1)
 - [ ] rustls fetch + view-source (Phase 2)

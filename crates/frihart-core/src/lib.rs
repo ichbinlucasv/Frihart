@@ -10,7 +10,7 @@ mod ids;
 mod urls;
 
 pub use error::{FrihartError, Result};
-pub use ids::{DocumentId, TabId, WindowId};
+pub use ids::{ContainerId, DocumentId, IsolationKey, TabId, WindowId};
 pub use urls::{
     UrlKind, about_page, classify_url, display_url, parse_user_input, try_parse_user_input,
 };

@@ -2,6 +2,8 @@
 
 Frihart is an original, privacy-first web browser written in Rust.
 It is not a fork of Firefox, LibreWolf, Chromium, or anything else.
+**LibreWolf is the inspiration** — telemetry gone, fingerprinting
+resisted, the user is sovereign — implemented as original code.
 
 The primary platform is Linux (Arch and CachyOS first). Windows, then
 macOS, then Android come later — in that order, and not before Linux is
@@ -10,6 +12,18 @@ actually useful.
 This repository is at the beginning of a long project. The chrome runs.
 The web engine does not, yet. That is intentional. Read
 [ROADMAP.md](ROADMAP.md).
+
+## Repositories
+
+- **Primary:** [codeberg.org/ichbinlucasv/Frihart](https://codeberg.org/ichbinlucasv/Frihart)
+- **Mirror:** [github.com/ichbinlucasv/Frihart](https://github.com/ichbinlucasv/Frihart)
+
+## Phase 1 product
+
+- Identity **containers** built into the tab strip (`about:containers`)
+- Native **uBlock-class blocker**, on at install (`about:blocker`)
+- Built-in **translator** chrome, no Google (`about:translate`)
+- **Dark mode** as the product look: black chrome, yellow accents
 
 ## Principles
 
@@ -23,11 +37,13 @@ The full constitution is [PHILOSOPHY.md](PHILOSOPHY.md).
 
 ## Current status
 
-**Phase 0 / early Phase 1.** On Linux, `cargo run` opens a real window:
+**Phase 1.** On Linux, `cargo run` opens a real window:
 
-- Tab strip, URL bar, navigation keys
-- Internal pages: `about:home`, `about:settings`, `about:privacy`,
-  `about:config`, `about:keyboard`, `about:license`, `about:credits`
+- Black chrome, yellow accents, dark pages
+- Tab strip with container stripes, URL bar, navigation keys
+- Native blocker, containers, translator (`about:blocker`,
+  `about:containers`, `about:translate`)
+- Find in page (Ctrl+F), bookmark (Ctrl+D), cycle container (Ctrl+Shift+C)
 - Privacy-first prefs persisted in an XDG profile
 - No network on startup, and no web rendering yet
 

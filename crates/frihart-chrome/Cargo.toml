@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 cosmic-text.workspace = true
+frihart-blocker.workspace = true
 frihart-config.workspace = true
 frihart-content.workspace = true
 frihart-core.workspace = true

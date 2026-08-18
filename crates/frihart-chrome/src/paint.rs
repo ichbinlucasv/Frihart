@@ -9,9 +9,9 @@ use crate::raster::{Framebuffer, Rect};
 use crate::state::{Browser, Hit};
 use crate::text::{DrawText, TextEngine};
 use crate::theme::{
-    ACCENT, ACCENT_DIM, BAD, BG_CHROME, BG_CONTENT, BG_NOTE, BG_STATUS, BG_TAB_ACTIVE,
+    ACCENT, ACCENT_DIM, BAD, BG_CHROME, BG_CONTENT, BG_FIND, BG_NOTE, BG_STATUS, BG_TAB_ACTIVE,
     BG_TAB_HOVER, BG_TOGGLE_OFF, BG_TOGGLE_ON, BG_TOOLBAR, BG_URL, BG_URL_FOCUS, GOOD, HAIRLINE,
-    Metrics, TEXT_CHROME, TEXT_CONTENT, TEXT_CONTENT_MUTED, TEXT_LINK, TEXT_MUTED, WARN,
+    Metrics, PRIVATE, TEXT_CHROME, TEXT_CONTENT, TEXT_CONTENT_MUTED, TEXT_LINK, TEXT_MUTED, WARN,
 };
 
 pub struct HitRegion {
@@ -39,6 +39,7 @@ pub fn paint(
     } else {
         0
     };
+    let find_h = if browser.find_open { m.find_h() } else { 0 };
 
     paint_tabs(fb, text, browser, &m, w, tab_h, &mut hits);
     paint_toolbar(
@@ -54,9 +55,20 @@ pub fn paint(
         0,
         tab_h + toolbar_h,
         w,
-        (h - tab_h - toolbar_h - status_h).max(0),
+        (h - tab_h - toolbar_h - status_h - find_h).max(0),
     );
     paint_content(fb, text, browser, &m, content, &mut hits);
+
+    if find_h > 0 {
+        paint_find(
+            fb,
+            text,
+            browser,
+            &m,
+            Rect::new(0, h - status_h - find_h, w, find_h),
+            &mut hits,
+        );
+    }
 
     if status_h > 0 {
         paint_status(
@@ -66,6 +78,10 @@ pub fn paint(
             &m,
             Rect::new(0, h - status_h, w, status_h),
         );
+    }
+
+    if browser.is_private() {
+        fb.fill_rect(Rect::new(0, 0, m.s(4.0), h), PRIVATE);
     }
 
     hits
@@ -104,6 +120,12 @@ fn paint_tabs(
         if active {
             fb.fill_rect(Rect::new(rect.x, rect.bottom() - 2, rect.w, 2), ACCENT);
         }
+        let stripe = browser
+            .profile
+            .container(tab.container)
+            .map(|c| c.color)
+            .unwrap_or(ACCENT);
+        fb.fill_rect(Rect::new(rect.x, rect.y, m.s(4.0), rect.h), stripe);
 
         let close_w = m.s(18.0);
         let label_w = (rect.w - close_w - 16).max(8) as f32;
@@ -212,6 +234,11 @@ fn paint_toolbar(
         ("‹", Hit::Back, tab.session.can_go_back()),
         ("›", Hit::Forward, tab.session.can_go_forward()),
         ("↻", Hit::Reload, true),
+        (
+            container_glyph(browser),
+            Hit::ContainerBadge,
+            browser.profile.prefs().privacy.containers,
+        ),
     ];
     for (label, hit, enabled) in buttons {
         let r = Rect::new(x, y, btn, btn);
@@ -220,6 +247,7 @@ fn paint_toolbar(
             (Hit::Back, Some(Hit::Back))
                 | (Hit::Forward, Some(Hit::Forward))
                 | (Hit::Reload, Some(Hit::Reload))
+                | (Hit::ContainerBadge, Some(Hit::ContainerBadge))
         );
         if hovered && enabled {
             fb.fill_rect(r, BG_TAB_HOVER);
@@ -646,6 +674,9 @@ fn paint_status(
     if browser.is_private() {
         label = format!("Private.  {label}");
     }
+    if let Some(c) = browser.profile.container(browser.active_tab().container) {
+        label = format!("{}  ·  {label}", c.name);
+    }
     text.draw(
         fb,
         &label,
@@ -675,6 +706,98 @@ fn paint_status(
             ellipsis: true,
         },
     );
+}
+
+fn container_glyph(browser: &Browser) -> &'static str {
+    match browser.active_tab().container.0 {
+        1 => "P",
+        2 => "W",
+        3 => "B",
+        4 => "S",
+        _ => "C",
+    }
+}
+
+fn paint_find(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    browser: &Browser,
+    m: &Metrics,
+    rect: Rect,
+    hits: &mut Vec<HitRegion>,
+) {
+    fb.fill_rect(rect, BG_FIND);
+    fb.fill_rect(Rect::new(rect.x, rect.y, rect.w, 1), ACCENT_DIM);
+    text.draw(
+        fb,
+        "Find",
+        DrawText {
+            x: rect.x + m.pad(),
+            y: rect.y + 6,
+            max_width: m.s(48.0) as f32,
+            font_size: m.font_ui(),
+            line_height: m.line_ui(),
+            color: TEXT_CHROME,
+            weight: Weight::MEDIUM,
+            ellipsis: false,
+        },
+    );
+    let field = Rect::new(
+        rect.x + m.s(64.0),
+        rect.y + 4,
+        (rect.w / 2).max(80),
+        rect.h - 8,
+    );
+    fb.fill_rect(field, BG_URL);
+    fb.stroke_rect(
+        field,
+        if browser.find_focused {
+            ACCENT
+        } else {
+            HAIRLINE
+        },
+    );
+    let shown = if browser.find_text.is_empty() {
+        "type to search this page"
+    } else {
+        browser.find_text.as_str()
+    };
+    text.draw(
+        fb,
+        shown,
+        DrawText {
+            x: field.x + 8,
+            y: field.y + 2,
+            max_width: (field.w - 16) as f32,
+            font_size: m.font_ui(),
+            line_height: m.line_ui(),
+            color: if browser.find_text.is_empty() {
+                TEXT_MUTED
+            } else {
+                TEXT_CONTENT
+            },
+            weight: Weight::NORMAL,
+            ellipsis: true,
+        },
+    );
+    text.draw(
+        fb,
+        &browser.find_status,
+        DrawText {
+            x: field.right() + 12,
+            y: rect.y + 6,
+            max_width: (rect.right() - field.right() - 20) as f32,
+            font_size: m.font_ui_sm(),
+            line_height: m.line_ui(),
+            color: TEXT_MUTED,
+            weight: Weight::NORMAL,
+            ellipsis: true,
+        },
+    );
+    hits.push(HitRegion {
+        rect: field,
+        hit: Hit::FindBar,
+    });
 }
 
 pub fn hit_test(hits: &[HitRegion], x: i32, y: i32) -> Option<Hit> {

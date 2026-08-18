@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/frihart",
+    "crates/frihart-blocker",
     "crates/frihart-chrome",
     "crates/frihart-config",
     "crates/frihart-content",
@@ -22,6 +23,7 @@ description = "A sovereign, privacy-first web browser"
 publish = false
 
 [workspace.dependencies]
+frihart-blocker = { path = "crates/frihart-blocker" }
 frihart-chrome = { path = "crates/frihart-chrome" }
 frihart-config = { path = "crates/frihart-config" }
 frihart-content = { path = "crates/frihart-content" }

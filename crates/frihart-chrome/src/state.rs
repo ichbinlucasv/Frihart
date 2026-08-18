@@ -1,7 +1,7 @@
 //! Browser session state: tabs, URL bar, navigation.
 
 use frihart_content::{Document, PrefToggle, SessionHistory, load};
-use frihart_core::{TabId, display_url, parse_user_input};
+use frihart_core::{ContainerId, TabId, display_url, parse_user_input};
 use frihart_profile::Profile;
 use url::Url;
 
@@ -15,6 +15,8 @@ pub enum Hit {
     Reload,
     UrlBar,
     PrivacyBadge,
+    ContainerBadge,
+    FindBar,
     ContentLink(String),
     ContentToggle(PrefToggle),
 }
@@ -26,6 +28,7 @@ pub struct Tab {
     pub session: SessionHistory,
     pub document: Document,
     pub scroll_y: f32,
+    pub container: ContainerId,
 }
 
 impl Tab {
@@ -57,6 +60,10 @@ pub struct Browser {
     pub hover: Option<Hit>,
     pub cursor: (f64, f64),
     pub status: String,
+    pub find_open: bool,
+    pub find_focused: bool,
+    pub find_text: String,
+    pub find_status: String,
 }
 
 impl Browser {
@@ -74,6 +81,10 @@ impl Browser {
             hover: None,
             cursor: (0.0, 0.0),
             status: "Ready.".into(),
+            find_open: false,
+            find_focused: false,
+            find_text: String::new(),
+            find_status: String::new(),
         }
     }
 
@@ -91,12 +102,14 @@ impl Browser {
 
     pub fn new_tab(&mut self) {
         let url = self.profile.prefs().general.new_tab_url.clone();
-        let tab = open_tab(&mut self.profile, &url);
+        let container = self.active_tab().container;
+        let mut tab = open_tab(&mut self.profile, &url);
+        tab.container = container;
         self.tabs.push(tab);
         self.active = self.tabs.len() - 1;
         self.sync_url_bar();
         self.url_focused = false;
-        self.status = "New tab.".into();
+        self.status = format!("New tab · {}", container.slug());
     }
 
     pub fn close_tab(&mut self, index: usize) -> bool {
@@ -213,7 +226,86 @@ impl Browser {
         self.url_focused = false;
     }
 
+    pub fn cycle_container(&mut self) {
+        if !self.profile.prefs().privacy.containers {
+            self.status = "Containers are off.".into();
+            return;
+        }
+        let next = self.profile.containers().cycle(self.active_tab().container);
+        self.active_tab_mut().container = next;
+        let name = self
+            .profile
+            .container(next)
+            .map(|c| c.name.clone())
+            .unwrap_or_else(|| next.slug().to_string());
+        self.status = format!("Container: {name}");
+    }
+
+    pub fn assign_container(&mut self, slug: &str) {
+        if let Some(id) = ContainerId::from_slug(slug) {
+            self.active_tab_mut().container = id;
+            self.status = format!("Container: {}", id.slug());
+        }
+    }
+
+    pub fn bookmark_current(&mut self) {
+        let url = self.active_tab().url_display();
+        let title = self.active_tab().title();
+        self.profile.bookmarks_mut().add(title, url);
+        if let Err(err) = self.profile.save_bookmarks() {
+            self.status = format!("Could not save bookmark: {err}");
+            return;
+        }
+        self.status = "Bookmarked.".into();
+    }
+
+    pub fn open_find(&mut self) {
+        self.find_open = true;
+        self.find_focused = true;
+        self.url_focused = false;
+        self.status = "Find.".into();
+    }
+
+    pub fn close_find(&mut self) {
+        self.find_open = false;
+        self.find_focused = false;
+        self.find_status.clear();
+    }
+
+    pub fn insert_find_text(&mut self, text: &str) {
+        self.find_text.push_str(text);
+        self.run_find();
+    }
+
+    pub fn backspace_find(&mut self) {
+        self.find_text.pop();
+        self.run_find();
+    }
+
+    pub fn run_find(&mut self) {
+        if self.find_text.is_empty() {
+            self.find_status.clear();
+            return;
+        }
+        let hay = self.active_tab().document.searchable_text();
+        let needle = self.find_text.to_ascii_lowercase();
+        let hay_l = hay.to_ascii_lowercase();
+        if let Some(pos) = hay_l.find(&needle) {
+            self.find_status = format!("found at {pos}");
+            self.active_tab_mut().scroll_y = (pos as f32 * 0.15).min(2000.0);
+        } else {
+            self.find_status = "no matches".into();
+        }
+    }
+
     pub fn navigate(&mut self, url: Url) {
+        if url.scheme() == "frihart" {
+            let spec = url.as_str().trim_start_matches("frihart:");
+            if let Some(slug) = spec.strip_prefix("container/") {
+                self.assign_container(slug);
+                return;
+            }
+        }
         let doc = load(&url, &self.profile);
         let title = doc.title().to_string();
         let _ = self.profile.record_visit(url.as_str(), &title);
@@ -307,5 +399,6 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
         session: SessionHistory::new(url, title),
         document,
         scroll_y: 0.0,
+        container: ContainerId::PERSONAL,
     }
 }

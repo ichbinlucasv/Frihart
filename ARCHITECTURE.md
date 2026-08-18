@@ -90,6 +90,7 @@ Frihart/
 │   ├── frihart-config/       # typed prefs, privacy-first defaults
 │   ├── frihart-profile/      # on-disk profile, lock, bookmarks, history
 │   ├── frihart-privacy/      # policy engine (the constitution, as code)
+│   ├── frihart-blocker/      # native uBlock-class host blocker
 │   ├── frihart-net/          # HTTP(S), DNS, TLS interfaces
 │   ├── frihart-platform/     # OS paths, windowing hooks, sandbox stubs
 │   ├── frihart-content/      # documents, about: pages, navigation
@@ -183,6 +184,16 @@ Request contexts include:
 - fingerprint surface (canvas, fonts, WebGL, audio, …)
 
 Chrome displays `Decision` reasons. Content and net obey them.
+
+### `frihart-blocker`
+
+Native filter engine. Inspired by uBlock Origin, not a port of it and
+not a WebExtension. Phase 1 is host matching plus a built-in tracker
+seed, on by default. Phase 2 ingests EasyList / EasyPrivacy / uBlock
+filter files from disk. No list updates from Frihart servers.
+
+The network stack asks this crate *and* `frihart-privacy` before a
+request leaves the machine.
 
 ### `frihart-net`
 

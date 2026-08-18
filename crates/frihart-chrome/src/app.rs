@@ -145,9 +145,15 @@ impl Handler {
             Hit::Reload => self.browser.reload(),
             Hit::UrlBar => self.browser.focus_url(),
             Hit::PrivacyBadge => {
-                if let Ok(url) = frihart_core::parse_user_input("about:privacy") {
+                if let Ok(url) = frihart_core::parse_user_input("about:blocker") {
                     self.browser.navigate(url);
                 }
+            }
+            Hit::ContainerBadge => self.browser.cycle_container(),
+            Hit::FindBar => {
+                self.browser.find_open = true;
+                self.browser.find_focused = true;
+                self.browser.url_focused = false;
             }
             Hit::ContentLink(href) => {
                 if let Ok(url) = frihart_core::parse_user_input(&href) {
@@ -194,6 +200,21 @@ impl Handler {
                     }
                     "q" => {
                         event_loop.exit();
+                        return;
+                    }
+                    "f" => {
+                        self.browser.open_find();
+                        self.request_redraw();
+                        return;
+                    }
+                    "d" => {
+                        self.browser.bookmark_current();
+                        self.request_redraw();
+                        return;
+                    }
+                    "c" if shift => {
+                        self.browser.cycle_container();
+                        self.request_redraw();
                         return;
                     }
                     "u" if self.browser.url_focused => {
@@ -243,7 +264,21 @@ impl Handler {
                 return;
             }
             Key::Named(NamedKey::Escape) => {
-                self.browser.blur_url();
+                if self.browser.find_open {
+                    self.browser.close_find();
+                } else {
+                    self.browser.blur_url();
+                }
+                self.request_redraw();
+                return;
+            }
+            Key::Named(NamedKey::Enter) if self.browser.find_focused => {
+                self.browser.run_find();
+                self.request_redraw();
+                return;
+            }
+            Key::Named(NamedKey::Backspace) if self.browser.find_focused => {
+                self.browser.backspace_find();
                 self.request_redraw();
                 return;
             }
@@ -283,6 +318,16 @@ impl Handler {
                 return;
             }
             _ => {}
+        }
+
+        if self.browser.find_focused && !ctrl && !alt {
+            if let Some(txt) = event.text.as_ref() {
+                if !txt.chars().any(|c| c.is_control()) {
+                    self.browser.insert_find_text(txt);
+                    self.request_redraw();
+                    return;
+                }
+            }
         }
 
         if self.browser.url_focused && !ctrl && !alt {
@@ -342,8 +387,9 @@ impl ApplicationHandler for Handler {
                     self.browser.cursor.0 as i32,
                     self.browser.cursor.1 as i32,
                 ) {
-                    if !matches!(hit, Hit::UrlBar) {
+                    if !matches!(hit, Hit::UrlBar | Hit::FindBar) {
                         self.browser.blur_url();
+                        self.browser.find_focused = false;
                     }
                     self.handle_hit(hit, event_loop);
                 } else {
@@ -378,7 +424,9 @@ fn hits_eq(a: &Hit, b: &Hit) -> bool {
         | (Hit::Forward, Hit::Forward)
         | (Hit::Reload, Hit::Reload)
         | (Hit::UrlBar, Hit::UrlBar)
-        | (Hit::PrivacyBadge, Hit::PrivacyBadge) => true,
+        | (Hit::PrivacyBadge, Hit::PrivacyBadge)
+        | (Hit::ContainerBadge, Hit::ContainerBadge)
+        | (Hit::FindBar, Hit::FindBar) => true,
         (Hit::ContentLink(x), Hit::ContentLink(y)) => x == y,
         (Hit::ContentToggle(x), Hit::ContentToggle(y)) => x == y,
         _ => false,

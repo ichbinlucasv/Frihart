@@ -1,31 +1,33 @@
-//! Chrome metrics and the Ember palette.
+//! Chrome metrics and the black / yellow palette.
 
 /// Packed 0x00RRGGBB, which matches softbuffer on little-endian.
 pub type Rgb = u32;
 
-pub const BG_CHROME: Rgb = 0x001A1714;
-pub const BG_TAB_ACTIVE: Rgb = 0x002A241F;
-pub const BG_TAB_HOVER: Rgb = 0x00231E1A;
-pub const BG_TOOLBAR: Rgb = 0x00211C18;
-pub const BG_URL: Rgb = 0x0012100E;
-pub const BG_URL_FOCUS: Rgb = 0x0014100C;
-pub const BG_CONTENT: Rgb = 0x00F4EFE6;
-pub const BG_STATUS: Rgb = 0x0016110E;
-pub const BG_NOTE: Rgb = 0x00E8DFD0;
-pub const BG_TOGGLE_OFF: Rgb = 0x00C9BBA8;
-pub const BG_TOGGLE_ON: Rgb = 0x00C47A3A;
+pub const BG_CHROME: Rgb = 0x00000000;
+pub const BG_TAB_ACTIVE: Rgb = 0x00161616;
+pub const BG_TAB_HOVER: Rgb = 0x00202020;
+pub const BG_TOOLBAR: Rgb = 0x000A0A0A;
+pub const BG_URL: Rgb = 0x00000000;
+pub const BG_URL_FOCUS: Rgb = 0x001A1400;
+pub const BG_CONTENT: Rgb = 0x000A0A0A;
+pub const BG_STATUS: Rgb = 0x00000000;
+pub const BG_NOTE: Rgb = 0x001A1600;
+pub const BG_TOGGLE_OFF: Rgb = 0x00333333;
+pub const BG_TOGGLE_ON: Rgb = 0x00F5C400;
+pub const BG_FIND: Rgb = 0x00141414;
 
-pub const ACCENT: Rgb = 0x00C47A3A;
-pub const ACCENT_DIM: Rgb = 0x008A5A2E;
-pub const TEXT_CHROME: Rgb = 0x00E8E0D4;
-pub const TEXT_MUTED: Rgb = 0x009A8F82;
-pub const TEXT_CONTENT: Rgb = 0x00241E18;
-pub const TEXT_CONTENT_MUTED: Rgb = 0x00685E54;
-pub const TEXT_LINK: Rgb = 0x008A4B1A;
-pub const HAIRLINE: Rgb = 0x00362E27;
-pub const GOOD: Rgb = 0x006B9B6E;
-pub const WARN: Rgb = 0x00C4A03A;
-pub const BAD: Rgb = 0x00B05A4A;
+pub const ACCENT: Rgb = 0x00F5C400;
+pub const ACCENT_DIM: Rgb = 0x00B38F00;
+pub const TEXT_CHROME: Rgb = 0x00F5C400;
+pub const TEXT_MUTED: Rgb = 0x00A09040;
+pub const TEXT_CONTENT: Rgb = 0x00F2F2F2;
+pub const TEXT_CONTENT_MUTED: Rgb = 0x00B8B8B8;
+pub const TEXT_LINK: Rgb = 0x00F5C400;
+pub const HAIRLINE: Rgb = 0x002A2A2A;
+pub const GOOD: Rgb = 0x00F5C400;
+pub const WARN: Rgb = 0x00E6B800;
+pub const BAD: Rgb = 0x00C04040;
+pub const PRIVATE: Rgb = 0x00F5C400;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Metrics {
@@ -53,6 +55,10 @@ impl Metrics {
 
     pub fn status_h(&self) -> i32 {
         self.s(24.0)
+    }
+
+    pub fn find_h(&self) -> i32 {
+        self.s(32.0)
     }
 
     pub fn pad(&self) -> i32 {

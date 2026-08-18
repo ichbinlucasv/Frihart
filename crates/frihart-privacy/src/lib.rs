@@ -297,6 +297,16 @@ impl Policy {
                 bool_label(self.prefs.network.client_hints),
                 !self.prefs.network.client_hints,
             ),
+            (
+                "Native blocker",
+                bool_label(self.prefs.privacy.blocker),
+                self.prefs.privacy.blocker,
+            ),
+            (
+                "Containers",
+                bool_label(self.prefs.privacy.containers),
+                self.prefs.privacy.containers,
+            ),
         ]
     }
 }

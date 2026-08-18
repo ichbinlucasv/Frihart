@@ -18,6 +18,10 @@ pub enum PrefToggle {
     WebRtc,
     RestoreSession,
     ThirdPartyCookies,
+    Blocker,
+    Containers,
+    DarkMode,
+    Translate,
 }
 
 impl PrefToggle {
@@ -36,6 +40,10 @@ impl PrefToggle {
             Self::ThirdPartyCookies => {
                 prefs.privacy.third_party_cookies = !prefs.privacy.third_party_cookies;
             }
+            Self::Blocker => prefs.privacy.blocker = !prefs.privacy.blocker,
+            Self::Containers => prefs.privacy.containers = !prefs.privacy.containers,
+            Self::DarkMode => prefs.content.dark_mode = !prefs.content.dark_mode,
+            Self::Translate => prefs.translate.enabled = !prefs.translate.enabled,
         }
     }
 }
@@ -57,6 +65,9 @@ pub fn is_known(name: &str) -> bool {
             | "frihart"
             | "bookmarks"
             | "history"
+            | "containers"
+            | "blocker"
+            | "translate"
     )
 }
 
@@ -74,6 +85,9 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "about" | "frihart" => about(url),
         "bookmarks" => bookmarks(url, profile),
         "history" => history(url, profile),
+        "containers" => containers(url, profile),
+        "blocker" => blocker(url, prefs),
+        "translate" => translate(url, prefs),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -95,11 +109,13 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
     let mut blocks = vec![
         Block::Hero {
             title: APP_NAME.into(),
-            subtitle: "A sovereign, privacy-first web browser. Original code. No telemetry.".into(),
+            subtitle:
+                "A sovereign, privacy-first web browser. Inspired by LibreWolf. Original code."
+                    .into(),
         },
         Block::Paragraph(format!(
-            "This is Phase 0 / early Phase 1. The chrome is real. The web engine \
-             is not. Version {VERSION}. Profile “{}”.",
+            "Phase 1. Containers, a native blocker, and a translator live in the \
+             chrome. The web engine is not here yet. Version {VERSION}. Profile “{}”.",
             profile.name()
         )),
         Block::Heading("Pages".into()),
@@ -122,6 +138,18 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Roadmap".into(),
             href: "about:roadmap".into(),
+        },
+        Block::Link {
+            label: "Containers".into(),
+            href: "about:containers".into(),
+        },
+        Block::Link {
+            label: "Blocker".into(),
+            href: "about:blocker".into(),
+        },
+        Block::Link {
+            label: "Translator".into(),
+            href: "about:translate".into(),
         },
         Block::Link {
             label: "Bookmarks".into(),
@@ -187,7 +215,32 @@ fn settings(url: &Url, prefs: &Prefs) -> Document {
                 title: "Settings".into(),
                 subtitle: "Defaults protect you. Every toggle is local.".into(),
             },
+            Block::Heading("Look".into()),
+            toggle(
+                PrefToggle::DarkMode,
+                "Dark mode",
+                "Black pages, yellow accents. This is the product look, not a theme store.",
+                prefs.content.dark_mode,
+            ),
             Block::Heading("Protection".into()),
+            toggle(
+                PrefToggle::Blocker,
+                "Native blocker (uBlock-class)",
+                "On by default. Built into Frihart — not an add-on, not a store listing.",
+                prefs.privacy.blocker,
+            ),
+            toggle(
+                PrefToggle::Containers,
+                "Identity containers",
+                "Tabs belong to Personal, Work, Banking, or Shopping. Cookies never cross.",
+                prefs.privacy.containers,
+            ),
+            toggle(
+                PrefToggle::Translate,
+                "Built-in translator",
+                "UI is local. Network translation only hits an endpoint you configure.",
+                prefs.translate.enabled,
+            ),
             toggle(
                 PrefToggle::HttpsOnly,
                 "HTTPS-only mode",
@@ -366,6 +419,8 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("javascript", bool_str(prefs.privacy.javascript)),
         kv("timezone", &format!("{:?}", prefs.privacy.timezone)),
         kv("language", &prefs.privacy.language),
+        kv("containers", bool_str(prefs.privacy.containers)),
+        kv("blocker", bool_str(prefs.privacy.blocker)),
         Block::Heading("network".into()),
         kv("user_agent", &prefs.network.user_agent),
         kv("client_hints", bool_str(prefs.network.client_hints)),
@@ -385,6 +440,19 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("media", bool_str(prefs.content.media)),
         kv("webgl", bool_str(prefs.content.webgl)),
         kv("canvas", bool_str(prefs.content.canvas)),
+        kv("dark_mode", bool_str(prefs.content.dark_mode)),
+        Block::Heading("translate".into()),
+        kv("enabled", bool_str(prefs.translate.enabled)),
+        kv(
+            "endpoint",
+            if prefs.translate.endpoint.is_empty() {
+                "(empty — no third-party translator)"
+            } else {
+                &prefs.translate.endpoint
+            },
+        ),
+        kv("source", &prefs.translate.source),
+        kv("target", &prefs.translate.target),
     ];
     let _ = FROZEN_USER_AGENT;
     blocks.push(Block::Link {
@@ -438,6 +506,15 @@ fn credits(url: &Url) -> Document {
             Block::Paragraph(
                 "Frihart is not a fork. The browser, chrome, policy engine, and \
                  (over time) document engine are written here."
+                    .into(),
+            ),
+            Block::Heading("Inspiration".into()),
+            Block::Paragraph(
+                "LibreWolf is the inspiration for Frihart's stance: telemetry \
+                 stripped, fingerprinting resisted, no sponsored defaults, the \
+                 user is sovereign. LibreWolf is a Firefox fork. Frihart is not. \
+                 We take the ethic and implement it as original code — containers \
+                 and a uBlock-class blocker are native, not add-ons."
                     .into(),
             ),
             Block::Heading("Primitives we did not reimplement".into()),
@@ -508,6 +585,22 @@ fn keyboard(url: &Url) -> Document {
                 key: "Ctrl+Q".into(),
                 value: "Quit".into(),
             },
+            Block::KeyValue {
+                key: "Ctrl+F".into(),
+                value: "Find in page".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+D".into(),
+                value: "Bookmark this page".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+Shift+C".into(),
+                value: "Cycle container".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+Shift+P".into(),
+                value: "Hint: start with --private".into(),
+            },
         ],
     })
 }
@@ -522,8 +615,8 @@ fn roadmap(url: &Url) -> Document {
                 subtitle: "A capability ladder, not a fake launch date.".into(),
             },
             Block::List(vec![
-                "Phase 0 — identity, crates, philosophy (you are here)".into(),
-                "Phase 1 — Linux shell: windows, bookmarks UI, packaging".into(),
+                "Phase 0 — identity, crates, philosophy".into(),
+                "Phase 1 — Linux shell, containers, native blocker (you are here)".into(),
                 "Phase 2 — rustls network stack, cookies, downloads".into(),
                 "Phase 3 — HTML tokenizer, tree builder, DOM".into(),
                 "Phase 4 — CSS, layout, paint".into(),
@@ -553,8 +646,9 @@ fn about(url: &Url) -> Document {
                 subtitle: "Original. Private by default. Linux first.".into(),
             },
             Block::Paragraph(
-                "Frihart is not Firefox, not LibreWolf, not Chromium, and not a \
-                 reskin of any of them. It is a long project with honest scope."
+                "Frihart is not Firefox, not LibreWolf, and not Chromium. LibreWolf \
+                 inspired the defaults and the refusal of telemetry. The code is \
+                 original. It is a long project with honest scope."
                     .into(),
             ),
             Block::KeyValue {
@@ -600,6 +694,158 @@ fn bookmarks(url: &Url, profile: &Profile) -> Document {
         title: "Bookmarks".into(),
         url: url.clone(),
         blocks,
+    })
+}
+
+fn containers(url: &Url, profile: &Profile) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Containers".into(),
+            subtitle: "First-class identity isolation. Inspired by Firefox Multi-Account Containers, built into Frihart — not an add-on.".into(),
+        },
+        Block::Paragraph(
+            "Each tab belongs to a container. When the network stack exists, cookies, \
+             cache, and storage are partitioned by container. A banking tab cannot \
+             see a shopping tab."
+                .into(),
+        ),
+        Block::Note(
+            "Click a container to assign it to the current tab. Ctrl+Shift+C cycles. \
+             New tabs inherit the active container."
+                .into(),
+        ),
+        Block::Heading("Your containers".into()),
+    ];
+    for item in &profile.containers().items {
+        blocks.push(Block::Link {
+            label: format!("{}  ·  {}", item.name, item.slug),
+            href: format!("frihart:container/{}", item.slug),
+        });
+        blocks.push(Block::KeyValue {
+            key: "color".into(),
+            value: format!("#{:06x}", item.color & 0x00ff_ffff),
+        });
+    }
+    if !profile.prefs().privacy.containers {
+        blocks.push(Block::Note(
+            "Containers are disabled in settings. Isolation will not be applied.".into(),
+        ));
+    }
+    Document::internal(InternalPage {
+        title: "Containers".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn blocker(url: &Url, prefs: &Prefs) -> Document {
+    let engine = frihart_blocker::FilterEngine::new(prefs.privacy.blocker);
+    let mut sample: Vec<String> = engine
+        .sample(16)
+        .into_iter()
+        .map(|h| format!("||{h}^"))
+        .collect();
+    if sample.is_empty() {
+        sample.push("(no rules)".into());
+    }
+    Document::internal(InternalPage {
+        title: "Blocker".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Native blocker".into(),
+                subtitle: "uBlock-class protection, shipped in the browser. Not an extension."
+                    .into(),
+            },
+            Block::Paragraph(
+                "LibreWolf ships uBlock Origin as a default add-on because it is a \
+                 Firefox fork. Frihart is not Firefox, so we do not embed that \
+                 extension. We build the same job into the engine: network blocking \
+                 on by default, lists the user can replace, no store, no phone-home."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "Enabled".into(),
+                value: if engine.enabled() {
+                    "on".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::KeyValue {
+                key: "Built-in host rules".into(),
+                value: engine.rule_count().to_string(),
+            },
+            Block::KeyValue {
+                key: "List format (Phase 2)".into(),
+                value: "EasyList, EasyPrivacy, uBlock filters — local files only".into(),
+            },
+            Block::Heading("Seed (sample)".into()),
+            Block::List(sample),
+            Block::Note(
+                "Cosmetic filtering waits for the HTML engine. List updates are \
+                 never pulled from Frihart servers. Distros or you ship new lists."
+                    .into(),
+            ),
+            Block::Link {
+                label: "Settings".into(),
+                href: "about:settings".into(),
+            },
+        ],
+    })
+}
+
+fn translate(url: &Url, prefs: &Prefs) -> Document {
+    let endpoint = if prefs.translate.endpoint.is_empty() {
+        "(none — translator will not call a network)".to_string()
+    } else {
+        prefs.translate.endpoint.clone()
+    };
+    Document::internal(InternalPage {
+        title: "Translator".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Translator".into(),
+                subtitle: "Built in. Local first. No Google.".into(),
+            },
+            Block::Paragraph(
+                "Page translation needs the document engine (Phase 4+). The chrome \
+                 and this page exist now so the feature is first-class, not a \
+                 bolted-on extension later."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "Enabled".into(),
+                value: if prefs.translate.enabled {
+                    "on".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::KeyValue {
+                key: "Source".into(),
+                value: prefs.translate.source.clone(),
+            },
+            Block::KeyValue {
+                key: "Target".into(),
+                value: prefs.translate.target.clone(),
+            },
+            Block::KeyValue {
+                key: "Endpoint".into(),
+                value: endpoint,
+            },
+            Block::Note(
+                "Set translate.endpoint in prefs.toml to a LibreTranslate-compatible \
+                 URL you host. Frihart will not ship a default cloud translator \
+                 and will not call Google or DeepL unless you type that URL."
+                    .into(),
+            ),
+            Block::Link {
+                label: "about:config".into(),
+                href: "about:config".into(),
+            },
+        ],
     })
 }
 

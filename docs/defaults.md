@@ -32,6 +32,17 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.javascript` | `false` | No engine yet. Remains a permission after an engine exists. |
 | `privacy.timezone` | `utc` | System timezone is identifying. |
 | `privacy.language` | `en` | A single language; not the full system list. |
+| `privacy.containers` | `true` | Identity isolation is a default, not an add-on. |
+| `privacy.blocker` | `true` | uBlock-class host blocking is on at install. |
+
+## Translate
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `translate.enabled` | `true` | The UI exists. It does not call a network until `endpoint` is set. |
+| `translate.endpoint` | empty | No default cloud translator. LibreTranslate you host, or nothing. |
+| `translate.source` | `auto` | Detect when a backend exists. |
+| `translate.target` | `en` | User-changeable. |
 
 ## Network
 
@@ -52,6 +63,7 @@ The implementing type is `frihart_config::Prefs`.
 | `content.media` | `false` until implemented | No silent decoder attack surface. |
 | `content.webgl` | `false` | GPU fingerprinting. |
 | `content.canvas` | `false` until implemented | Classic fingerprint surface. |
+| `content.dark_mode` | `true` | Black and yellow is the product, not a theme pack. |
 
 ## What is intentionally absent
 
