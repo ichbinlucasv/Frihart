@@ -1,0 +1,49 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/frihart",
+    "crates/frihart-chrome",
+    "crates/frihart-config",
+    "crates/frihart-content",
+    "crates/frihart-core",
+    "crates/frihart-net",
+    "crates/frihart-platform",
+    "crates/frihart-privacy",
+    "crates/frihart-profile",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+authors = ["Frihart contributors"]
+rust-version = "1.85"
+description = "A sovereign, privacy-first web browser"
+publish = false
+
+[workspace.dependencies]
+frihart-chrome = { path = "crates/frihart-chrome" }
+frihart-config = { path = "crates/frihart-config" }
+frihart-content = { path = "crates/frihart-content" }
+frihart-core = { path = "crates/frihart-core" }
+frihart-net = { path = "crates/frihart-net" }
+frihart-platform = { path = "crates/frihart-platform" }
+frihart-privacy = { path = "crates/frihart-privacy" }
+frihart-profile = { path = "crates/frihart-profile" }
+
+clap = { version = "4.5", features = ["derive"] }
+cosmic-text = "0.14"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+softbuffer = "0.4"
+thiserror = "2.0"
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = "2.5"
+winit = "0.30"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"

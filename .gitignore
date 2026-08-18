@@ -1,0 +1,25 @@
+/target
+**/*.rs.bk
+Cargo.lock.bak
+
+# Local profiles used while developing
+/profile-dev
+/tmp-profile
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Coverage / profiling
+*.profraw
+*.profdata
+/coverage
+lcov.info
+tarpaulin-report.html
+
+# Generated docs
+/book/book

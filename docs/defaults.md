@@ -1,0 +1,60 @@
+# Frihart defaults
+
+Every shipped default lives here. If you change a default, change this
+file in the same commit and say why.
+
+The implementing type is `frihart_config::Prefs`.
+
+## General
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `general.homepage` | `about:home` | No third-party start page. No sponsored tiles. |
+| `general.restore_session` | `false` | The user opens what they open. Session restore is opt-in. |
+| `general.new_tab_url` | `about:newtab` | Same reason as homepage. |
+| `general.search_url` | empty | No default-search deal. Search is a user-supplied URL template or nothing. |
+| `general.show_status_bar` | `true` | Destinations should be visible before click. |
+
+## Privacy
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `privacy.https_only` | `true` | Cleartext HTTP is the exception, not the web. |
+| `privacy.resist_fingerprinting` | `true` | Identity is not a site entitlement. |
+| `privacy.third_party_cookies` | `false` | Cross-site cookies are tracking. |
+| `privacy.partition_first_party_state` | `true` | Embedded first-party state is still a tracking vector. |
+| `privacy.send_referrer` | `origin-only` | Path-bearing referrers leak URLs. Cross-site referrers are dropped. |
+| `privacy.send_dnt` | `false` | DNT is a fingerprint with no legal force. |
+| `privacy.send_gpc` | `true` | GPC is meaningful in some jurisdictions and is a single bit. |
+| `privacy.persist_history` | `true` | Local history is the user's. It never leaves the disk. Easy to disable or wipe. |
+| `privacy.persist_cookies` | `true` | Same. First-party only. |
+| `privacy.webrtc` | `false` | IP-leak surface. Stays off until implemented and reviewed. |
+| `privacy.javascript` | `false` | No engine yet. Remains a permission after an engine exists. |
+| `privacy.timezone` | `utc` | System timezone is identifying. |
+| `privacy.language` | `en` | A single language; not the full system list. |
+
+## Network
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `network.user_agent` | frozen Frihart UA | No OS micro-version, no engine version salad. |
+| `network.client_hints` | `false` | Client hints exist to fingerprint. |
+| `network.doh_mode` | `off` | System DNS first. DoH is opt-in and user-chosen. |
+| `network.doh_url` | empty | We do not pick a national or corporate resolver for you. |
+| `network.http2` | `true` (when implemented) | Performance without a privacy cost by itself. |
+| `network.http3` | `false` until reviewed | QUIC exposes a different fingerprint; later. |
+
+## Content
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `content.images` | `true` | Needed for a usable web; still first-party by policy. |
+| `content.media` | `false` until implemented | No silent decoder attack surface. |
+| `content.webgl` | `false` | GPU fingerprinting. |
+| `content.canvas` | `false` until implemented | Classic fingerprint surface. |
+
+## What is intentionally absent
+
+There is no pref for telemetry, crash-report upload, usage ping, or
+"help improve Frihart." Adding one is a philosophy violation, not a
+product question.

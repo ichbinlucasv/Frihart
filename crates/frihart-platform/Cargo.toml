@@ -1,0 +1,12 @@
+[package]
+name = "frihart-platform"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Operating-system seams (Linux first)"
+publish.workspace = true
+
+[dependencies]
+frihart-core.workspace = true

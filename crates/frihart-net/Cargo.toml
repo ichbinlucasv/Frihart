@@ -1,0 +1,17 @@
+[package]
+name = "frihart-net"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Network stack interfaces (implementation is Phase 2)"
+publish.workspace = true
+
+[dependencies]
+frihart-core.workspace = true
+frihart-privacy.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+frihart-config.workspace = true

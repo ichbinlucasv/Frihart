@@ -1,0 +1,16 @@
+[package]
+name = "frihart-content"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Documents, about: pages, and session history"
+publish.workspace = true
+
+[dependencies]
+frihart-config.workspace = true
+frihart-core.workspace = true
+frihart-privacy.workspace = true
+frihart-profile.workspace = true
+url.workspace = true

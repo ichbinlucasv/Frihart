@@ -1,0 +1,22 @@
+[package]
+name = "frihart-chrome"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Linux browser chrome: windows, tabs, toolbar, viewport"
+publish.workspace = true
+
+[dependencies]
+cosmic-text.workspace = true
+frihart-config.workspace = true
+frihart-content.workspace = true
+frihart-core.workspace = true
+frihart-platform.workspace = true
+frihart-privacy.workspace = true
+frihart-profile.workspace = true
+softbuffer.workspace = true
+tracing.workspace = true
+url.workspace = true
+winit.workspace = true

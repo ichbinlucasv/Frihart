@@ -1,0 +1,651 @@
+use frihart_config::Prefs;
+use frihart_core::{APP_NAME, FROZEN_USER_AGENT, VERSION};
+use frihart_privacy::Policy;
+use frihart_profile::Profile;
+use url::Url;
+
+use crate::document::{Block, Document, InternalPage};
+
+/// A preference exposed as a toggle on an internal page.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PrefToggle {
+    HttpsOnly,
+    ResistFingerprinting,
+    PersistHistory,
+    PersistCookies,
+    SendGpc,
+    Javascript,
+    WebRtc,
+    RestoreSession,
+    ThirdPartyCookies,
+}
+
+impl PrefToggle {
+    pub fn apply(self, prefs: &mut Prefs) {
+        match self {
+            Self::HttpsOnly => prefs.privacy.https_only = !prefs.privacy.https_only,
+            Self::ResistFingerprinting => {
+                prefs.privacy.resist_fingerprinting = !prefs.privacy.resist_fingerprinting;
+            }
+            Self::PersistHistory => prefs.privacy.persist_history = !prefs.privacy.persist_history,
+            Self::PersistCookies => prefs.privacy.persist_cookies = !prefs.privacy.persist_cookies,
+            Self::SendGpc => prefs.privacy.send_gpc = !prefs.privacy.send_gpc,
+            Self::Javascript => prefs.privacy.javascript = !prefs.privacy.javascript,
+            Self::WebRtc => prefs.privacy.webrtc = !prefs.privacy.webrtc,
+            Self::RestoreSession => prefs.general.restore_session = !prefs.general.restore_session,
+            Self::ThirdPartyCookies => {
+                prefs.privacy.third_party_cookies = !prefs.privacy.third_party_cookies;
+            }
+        }
+    }
+}
+
+pub fn is_known(name: &str) -> bool {
+    matches!(
+        name,
+        "blank"
+            | "home"
+            | "newtab"
+            | "settings"
+            | "privacy"
+            | "config"
+            | "license"
+            | "credits"
+            | "keyboard"
+            | "roadmap"
+            | "about"
+            | "frihart"
+            | "bookmarks"
+            | "history"
+    )
+}
+
+pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
+    match name {
+        "blank" => Document::Blank,
+        "home" | "newtab" => home(url, prefs, profile),
+        "settings" => settings(url, prefs),
+        "privacy" => privacy(url, prefs),
+        "config" => config(url, prefs),
+        "license" => license(url),
+        "credits" => credits(url),
+        "keyboard" => keyboard(url),
+        "roadmap" => roadmap(url),
+        "about" | "frihart" => about(url),
+        "bookmarks" => bookmarks(url, profile),
+        "history" => history(url, profile),
+        other => Document::internal(InternalPage {
+            title: "Unknown page".into(),
+            url: url.clone(),
+            blocks: vec![
+                Block::Hero {
+                    title: format!("about:{other} is not a page"),
+                    subtitle: "Internal pages are listed on about:home.".into(),
+                },
+                Block::Link {
+                    label: "Home".into(),
+                    href: "about:home".into(),
+                },
+            ],
+        }),
+    }
+}
+
+fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: APP_NAME.into(),
+            subtitle: "A sovereign, privacy-first web browser. Original code. No telemetry.".into(),
+        },
+        Block::Paragraph(format!(
+            "This is Phase 0 / early Phase 1. The chrome is real. The web engine \
+             is not. Version {VERSION}. Profile “{}”.",
+            profile.name()
+        )),
+        Block::Heading("Pages".into()),
+        Block::Link {
+            label: "Settings".into(),
+            href: "about:settings".into(),
+        },
+        Block::Link {
+            label: "Privacy".into(),
+            href: "about:privacy".into(),
+        },
+        Block::Link {
+            label: "Preferences (about:config)".into(),
+            href: "about:config".into(),
+        },
+        Block::Link {
+            label: "Keyboard shortcuts".into(),
+            href: "about:keyboard".into(),
+        },
+        Block::Link {
+            label: "Roadmap".into(),
+            href: "about:roadmap".into(),
+        },
+        Block::Link {
+            label: "Bookmarks".into(),
+            href: "about:bookmarks".into(),
+        },
+        Block::Link {
+            label: "History".into(),
+            href: "about:history".into(),
+        },
+        Block::Link {
+            label: "License".into(),
+            href: "about:license".into(),
+        },
+    ];
+
+    if !profile.bookmarks().items.is_empty() {
+        blocks.push(Block::Heading("Bookmarks".into()));
+        for mark in &profile.bookmarks().items {
+            blocks.push(Block::Link {
+                label: mark.title.clone(),
+                href: mark.url.clone(),
+            });
+        }
+    }
+
+    if prefs.privacy.persist_history {
+        let recent = profile.history().recent(8);
+        if !recent.is_empty() {
+            blocks.push(Block::Heading("Recent".into()));
+            for entry in recent {
+                let label = if entry.title.is_empty() {
+                    entry.url.clone()
+                } else {
+                    format!("{}  ·  {}", entry.title, entry.url)
+                };
+                blocks.push(Block::Link {
+                    label,
+                    href: entry.url.clone(),
+                });
+            }
+        }
+    }
+
+    blocks.push(Block::Note(
+        "Typing an https:// URL will not fetch it yet. You will get an honest \
+         page instead of a fake render."
+            .into(),
+    ));
+
+    Document::internal(InternalPage {
+        title: "Home".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn settings(url: &Url, prefs: &Prefs) -> Document {
+    Document::internal(InternalPage {
+        title: "Settings".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Settings".into(),
+                subtitle: "Defaults protect you. Every toggle is local.".into(),
+            },
+            Block::Heading("Protection".into()),
+            toggle(
+                PrefToggle::HttpsOnly,
+                "HTTPS-only mode",
+                "Refuse cleartext HTTP. Exceptions will be per-site, when the network stack exists.",
+                prefs.privacy.https_only,
+            ),
+            toggle(
+                PrefToggle::ResistFingerprinting,
+                "Resist fingerprinting",
+                "Clamp or deny high-entropy APIs. Frihart will not impersonate Chrome.",
+                prefs.privacy.resist_fingerprinting,
+            ),
+            toggle(
+                PrefToggle::ThirdPartyCookies,
+                "Allow third-party cookies",
+                "Off. Cross-site cookies are tracking. Turn this on only if you mean it.",
+                prefs.privacy.third_party_cookies,
+            ),
+            toggle(
+                PrefToggle::SendGpc,
+                "Send Global Privacy Control",
+                "A single bit some jurisdictions treat as a legal signal. Do Not Track is not sent.",
+                prefs.privacy.send_gpc,
+            ),
+            Block::Heading("Local data".into()),
+            toggle(
+                PrefToggle::PersistHistory,
+                "Remember history",
+                "Stored only in your profile. Never uploaded. Private windows ignore this.",
+                prefs.privacy.persist_history,
+            ),
+            toggle(
+                PrefToggle::PersistCookies,
+                "Remember cookies",
+                "First-party only, when the network stack exists.",
+                prefs.privacy.persist_cookies,
+            ),
+            toggle(
+                PrefToggle::RestoreSession,
+                "Restore previous session",
+                "Off by default. The browser opens what you open.",
+                prefs.general.restore_session,
+            ),
+            Block::Heading("Attack surface".into()),
+            toggle(
+                PrefToggle::Javascript,
+                "JavaScript",
+                "There is no engine yet. This pref exists so the permission model is real from day one.",
+                prefs.privacy.javascript,
+            ),
+            toggle(
+                PrefToggle::WebRtc,
+                "WebRTC",
+                "Off. IP-leak surface. Stays off until implemented and reviewed.",
+                prefs.privacy.webrtc,
+            ),
+            Block::Note(
+                "More knobs live on about:config. There is no search-engine picker \
+                 because there is no default search deal."
+                    .into(),
+            ),
+            Block::Link {
+                label: "All preferences".into(),
+                href: "about:config".into(),
+            },
+        ],
+    })
+}
+
+fn privacy(url: &Url, prefs: &Prefs) -> Document {
+    let policy = Policy::from_prefs(prefs);
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Privacy".into(),
+            subtitle: "The constitution, as currently configured.".into(),
+        },
+        Block::Paragraph(
+            "No telemetry. No crash uploader. No anonymous usage ping. Startup \
+             makes zero network connections. This page is built from local prefs."
+                .into(),
+        ),
+        Block::Heading("Active policy".into()),
+    ];
+    for (key, value, _good) in policy.summary_lines() {
+        blocks.push(Block::KeyValue {
+            key: key.into(),
+            value,
+        });
+    }
+    blocks.extend([
+        Block::Heading("Identity we will send (Phase 2)".into()),
+        Block::KeyValue {
+            key: "User-Agent".into(),
+            value: policy.user_agent().into(),
+        },
+        Block::KeyValue {
+            key: "Language".into(),
+            value: prefs.privacy.language.clone(),
+        },
+        Block::KeyValue {
+            key: "Timezone".into(),
+            value: format!("{:?}", prefs.privacy.timezone).to_ascii_lowercase(),
+        },
+        Block::KeyValue {
+            key: "DoH".into(),
+            value: if prefs.network.doh_url.is_empty() {
+                format!("{} (no resolver configured)", prefs.network.doh_mode)
+            } else {
+                prefs.network.doh_mode.clone()
+            },
+        },
+        Block::Note(
+            "DNT is off on purpose. It is a tracking bit. GPC is on. Client \
+             Hints are never sent."
+                .into(),
+        ),
+        Block::Link {
+            label: "Change settings".into(),
+            href: "about:settings".into(),
+        },
+    ]);
+    Document::internal(InternalPage {
+        title: "Privacy".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn config(url: &Url, prefs: &Prefs) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "about:config".into(),
+            subtitle: "Typed preferences. Not a string soup.".into(),
+        },
+        Block::Note(
+            "Toggles that are safe to flip from chrome live on about:settings. \
+             This page is the full snapshot."
+                .into(),
+        ),
+        Block::Heading("general".into()),
+        kv("homepage", &prefs.general.homepage),
+        kv("new_tab_url", &prefs.general.new_tab_url),
+        kv(
+            "search_url",
+            if prefs.general.search_url.is_empty() {
+                "(empty — no default search)"
+            } else {
+                &prefs.general.search_url
+            },
+        ),
+        kv("restore_session", bool_str(prefs.general.restore_session)),
+        kv("show_status_bar", bool_str(prefs.general.show_status_bar)),
+        Block::Heading("privacy".into()),
+        kv("https_only", bool_str(prefs.privacy.https_only)),
+        kv(
+            "resist_fingerprinting",
+            bool_str(prefs.privacy.resist_fingerprinting),
+        ),
+        kv(
+            "third_party_cookies",
+            bool_str(prefs.privacy.third_party_cookies),
+        ),
+        kv(
+            "partition_first_party_state",
+            bool_str(prefs.privacy.partition_first_party_state),
+        ),
+        kv(
+            "send_referrer",
+            &format!("{:?}", prefs.privacy.send_referrer),
+        ),
+        kv("send_dnt", bool_str(prefs.privacy.send_dnt)),
+        kv("send_gpc", bool_str(prefs.privacy.send_gpc)),
+        kv("persist_history", bool_str(prefs.privacy.persist_history)),
+        kv("persist_cookies", bool_str(prefs.privacy.persist_cookies)),
+        kv("webrtc", bool_str(prefs.privacy.webrtc)),
+        kv("javascript", bool_str(prefs.privacy.javascript)),
+        kv("timezone", &format!("{:?}", prefs.privacy.timezone)),
+        kv("language", &prefs.privacy.language),
+        Block::Heading("network".into()),
+        kv("user_agent", &prefs.network.user_agent),
+        kv("client_hints", bool_str(prefs.network.client_hints)),
+        kv("doh_mode", &prefs.network.doh_mode),
+        kv(
+            "doh_url",
+            if prefs.network.doh_url.is_empty() {
+                "(empty)"
+            } else {
+                &prefs.network.doh_url
+            },
+        ),
+        kv("http2", bool_str(prefs.network.http2)),
+        kv("http3", bool_str(prefs.network.http3)),
+        Block::Heading("content".into()),
+        kv("images", bool_str(prefs.content.images)),
+        kv("media", bool_str(prefs.content.media)),
+        kv("webgl", bool_str(prefs.content.webgl)),
+        kv("canvas", bool_str(prefs.content.canvas)),
+    ];
+    let _ = FROZEN_USER_AGENT;
+    blocks.push(Block::Link {
+        label: "Settings".into(),
+        href: "about:settings".into(),
+    });
+    Document::internal(InternalPage {
+        title: "Config".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn license(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "License".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "License".into(),
+                subtitle: "MIT OR Apache-2.0".into(),
+            },
+            Block::Paragraph(
+                "Frihart is dual-licensed under the MIT License and the Apache \
+                 License, Version 2.0. You may choose either. The point is that \
+                 you own the binary you run."
+                    .into(),
+            ),
+            Block::Paragraph(
+                "Copyright 2026 Frihart contributors. The full texts live in \
+                 LICENSE-MIT and LICENSE-APACHE in the source tree."
+                    .into(),
+            ),
+            Block::Link {
+                label: "Credits".into(),
+                href: "about:credits".into(),
+            },
+        ],
+    })
+}
+
+fn credits(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Credits".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Credits".into(),
+                subtitle: "Original product. Borrowed primitives.".into(),
+            },
+            Block::Paragraph(
+                "Frihart is not a fork. The browser, chrome, policy engine, and \
+                 (over time) document engine are written here."
+                    .into(),
+            ),
+            Block::Heading("Primitives we did not reimplement".into()),
+            Block::List(vec![
+                "Rust, Cargo, and the language ecosystem".into(),
+                "winit — windowing".into(),
+                "softbuffer — presenting a software framebuffer".into(),
+                "cosmic-text — text shaping and raster".into(),
+                "the url crate — WHATWG URL parsing".into(),
+                "serde / toml — preferences on disk".into(),
+                "rustls (Phase 2) — TLS".into(),
+            ]),
+            Block::Note(
+                "Using those libraries is not the same as shipping Gecko, Blink, \
+                 WebKit, or Servo. See ARCHITECTURE.md."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn keyboard(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Keyboard".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Keyboard".into(),
+                subtitle: "The chrome is meant to be used without a mouse.".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+T".into(),
+                value: "New tab".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+W".into(),
+                value: "Close tab".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+Tab / Ctrl+Shift+Tab".into(),
+                value: "Cycle tabs".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+1 … Ctrl+9".into(),
+                value: "Jump to tab".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+L".into(),
+                value: "Focus URL bar".into(),
+            },
+            Block::KeyValue {
+                key: "Enter".into(),
+                value: "Go".into(),
+            },
+            Block::KeyValue {
+                key: "Escape".into(),
+                value: "Blur URL bar".into(),
+            },
+            Block::KeyValue {
+                key: "Alt+Left / Alt+Right".into(),
+                value: "Back / forward".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+R / F5".into(),
+                value: "Reload".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+Q".into(),
+                value: "Quit".into(),
+            },
+        ],
+    })
+}
+
+fn roadmap(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Roadmap".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Roadmap".into(),
+                subtitle: "A capability ladder, not a fake launch date.".into(),
+            },
+            Block::List(vec![
+                "Phase 0 — identity, crates, philosophy (you are here)".into(),
+                "Phase 1 — Linux shell: windows, bookmarks UI, packaging".into(),
+                "Phase 2 — rustls network stack, cookies, downloads".into(),
+                "Phase 3 — HTML tokenizer, tree builder, DOM".into(),
+                "Phase 4 — CSS, layout, paint".into(),
+                "Phase 5 — simple sites as a daily driver".into(),
+                "Phase 6 — process isolation and Linux sandbox".into(),
+                "Phase 7 — scripting, carefully".into(),
+                "Phase 8 — Windows".into(),
+                "Phase 9 — macOS".into(),
+                "Phase 10 — Android".into(),
+            ]),
+            Block::Paragraph(
+                "The full plan, success criteria, and time ranges live in ROADMAP.md \
+                 in the source tree. We do not skip isolation to paint more CSS."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn about(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: APP_NAME.into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: format!("{APP_NAME} {VERSION}"),
+                subtitle: "Original. Private by default. Linux first.".into(),
+            },
+            Block::Paragraph(
+                "Frihart is not Firefox, not LibreWolf, not Chromium, and not a \
+                 reskin of any of them. It is a long project with honest scope."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "Version".into(),
+                value: VERSION.into(),
+            },
+            Block::KeyValue {
+                key: "License".into(),
+                value: "MIT OR Apache-2.0".into(),
+            },
+            Block::KeyValue {
+                key: "User-Agent (frozen)".into(),
+                value: FROZEN_USER_AGENT.into(),
+            },
+            Block::Link {
+                label: "Philosophy lives in the source tree".into(),
+                href: "about:privacy".into(),
+            },
+        ],
+    })
+}
+
+fn bookmarks(url: &Url, profile: &Profile) -> Document {
+    let mut blocks = vec![Block::Hero {
+        title: "Bookmarks".into(),
+        subtitle: if profile.is_ephemeral() {
+            "This is a private window. These bookmarks are not written to disk.".into()
+        } else {
+            "Stored in your profile as bookmarks.toml.".into()
+        },
+    }];
+    if profile.bookmarks().items.is_empty() {
+        blocks.push(Block::Paragraph("No bookmarks yet.".into()));
+    } else {
+        for mark in &profile.bookmarks().items {
+            blocks.push(Block::Link {
+                label: format!("{}  ·  {}", mark.title, mark.url),
+                href: mark.url.clone(),
+            });
+        }
+    }
+    Document::internal(InternalPage {
+        title: "Bookmarks".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn history(url: &Url, profile: &Profile) -> Document {
+    let mut blocks = vec![Block::Hero {
+        title: "History".into(),
+        subtitle: if profile.prefs().privacy.persist_history && !profile.is_ephemeral() {
+            "Local only. Never uploaded.".into()
+        } else {
+            "History is not being recorded.".into()
+        },
+    }];
+    let recent = profile.history().recent(50);
+    if recent.is_empty() {
+        blocks.push(Block::Paragraph("No visits recorded.".into()));
+    } else {
+        for entry in recent {
+            blocks.push(Block::Link {
+                label: format!("{}  ·  {}", entry.title, entry.url),
+                href: entry.url.clone(),
+            });
+        }
+    }
+    Document::internal(InternalPage {
+        title: "History".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn toggle(id: PrefToggle, label: &str, description: &str, value: bool) -> Block {
+    Block::Toggle {
+        id,
+        label: label.into(),
+        description: description.into(),
+        value,
+    }
+}
+
+fn kv(key: &str, value: &str) -> Block {
+    Block::KeyValue {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+fn bool_str<'a>(v: bool) -> &'a str {
+    if v { "true" } else { "false" }
+}
