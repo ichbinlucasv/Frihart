@@ -25,6 +25,7 @@ frihart-platform.workspace = true
 frihart-privacy.workspace = true
 frihart-profile.workspace = true
 frihart-search.workspace = true
+serde_json.workspace = true
 softbuffer.workspace = true
 url.workspace = true
 winit.workspace = true

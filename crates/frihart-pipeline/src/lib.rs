@@ -2,11 +2,39 @@
 
 #![forbid(unsafe_code)]
 
+use serde::{Deserialize, Serialize};
+
 use frihart_css::parse_stylesheet;
 use frihart_gfx::{DisplayList, from_boxes};
 use frihart_html::{Block, author_css, document_title, parse, visible_fragments};
 use frihart_layout::{FlowItem, LayoutBox, block_flow};
 use frihart_style::{Element, style_element};
+
+/// JSON job for the sandboxed content worker (`frihart --content-worker`).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LayoutJob {
+    pub html: String,
+    pub extra_css: String,
+    pub viewport_w: f32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LayoutOut {
+    pub title: String,
+    pub display: DisplayList,
+    pub sandboxed: bool,
+    pub detail: String,
+}
+
+pub fn execute(job: &LayoutJob) -> LayoutOut {
+    let frame = layout_html(&job.html, &job.extra_css, job.viewport_w);
+    LayoutOut {
+        title: frame.title,
+        display: frame.display,
+        sandboxed: false,
+        detail: "in-process".into(),
+    }
+}
 
 pub struct Frame {
     pub title: String,
@@ -163,5 +191,19 @@ mod tests {
         assert!(one.y > left.y);
         assert!((one.x - left.x).abs() < 0.5);
         assert!(left.cell && right.cell);
+    }
+
+    #[test]
+    fn job_roundtrip_json() {
+        let job = LayoutJob {
+            html: "<h1>Hi</h1>".into(),
+            extra_css: String::new(),
+            viewport_w: 400.0,
+        };
+        let raw = serde_json::to_string(&job).unwrap();
+        let back: LayoutJob = serde_json::from_str(&raw).unwrap();
+        let out = execute(&back);
+        assert!(!out.display.is_empty());
+        assert!(out.display.find("Hi").is_some());
     }
 }

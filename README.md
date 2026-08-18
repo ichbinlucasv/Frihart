@@ -75,7 +75,9 @@ Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.m
 **D + E** are the open pole. **H** and **I** are parked.
 
 On Linux, `cargo run` opens a real window. `https://` fetches over rustls
-and paints the subset. JS is off. Tor tabs dial SOCKS only.
+and paints the subset via a sandboxed `--content-worker` (in-process
+fallback if the worker dies). Find (Ctrl+F) searches the display list.
+JS is off. Tor tabs dial SOCKS only.
 
 Next session: [docs/HANDOFF.md](docs/HANDOFF.md).
 

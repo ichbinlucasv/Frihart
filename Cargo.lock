@@ -636,8 +636,10 @@ dependencies = [
  "clap",
  "frihart-chrome",
  "frihart-core",
+ "frihart-pipeline",
  "frihart-platform",
  "frihart-profile",
+ "serde_json",
 ]
 
 [[package]]
@@ -678,6 +680,7 @@ dependencies = [
  "frihart-privacy",
  "frihart-profile",
  "frihart-search",
+ "serde_json",
  "softbuffer",
  "url",
  "winit",
@@ -758,6 +761,7 @@ version = "0.1.0"
 dependencies = [
  "frihart-layout",
  "frihart-style",
+ "serde",
 ]
 
 [[package]]
@@ -825,6 +829,8 @@ dependencies = [
  "frihart-html",
  "frihart-layout",
  "frihart-style",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

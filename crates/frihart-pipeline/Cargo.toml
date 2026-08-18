@@ -14,3 +14,5 @@ frihart-gfx.workspace = true
 frihart-html.workspace = true
 frihart-layout.workspace = true
 frihart-style.workspace = true
+serde.workspace = true
+serde_json.workspace = true

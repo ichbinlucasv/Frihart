@@ -20,6 +20,9 @@ struct Args {
     tor: bool,
     #[arg(long, value_name = "PATH")]
     install_addon: Option<PathBuf>,
+    /// Hidden: chrome spawns this to layout HTML under the content sandbox.
+    #[arg(long, hide = true)]
+    content_worker: bool,
 }
 
 fn main() -> ExitCode {
@@ -32,6 +35,10 @@ fn main() -> ExitCode {
 
 fn try_main() -> frihart_core::Result<()> {
     let args = Args::parse();
+
+    if args.content_worker {
+        return run_content_worker();
+    }
 
     if let Some(addon) = &args.install_addon {
         let mut profile = if let Some(path) = &args.profile {
@@ -53,4 +60,21 @@ fn try_main() -> frihart_core::Result<()> {
     };
 
     frihart_chrome::run(profile, args.url, args.tor)
+}
+
+fn run_content_worker() -> frihart_core::Result<()> {
+    use std::io::{Read, Write};
+
+    let report = frihart_platform::SandboxSpec::content_default().apply()?;
+    let mut raw = Vec::new();
+    std::io::stdin().read_to_end(&mut raw)?;
+    let job: frihart_pipeline::LayoutJob = serde_json::from_slice(&raw)
+        .map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
+    let mut out = frihart_pipeline::execute(&job);
+    out.sandboxed = report.no_new_privs || report.landlock;
+    out.detail = report.detail;
+    let bytes =
+        serde_json::to_vec(&out).map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
+    std::io::stdout().write_all(&bytes)?;
+    Ok(())
 }

@@ -457,7 +457,9 @@ fn paint_page(
         hit: Hit::PassLaunch,
     });
     y += m.s(36.0);
-    if !page.html.is_empty() {
+    if let Some(frame) = &browser.active_tab().frame {
+        y = paint_display_list(fb, text, frame, x, y, viewport, m, hits);
+    } else if !page.html.is_empty() {
         let extra = browser.profile.user_css();
         let frame = layout_html(&page.html, &extra, max_w as f32);
         y = paint_display_list(fb, text, &frame.display, x, y, viewport, m, hits);

@@ -16,5 +16,7 @@ path = "src/main.rs"
 clap.workspace = true
 frihart-chrome.workspace = true
 frihart-core.workspace = true
+frihart-pipeline.workspace = true
 frihart-platform.workspace = true
 frihart-profile.workspace = true
+serde_json.workspace = true

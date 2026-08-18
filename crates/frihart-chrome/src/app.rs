@@ -17,6 +17,7 @@ use crate::paint::{HitRegion, hit_test, paint};
 use crate::raster::Framebuffer;
 use crate::state::{Browser, Hit};
 use crate::text::TextEngine;
+use crate::theme::Metrics;
 
 struct WindowSurface {
     window: Arc<Window>,
@@ -110,6 +111,10 @@ impl Handler {
         };
         let mut fb = Framebuffer::new(width, height);
         let scale = ws.window.scale_factor() as f32;
+        let m = Metrics::new(scale);
+        let pad = m.content_pad();
+        let content_w = m.content_max_w().min(width as i32 - pad * 2);
+        self.browser.prepare_frame(content_w as f32);
         self.hits = paint(&mut fb, &mut self.text, &self.browser, scale);
         if buffer.len() == fb.pixels.len() {
             buffer.copy_from_slice(&fb.pixels);

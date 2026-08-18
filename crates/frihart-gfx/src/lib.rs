@@ -2,9 +2,11 @@
 
 #![forbid(unsafe_code)]
 
+use serde::{Deserialize, Serialize};
+
 use frihart_layout::LayoutBox;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum DisplayOp {
     Fill {
         x: f32,
@@ -25,9 +27,15 @@ pub enum DisplayOp {
     },
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct DisplayList {
     pub ops: Vec<DisplayOp>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextHit {
+    pub y: f32,
+    pub text: String,
 }
 
 impl DisplayList {
@@ -37,6 +45,38 @@ impl DisplayList {
 
     pub fn len(&self) -> usize {
         self.ops.len()
+    }
+
+    pub fn searchable(&self) -> String {
+        let mut out = String::new();
+        for op in &self.ops {
+            if let DisplayOp::Text { text, .. } = op {
+                if !out.is_empty() {
+                    out.push('\n');
+                }
+                out.push_str(text);
+            }
+        }
+        out
+    }
+
+    pub fn find(&self, needle: &str) -> Option<TextHit> {
+        let n = needle.trim();
+        if n.is_empty() {
+            return None;
+        }
+        let n = n.to_ascii_lowercase();
+        for op in &self.ops {
+            if let DisplayOp::Text { y, text, .. } = op {
+                if text.to_ascii_lowercase().contains(&n) {
+                    return Some(TextHit {
+                        y: *y,
+                        text: text.clone(),
+                    });
+                }
+            }
+        }
+        None
     }
 
     pub fn hit_test(&self, px: f32, py: f32) -> Option<&str> {
@@ -124,5 +164,7 @@ mod tests {
         let list = from_boxes(&boxes);
         assert_eq!(list.hit_test(8.0, 4.0), Some("https://ex.test/"));
         assert!(list.hit_test(1000.0, 1000.0).is_none());
+        assert!(list.find("HERE").is_some());
+        assert!(list.find("zzzz").is_none());
     }
 }

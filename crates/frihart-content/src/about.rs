@@ -552,8 +552,9 @@ fn processes_page(url: &Url) -> Document {
                 },
             },
             Block::Note(
-                "Content children get no_new_privs + landlock (read /usr /lib /bin \
-                 /etc). Do not apply that in chrome. seccomp comes next."
+                "HTML layout runs in `frihart --content-worker` with no_new_privs \
+                 + landlock. Chrome never applies the sandbox. A worker crash \
+                 falls back in-process. seccomp comes next."
                     .into(),
             ),
         ],

@@ -12,7 +12,8 @@ html bytes
   → frihart-chrome (software paint)
 ```
 
-`frihart-pipeline::layout_html` is that function.
+`frihart-pipeline::layout_html` is that function. Chrome prefers
+`frihart --content-worker` (sandboxed) and falls back in-process.
 
 `frihart-dom` is an arena of `NodeId`s over the same tree. Chrome does
 not mutate it.

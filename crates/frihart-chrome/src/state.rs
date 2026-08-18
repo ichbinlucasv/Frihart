@@ -7,8 +7,10 @@ use frihart_core::{
     ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
     parse_user_input,
 };
+use frihart_gfx::DisplayList;
 use frihart_ipc::Supervisor;
 use frihart_net::{CookieJar, FetchMode, RustlsClient};
+use frihart_pipeline::LayoutJob;
 use frihart_profile::Profile;
 use frihart_search::{by_id, primary, resolve};
 use url::Url;
@@ -59,6 +61,9 @@ pub struct Tab {
     pub scroll_y: f32,
     pub container: ContainerId,
     pub circuit: Circuit,
+    pub frame: Option<DisplayList>,
+    pub frame_w: f32,
+    pub sandboxed: bool,
 }
 
 impl Tab {
@@ -417,15 +422,51 @@ impl Browser {
             self.find_status.clear();
             return;
         }
+        let needle = self.find_text.clone();
+        if let Some(frame) = &self.active_tab().frame {
+            if let Some(hit) = frame.find(&needle) {
+                self.find_status = "ok".into();
+                self.active_tab_mut().scroll_y = hit.y.max(0.0);
+                return;
+            }
+        }
         let hay = self.active_tab().document.searchable_text();
-        let needle = self.find_text.to_ascii_lowercase();
+        let needle_l = needle.to_ascii_lowercase();
         let hay_l = hay.to_ascii_lowercase();
-        if let Some(pos) = hay_l.find(&needle) {
+        if let Some(pos) = hay_l.find(&needle_l) {
             self.find_status = "ok".into();
             self.active_tab_mut().scroll_y = (pos as f32 * 0.15).min(2000.0);
         } else {
             self.find_status = "none".into();
         }
+    }
+
+    /// Layout HTML in a sandboxed worker when possible. Safe to call often.
+    pub fn prepare_frame(&mut self, width: f32) {
+        let width = width.max(80.0);
+        let extra = self.profile.user_css();
+        let html = match &self.active_tab().document {
+            Document::Page(page) if !page.html.is_empty() => page.html.clone(),
+            _ => {
+                let tab = self.active_tab_mut();
+                tab.frame = None;
+                tab.sandboxed = false;
+                return;
+            }
+        };
+        let tab = self.active_tab();
+        if tab.frame.is_some() && (tab.frame_w - width).abs() < 8.0 {
+            return;
+        }
+        let out = crate::worker::layout_isolated(&LayoutJob {
+            html,
+            extra_css: extra,
+            viewport_w: width,
+        });
+        let tab = self.active_tab_mut();
+        tab.frame = Some(out.display);
+        tab.frame_w = width;
+        tab.sandboxed = out.sandboxed;
     }
 
     pub fn navigate(&mut self, url: Url) {
@@ -477,11 +518,14 @@ impl Browser {
             tab.session.push(url, title);
             tab.document = doc;
             tab.scroll_y = 0.0;
+            tab.frame = None;
+            tab.sandboxed = false;
         }
         self.sync_url_bar();
         self.persist_jar();
         self.field_focus = None;
         let _ = self.supervisor.slot_for(key);
+        self.prepare_frame(720.0);
         self.status.clear();
     }
 
@@ -493,9 +537,12 @@ impl Browser {
             let tab = self.active_tab_mut();
             tab.session.update_title(&title);
             tab.document = doc;
+            tab.frame = None;
+            tab.sandboxed = false;
         }
         self.sync_url_bar();
         self.persist_jar();
+        self.prepare_frame(720.0);
         self.status.clear();
     }
 
@@ -603,6 +650,8 @@ impl Browser {
             tab.session = SessionHistory::new(home, title);
             tab.document = doc;
             tab.scroll_y = 0.0;
+            tab.frame = None;
+            tab.sandboxed = false;
         }
         self.sync_url_bar();
     }
@@ -805,5 +854,8 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
         scroll_y: 0.0,
         container: ContainerId::PERSONAL,
         circuit: Circuit::Direct,
+        frame: None,
+        frame_w: 0.0,
+        sandboxed: false,
     }
 }

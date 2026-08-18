@@ -11,5 +11,6 @@ mod raster;
 mod state;
 mod text;
 mod theme;
+mod worker;
 
 pub use app::run;

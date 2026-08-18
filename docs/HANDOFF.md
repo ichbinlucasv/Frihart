@@ -39,22 +39,26 @@ cosmic-text wrap → display list → chrome paint. Tables are a **column
 grid**. Forms GET/POST encode (secrets skipped). Identity autofill
 only. JS off. Img is a box (no decode).
 
+Done recently: find-in-page on the display list; one-shot
+`frihart --content-worker` lays out HTML under landlock and returns
+the display list. Chrome paints/searches that list. Worker crash
+falls back in-process.
+
 Next D slices:
 
-1. More document fidelity (caption, colspans later, `hr`, better pre)
-2. Find-in-page against the display list
-3. Fields should stop being a second paint path
-4. Named “sites we claim” list of static pages
+1. Fields should stop being a second paint path
+2. More document fidelity (`hr`, caption)
+3. Named “sites we claim” list of static pages
 
 **E Isolation**  
 `frihart-ipc::Supervisor` = one content **slot** per
-`IsolationKey` (scheme + host + container). Content may not read the
-profile or open a raw socket (flags only). Landlock + `no_new_privs`
-apply in a **content child** (`pre_exec`), **never** in chrome.
+`IsolationKey` (scheme + host + container). Layout worker is a real
+process (`--content-worker`) with no_new_privs + landlock. Chrome
+never applies the sandbox.
 
 Next E slices:
 
-1. Spawn a real content process and apply the sandbox there
+1. Keep the worker alive per isolation key (not one-shot)
 2. seccomp-bpf on that child
 3. Killing a slot must not take chrome down
 

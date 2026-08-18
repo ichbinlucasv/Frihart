@@ -577,6 +577,8 @@ A sustainable rhythm for a long project:
 - [ ] Chrome paints only the pipeline (fields still overlay)
 - [x] Table grid (cells in columns)
 - [x] Content sandbox: no_new_privs + landlock (child only)
+- [x] Find-in-page on the display list
+- [x] `frihart --content-worker` sandboxed layout process
 - [x] Tails / Qubes-DVM default to private profile
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages besides the Arch PKGBUILD
