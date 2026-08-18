@@ -406,8 +406,25 @@ impl Browser {
                 self.wipe();
                 return;
             }
+            if spec == "reset" {
+                self.reset_profile();
+                return;
+            }
             if spec == "shred" {
                 self.shred();
+                return;
+            }
+            if let Some(name) = spec.strip_prefix("profile-new/") {
+                self.create_profile(name);
+                return;
+            }
+            if let Some(name) = spec.strip_prefix("profile/") {
+                self.switch_profile(name);
+                return;
+            }
+            if spec == "pass" || spec.starts_with("pass/") {
+                let id = spec.strip_prefix("pass/").unwrap_or("");
+                self.launch_pass(id);
                 return;
             }
         }
@@ -466,6 +483,65 @@ impl Browser {
         self.jar.clear();
         let _ = self.profile.wipe_session();
         self.persist_jar();
+        self.reset_tabs();
+        self.status = "wiped".into();
+    }
+
+    pub fn reset_profile(&mut self) {
+        self.jar.clear();
+        let _ = self.profile.reset_like_new();
+        self.blocker = FilterEngine::new(self.profile.prefs().privacy.blocker);
+        self.persist_jar();
+        self.reset_tabs();
+        self.status = "reset".into();
+    }
+
+    pub fn shred(&mut self) {
+        self.jar.clear();
+        let _ = self.profile.shred();
+        self.reset_tabs();
+        self.status = "shredded".into();
+    }
+
+    pub fn switch_profile(&mut self, name: &str) {
+        if self.profile.is_ephemeral() {
+            return;
+        }
+        let _ = self.profile.save_prefs();
+        let _ = self.profile.save_bookmarks();
+        self.persist_jar();
+        let Ok(profile) = Profile::open_named(name) else {
+            self.status = "err".into();
+            return;
+        };
+        self.replace_profile(profile);
+        self.status.clear();
+    }
+
+    pub fn create_profile(&mut self, name: &str) {
+        if self.profile.is_ephemeral() {
+            return;
+        }
+        let slug = frihart_profile::sanitize_name(name);
+        let _ = Profile::open_named(&slug);
+        self.switch_profile(&slug);
+    }
+
+    fn replace_profile(&mut self, profile: Profile) {
+        let persist = !profile.is_ephemeral() && profile.prefs().privacy.persist_cookies;
+        let enabled = profile.prefs().privacy.blocker;
+        let jar = if persist {
+            CookieJar::load(&profile.root().join("cookies.json")).unwrap_or_default()
+        } else {
+            CookieJar::default()
+        };
+        self.profile = profile;
+        self.jar = jar;
+        self.blocker = FilterEngine::new(enabled);
+        self.reset_tabs();
+    }
+
+    fn reset_tabs(&mut self) {
         let home = parse_user_input("about:home")
             .unwrap_or_else(|_| Url::parse("about:home").expect("about:home"));
         let doc = load(&home, &self.profile);
@@ -479,14 +555,23 @@ impl Browser {
             tab.scroll_y = 0.0;
         }
         self.sync_url_bar();
-        self.status = "wiped".into();
     }
 
-    pub fn shred(&mut self) {
-        self.jar.clear();
-        let _ = self.profile.shred();
-        self.wipe();
-        self.status = "shredded".into();
+    fn launch_pass(&mut self, id: &str) {
+        let wanted = if id.is_empty() {
+            self.profile.prefs().pass.manager.as_str()
+        } else {
+            id
+        };
+        let found = frihart_platform::detect_pass_managers();
+        let target = found
+            .iter()
+            .find(|m| m.id == wanted)
+            .or_else(|| found.first());
+        if let Some(mgr) = target {
+            let _ = frihart_platform::launch_local(&mgr.path);
+        }
+        self.status.clear();
     }
 
     fn persist_jar(&self) {

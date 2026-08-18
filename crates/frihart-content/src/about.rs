@@ -79,6 +79,9 @@ pub fn is_known(name: &str) -> bool {
             | "support"
             | "pay"
             | "shred"
+            | "profiles"
+            | "pass"
+            | "passwords"
     )
 }
 
@@ -106,6 +109,8 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "welcome" => welcome(url, prefs),
         "support" | "pay" => support(url, prefs),
         "shred" => shred_page(url),
+        "profiles" => profiles(url, profile),
+        "pass" | "passwords" => passwords(url, prefs),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -152,6 +157,14 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Wipe / shred".into(),
             href: "about:shred".into(),
+        },
+        Block::Link {
+            label: "Profiles".into(),
+            href: "about:profiles".into(),
+        },
+        Block::Link {
+            label: "Passwords".into(),
+            href: "about:pass".into(),
         },
         Block::Link {
             label: "Preferences (about:config)".into(),
@@ -256,8 +269,8 @@ fn welcome(url: &Url, prefs: &Prefs) -> Document {
         },
         Block::Paragraph(frihart_core::price_label().into()),
         Block::Paragraph(
-            "Android €80 lifetime. Windows and macOS €100 lifetime. Paid builds \
-             check a local key only. Nothing phones home."
+            "Any OS that is not Linux: €100 lifetime. Pay with Monero, Bitcoin, \
+             or fiat. Local key only. Nothing phones home."
                 .into(),
         ),
         Block::Heading("Support".into()),
@@ -304,8 +317,8 @@ fn support(url: &Url, prefs: &Prefs) -> Document {
         },
         Block::List(vec![
             "Linux: free".into(),
-            "Android: €80 lifetime".into(),
-            "Windows / macOS: €100 lifetime".into(),
+            "Android / Windows / macOS / other: €100 lifetime".into(),
+            "Pay: Monero, Bitcoin, or fiat".into(),
         ]),
         Block::Note(
             "No Frihart account. No license server. Paid ports will use a key \
@@ -364,22 +377,117 @@ fn shred_page(url: &Url) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Wipe / shred".into(),
-                subtitle: "Local only. No cloud copy exists.".into(),
+                subtitle: "This profile only. Other profiles stay.".into(),
             },
             Block::Paragraph(
-                "Wipe clears history, cookies, and open pages. Shred overwrites \
-                 the profile on disk, then rebuilds an empty one."
-                    .into(),
+                "Wipe: like a new session. Tabs, cookies, history gone. Bookmarks stay.".into(),
+            ),
+            Block::Paragraph("Reset: this profile like new. Prefs default. Bookmarks stay.".into()),
+            Block::Paragraph(
+                "Shred: overwrite this profile on disk. Other named profiles stay.".into(),
             ),
             Block::Link {
-                label: "Wipe session".into(),
+                label: "Wipe".into(),
                 href: "frihart:wipe".into(),
             },
             Block::Link {
-                label: "Shred profile".into(),
+                label: "Reset this profile".into(),
+                href: "frihart:reset".into(),
+            },
+            Block::Link {
+                label: "Shred this profile".into(),
                 href: "frihart:shred".into(),
             },
+            Block::Link {
+                label: "Profiles".into(),
+                href: "about:profiles".into(),
+            },
         ],
+    })
+}
+
+fn profiles(url: &Url, profile: &Profile) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Profiles".into(),
+            subtitle: format!("active: {}", profile.name()),
+        },
+        Block::Paragraph(
+            "Each profile has its own bookmarks, cookies, and prefs. Wipe one \
+             without touching the others."
+                .into(),
+        ),
+        Block::Heading("Switch".into()),
+    ];
+    for name in frihart_profile::list_profiles() {
+        blocks.push(Block::Link {
+            label: name.clone(),
+            href: format!("frihart:profile/{name}"),
+        });
+    }
+    blocks.extend([
+        Block::Heading("Create".into()),
+        Block::Link {
+            label: "work".into(),
+            href: "frihart:profile-new/work".into(),
+        },
+        Block::Link {
+            label: "travel".into(),
+            href: "frihart:profile-new/travel".into(),
+        },
+        Block::Note("Or type frihart:profile-new/yourname in the URL bar.".into()),
+    ]);
+    Document::internal(InternalPage {
+        title: "Profiles".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn passwords(url: &Url, prefs: &Prefs) -> Document {
+    let found = frihart_platform::detect_pass_managers();
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Passwords".into(),
+            subtitle:
+                "Frihart does not store logins. Use Proton Pass or another manager you chose."
+                    .into(),
+        },
+        Block::Paragraph(
+            "No password vault in this browser. No collection. Launch a local \
+             manager you already installed."
+                .into(),
+        ),
+        Block::KeyValue {
+            key: "preferred".into(),
+            value: if prefs.pass.manager.is_empty() {
+                "none".into()
+            } else {
+                prefs.pass.manager.clone()
+            },
+        },
+        Block::Heading("Detected".into()),
+    ];
+    if found.is_empty() {
+        blocks.push(Block::Paragraph(
+            "None on PATH. Install Proton Pass, KeePassXC, Bitwarden, or pass.".into(),
+        ));
+    } else {
+        for mgr in found {
+            blocks.push(Block::Link {
+                label: mgr.name.into(),
+                href: format!("frihart:pass/{}", mgr.id),
+            });
+        }
+    }
+    blocks.push(Block::Link {
+        label: "Launch preferred".into(),
+        href: "frihart:pass".into(),
+    });
+    Document::internal(InternalPage {
+        title: "Passwords".into(),
+        url: url.clone(),
+        blocks,
     })
 }
 
@@ -654,6 +762,15 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("provider", &prefs.vpn.provider),
         Block::Heading("extensions".into()),
         kv("enabled", bool_str(prefs.extensions.enabled)),
+        Block::Heading("pass".into()),
+        kv(
+            "manager",
+            if prefs.pass.manager.is_empty() {
+                "none"
+            } else {
+                &prefs.pass.manager
+            },
+        ),
         Block::Heading("support".into()),
         kv(
             "xmr",

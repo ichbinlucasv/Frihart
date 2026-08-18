@@ -222,6 +222,27 @@ impl Profile {
         Ok(())
     }
 
+    /// Like new for this profile. Bookmarks stay. Support addresses stay.
+    pub fn reset_like_new(&mut self) -> Result<()> {
+        let bookmarks = self.bookmarks.clone();
+        let support = self.prefs.support.clone();
+        self.wipe_session()?;
+        self.prefs = Prefs::default();
+        self.prefs.support = support;
+        self.prefs.general.welcome_seen = true;
+        self.bookmarks = bookmarks;
+        self.containers = ContainerStore::defaults();
+        self.addons = AddonStore::default();
+        if self.ephemeral {
+            self.prefs.privacy.persist_history = false;
+            self.prefs.privacy.persist_cookies = false;
+            return Ok(());
+        }
+        self.save_prefs()?;
+        self.save_bookmarks()?;
+        Ok(())
+    }
+
     pub fn shred(&mut self) -> Result<()> {
         if self.ephemeral {
             self.history.clear();
@@ -258,7 +279,26 @@ impl Profile {
     }
 }
 
-fn sanitize_name(name: &str) -> String {
+pub fn list_profiles() -> Vec<String> {
+    let mut names = Vec::new();
+    let Ok(entries) = std::fs::read_dir(profiles_dir()) else {
+        return names;
+    };
+    for entry in entries.flatten() {
+        if !entry.path().is_dir() {
+            continue;
+        }
+        if let Some(name) = entry.file_name().to_str() {
+            if !name.is_empty() && !name.starts_with('.') {
+                names.push(name.to_string());
+            }
+        }
+    }
+    names.sort();
+    names
+}
+
+pub fn sanitize_name(name: &str) -> String {
     let cleaned: String = name
         .chars()
         .map(|c| {
@@ -316,5 +356,50 @@ mod tests {
     #[test]
     fn sanitize_rejects_path_escape() {
         assert_eq!(sanitize_name("../etc"), "___etc");
+    }
+
+    #[test]
+    fn wipe_keeps_bookmarks_clears_history() {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("frihart-wipe-{stamp}"));
+        {
+            let mut p = Profile::open_dir(&root).unwrap();
+            p.bookmarks_mut().add("Keep", "about:home");
+            p.save_bookmarks().unwrap();
+            p.record_visit("about:privacy", "Privacy").unwrap();
+            assert!(!p.history().is_empty());
+            p.wipe_session().unwrap();
+            assert!(p.history().is_empty());
+            assert!(p.bookmarks().items.iter().any(|b| b.title == "Keep"));
+        }
+        {
+            let p = Profile::open_dir(&root).unwrap();
+            assert!(p.history().is_empty());
+            assert!(p.bookmarks().items.iter().any(|b| b.title == "Keep"));
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn reset_like_new_keeps_bookmarks() {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("frihart-reset-{stamp}"));
+        {
+            let mut p = Profile::open_dir(&root).unwrap();
+            p.bookmarks_mut().add("Keep", "about:home");
+            p.save_bookmarks().unwrap();
+            p.prefs_mut().privacy.javascript = true;
+            p.save_prefs().unwrap();
+            p.reset_like_new().unwrap();
+            assert!(!p.prefs().privacy.javascript);
+            assert!(p.bookmarks().items.iter().any(|b| b.title == "Keep"));
+        }
+        let _ = fs::remove_dir_all(&root);
     }
 }

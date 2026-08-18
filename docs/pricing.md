@@ -1,21 +1,21 @@
 # Pricing
 
-Linux is free. Other ports are a one-time lifetime fee. There is no
-subscription and no Frihart account.
+Linux is free. Every other OS is a one-time **€100** lifetime fee.
+Pay with Monero, Bitcoin, or fiat. No subscription. No Frihart account.
 
 | Platform | Price |
 | --- | --- |
-| Linux (Arch, Fedora, Debian, …) | free |
-| Android | €80 lifetime |
+| Linux | free |
+| Android | €100 lifetime |
 | Windows | €100 lifetime |
 | macOS | €100 lifetime |
+| anything else | €100 lifetime |
 
-Paid builds will unlock with a **local** key file. No license server.
-No phone-home.
+Paid builds unlock with a **local** key. No license server.
 
-## Donations
+## Pay
 
-Set these in `prefs.toml` (never commit live wallets to git):
+Set addresses in `prefs.toml` (do not commit live wallets):
 
 ```toml
 [support]
@@ -23,5 +23,3 @@ xmr = ""
 btc = ""
 fiat_url = ""
 ```
-
-Monero first, then Bitcoin, then a fiat URL you host.

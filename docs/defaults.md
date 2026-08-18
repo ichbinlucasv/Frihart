@@ -36,6 +36,7 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.containers` | `true` | Identity isolation is a default, not an add-on. |
 | `privacy.blocker` | `true` | uBlock-class host blocking is on at install. |
 | `privacy.store_logins` | `false` | Forced. Frihart does not collect passwords or logins. |
+| `pass.manager` | empty | External only: Proton Pass, KeePassXC, Bitwarden, pass. |
 
 ## Translate
 

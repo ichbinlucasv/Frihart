@@ -5,7 +5,7 @@
 #![forbid(unsafe_code)]
 
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use frihart_core::{APP_NAME, Result};
 
@@ -103,6 +103,45 @@ pub fn detect_tor() -> TorPresence {
 pub struct VpnPresence {
     pub proton: Option<PathBuf>,
     pub mullvad: Option<PathBuf>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PassManager {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub path: PathBuf,
+}
+
+pub fn detect_pass_managers() -> Vec<PassManager> {
+    const CANDIDATES: &[(&str, &str)] = &[
+        ("proton-pass", "Proton Pass"),
+        ("protonpass", "Proton Pass"),
+        ("keepassxc", "KeePassXC"),
+        ("bitwarden", "Bitwarden"),
+        ("bw", "Bitwarden CLI"),
+        ("pass", "pass"),
+    ];
+    let mut out = Vec::new();
+    for (bin, name) in CANDIDATES {
+        if let Some(path) = find_in_path(bin) {
+            out.push(PassManager {
+                id: bin,
+                name,
+                path,
+            });
+        }
+    }
+    out
+}
+
+pub fn launch_local(path: &Path) -> Result<()> {
+    std::process::Command::new(path)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map(|_| ())
+        .map_err(frihart_core::FrihartError::from)
 }
 
 pub fn detect_vpn() -> VpnPresence {

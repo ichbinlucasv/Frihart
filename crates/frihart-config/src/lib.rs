@@ -47,6 +47,7 @@ pub struct Prefs {
     pub vpn: VpnPrefs,
     pub extensions: ExtensionPrefs,
     pub support: SupportPrefs,
+    pub pass: PassPrefs,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -260,6 +261,14 @@ impl Default for ExtensionPrefs {
     fn default() -> Self {
         Self { enabled: true }
     }
+}
+
+/// External password manager. Frihart never stores logins.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct PassPrefs {
+    /// `none`, `proton-pass`, `keepassxc`, `bitwarden`, or `pass`.
+    pub manager: String,
 }
 
 /// Local-only funding. Addresses are never fetched. Fill them yourself.
