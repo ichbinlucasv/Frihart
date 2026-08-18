@@ -93,6 +93,8 @@ Frihart/
 │   ├── frihart-blocker/      # native uBlock-class host blocker
 │   ├── frihart-search/       # Swisscows / DDG / privacy search catalog
 │   ├── frihart-extensions/   # WebExtensions host (parse now, run later)
+│   ├── frihart-html/         # HTML subset tokenizer + tree
+│   ├── frihart-autofill/     # identity fill, never passwords
 │   ├── frihart-net/          # HTTP(S), DNS, TLS interfaces
 │   ├── frihart-platform/     # OS paths, windowing hooks, sandbox stubs
 │   ├── frihart-content/      # documents, about: pages, navigation

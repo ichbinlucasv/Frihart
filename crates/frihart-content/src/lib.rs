@@ -6,15 +6,19 @@ mod about;
 mod document;
 mod session;
 
+use frihart_autofill::{FieldKind, classify};
 use frihart_blocker::FilterEngine;
 use frihart_core::{ContainerId, UrlKind, about_page, classify_url, safe_host};
-use frihart_net::{CookieJar, FetchMode, HttpClient, Request, RustlsClient, decode_body};
+use frihart_html::{document_title, parse, visible_blocks};
+use frihart_net::{
+    CookieJar, FetchMode, HttpClient, Request, RustlsClient, content_type, decode_body,
+};
 use frihart_privacy::Policy;
 use frihart_profile::Profile;
 use url::Url;
 
 pub use about::PrefToggle;
-pub use document::{Block, Document, InternalPage};
+pub use document::{Block, Document, InternalPage, Page, PageItem};
 pub use session::{SessionEntry, SessionHistory};
 
 pub fn load(url: &Url, profile: &Profile) -> Document {
@@ -83,14 +87,62 @@ pub fn fetch(req: FetchRequest<'_>) -> Document {
         Ok(resp) => {
             let text = decode_body(&resp);
             let host = safe_host(&resp.final_url);
-            Document::Source {
-                url: resp.final_url,
-                title: host,
-                text,
+            let ct = content_type(&resp);
+            if is_html(&ct, &text) {
+                Document::Page(page_from_html(resp.final_url, host, &text))
+            } else {
+                Document::Source {
+                    url: resp.final_url,
+                    title: host,
+                    text,
+                }
             }
         }
         Err(err) => Document::unavailable(req.url.clone(), err.to_string()),
     }
+}
+
+fn is_html(content_type: &str, body: &str) -> bool {
+    let ct = content_type.to_ascii_lowercase();
+    if ct.contains("html") {
+        return true;
+    }
+    let t = body.trim_start();
+    t.starts_with("<!doctype") || t.starts_with("<!DOCTYPE") || t.starts_with("<html")
+}
+
+fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
+    let root = parse(html);
+    let title = document_title(&root);
+    let title = if title.is_empty() { host } else { title };
+    let mut items = Vec::new();
+    for block in visible_blocks(&root) {
+        match block {
+            frihart_html::Block::Heading(l, t) => items.push(PageItem::Heading(l, t)),
+            frihart_html::Block::Text(t) => items.push(PageItem::Text(t)),
+            frihart_html::Block::Link { text, href } => items.push(PageItem::Link { text, href }),
+            frihart_html::Block::Field(f) => {
+                let kind = classify(&f);
+                let secret = kind == FieldKind::Password;
+                let label = if f.label.is_empty() {
+                    if f.name.is_empty() {
+                        f.input_type.clone()
+                    } else {
+                        f.name.clone()
+                    }
+                } else {
+                    f.label
+                };
+                items.push(PageItem::Field {
+                    kind,
+                    label,
+                    value: String::new(),
+                    secret,
+                });
+            }
+        }
+    }
+    Page { url, title, items }
 }
 
 pub fn about_url(name: &str) -> Url {

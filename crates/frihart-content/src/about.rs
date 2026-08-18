@@ -23,6 +23,7 @@ pub enum PrefToggle {
     DarkMode,
     Translate,
     DismissWelcome,
+    Autofill,
 }
 
 impl PrefToggle {
@@ -46,6 +47,7 @@ impl PrefToggle {
             Self::DarkMode => prefs.content.dark_mode = !prefs.content.dark_mode,
             Self::Translate => prefs.translate.enabled = !prefs.translate.enabled,
             Self::DismissWelcome => prefs.general.welcome_seen = true,
+            Self::Autofill => prefs.autofill.enabled = !prefs.autofill.enabled,
         }
     }
 }
@@ -82,6 +84,7 @@ pub fn is_known(name: &str) -> bool {
             | "profiles"
             | "pass"
             | "passwords"
+            | "autofill"
     )
 }
 
@@ -111,6 +114,7 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "shred" => shred_page(url),
         "profiles" => profiles(url, profile),
         "pass" | "passwords" => passwords(url, prefs),
+        "autofill" => autofill_page(url, prefs, profile),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -444,6 +448,60 @@ fn profiles(url: &Url, profile: &Profile) -> Document {
     })
 }
 
+fn autofill_page(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
+    let id =
+        frihart_autofill::Identity::load(&profile.root().join("autofill.toml")).unwrap_or_default();
+    Document::internal(InternalPage {
+        title: "Autofill".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Autofill".into(),
+                subtitle: "Identity only. Passwords never stored.".into(),
+            },
+            Block::KeyValue {
+                key: "enabled".into(),
+                value: if prefs.autofill.enabled {
+                    "on".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::KeyValue {
+                key: "name".into(),
+                value: empty_dash(&id.name),
+            },
+            Block::KeyValue {
+                key: "email".into(),
+                value: empty_dash(&id.email),
+            },
+            Block::KeyValue {
+                key: "organization".into(),
+                value: empty_dash(&id.organization),
+            },
+            Block::KeyValue {
+                key: "address".into(),
+                value: empty_dash(&id.address),
+            },
+            Block::Note(
+                "Edit autofill.toml in this profile (0600). Ctrl+Shift+A fills the page.".into(),
+            ),
+            Block::Link {
+                label: "Password managers".into(),
+                href: "about:pass".into(),
+            },
+        ],
+    })
+}
+
+fn empty_dash(s: &str) -> String {
+    if s.is_empty() {
+        "(empty)".into()
+    } else {
+        s.into()
+    }
+}
+
 fn passwords(url: &Url, prefs: &Prefs) -> Document {
     let found = frihart_platform::detect_pass_managers();
     let mut blocks = vec![
@@ -519,6 +577,12 @@ fn settings(url: &Url, prefs: &Prefs) -> Document {
                 "Identity containers",
                 "Tabs belong to Personal, Work, Banking, or Shopping. Cookies never cross.",
                 prefs.privacy.containers,
+            ),
+            toggle(
+                PrefToggle::Autofill,
+                "Identity autofill",
+                "Fills name/email/address you saved. Never passwords.",
+                prefs.autofill.enabled,
             ),
             toggle(
                 PrefToggle::Translate,

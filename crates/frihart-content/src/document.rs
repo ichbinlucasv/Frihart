@@ -1,3 +1,4 @@
+use frihart_autofill::FieldKind;
 use url::Url;
 
 use crate::about::PrefToggle;
@@ -12,6 +13,7 @@ pub enum Document {
         title: String,
         text: String,
     },
+    Page(Page),
     Unavailable {
         url: Url,
         reason: String,
@@ -35,6 +37,7 @@ impl Document {
             Self::Blank => "Blank",
             Self::Internal(page) => &page.title,
             Self::Source { title, .. } => title,
+            Self::Page(page) => &page.title,
             Self::Unavailable { .. } => "Unavailable",
         }
     }
@@ -43,6 +46,7 @@ impl Document {
         match self {
             Self::Blank => None,
             Self::Internal(page) => Some(&page.url),
+            Self::Page(page) => Some(&page.url),
             Self::Source { url, .. } | Self::Unavailable { url, .. } => Some(url),
         }
     }
@@ -52,6 +56,7 @@ impl Document {
         match self {
             Self::Blank => "about:blank".into(),
             Self::Source { text, .. } => text.clone(),
+            Self::Page(page) => page.searchable(),
             Self::Unavailable { reason, .. } => reason.clone(),
             Self::Internal(page) => {
                 let mut out = page.title.clone();
@@ -60,6 +65,61 @@ impl Document {
                     out.push_str(&block.searchable());
                 }
                 out
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Page {
+    pub url: Url,
+    pub title: String,
+    pub items: Vec<PageItem>,
+}
+
+impl Page {
+    pub fn searchable(&self) -> String {
+        let mut s = self.title.clone();
+        for item in &self.items {
+            s.push('\n');
+            s.push_str(&item.searchable());
+        }
+        s
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum PageItem {
+    Heading(u8, String),
+    Text(String),
+    Link {
+        text: String,
+        href: String,
+    },
+    Field {
+        kind: FieldKind,
+        label: String,
+        value: String,
+        secret: bool,
+    },
+}
+
+impl PageItem {
+    fn searchable(&self) -> String {
+        match self {
+            Self::Heading(_, t) | Self::Text(t) => t.clone(),
+            Self::Link { text, href } => format!("{text} {href}"),
+            Self::Field {
+                label,
+                value,
+                secret,
+                ..
+            } => {
+                if *secret {
+                    label.clone()
+                } else {
+                    format!("{label} {value}")
+                }
             }
         }
     }

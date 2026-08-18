@@ -2,7 +2,7 @@
 
 use cosmic_text::Weight;
 
-use frihart_content::{Block, Document};
+use frihart_content::{Block, Document, PageItem};
 use frihart_core::display_url;
 
 use crate::raster::{Framebuffer, Rect};
@@ -388,6 +388,176 @@ fn paint_content(
         }
         Document::Internal(page) => {
             paint_internal_blocks(fb, text, browser, m, rect, &page.blocks, hits);
+        }
+        Document::Page(page) => {
+            paint_page(fb, text, browser, m, rect, page, hits);
+        }
+    }
+}
+
+fn paint_page(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    browser: &Browser,
+    m: &Metrics,
+    viewport: Rect,
+    page: &frihart_content::Page,
+    hits: &mut Vec<HitRegion>,
+) {
+    let pad = m.content_pad();
+    let max_w = m.content_max_w().min(viewport.w - pad * 2);
+    let x = viewport.x + ((viewport.w - max_w) / 2).max(pad);
+    let mut y = viewport.y + pad - browser.active_tab().scroll_y as i32;
+    let fill = Rect::new(x, y, max_w, m.s(28.0));
+    text.draw(
+        fb,
+        "Fill identity",
+        DrawText {
+            x: fill.x,
+            y,
+            max_width: (max_w / 2) as f32,
+            font_size: m.font_ui(),
+            line_height: m.line_ui(),
+            color: TEXT_LINK,
+            weight: Weight::MEDIUM,
+            ellipsis: true,
+        },
+    );
+    hits.push(HitRegion {
+        rect: fill,
+        hit: Hit::Autofill,
+    });
+    let pass = Rect::new(x + max_w / 2, y, max_w / 2, m.s(28.0));
+    text.draw(
+        fb,
+        "Password manager",
+        DrawText {
+            x: pass.x,
+            y,
+            max_width: pass.w as f32,
+            font_size: m.font_ui(),
+            line_height: m.line_ui(),
+            color: TEXT_LINK,
+            weight: Weight::MEDIUM,
+            ellipsis: true,
+        },
+    );
+    hits.push(HitRegion {
+        rect: pass,
+        hit: Hit::PassLaunch,
+    });
+    y += m.s(36.0);
+    for (i, item) in page.items.iter().enumerate() {
+        if y > viewport.bottom() {
+            break;
+        }
+        match item {
+            PageItem::Heading(level, t) => {
+                let size = if *level <= 1 {
+                    m.font_hero()
+                } else {
+                    m.font_heading()
+                };
+                let h = text.draw(
+                    fb,
+                    t,
+                    DrawText {
+                        x,
+                        y,
+                        max_width: max_w as f32,
+                        font_size: size,
+                        line_height: size + 6.0,
+                        color: TEXT_CONTENT,
+                        weight: Weight::SEMIBOLD,
+                        ellipsis: false,
+                    },
+                );
+                y += h.1 + m.s(10.0);
+            }
+            PageItem::Text(t) => {
+                let h = draw_wrapped(fb, text, t, (x, y), max_w, m, TEXT_CONTENT);
+                y += h + m.s(10.0);
+            }
+            PageItem::Link { text: label, href } => {
+                let h = text.draw(
+                    fb,
+                    label,
+                    DrawText {
+                        x,
+                        y,
+                        max_width: max_w as f32,
+                        font_size: m.font_content(),
+                        line_height: m.line_content(),
+                        color: TEXT_LINK,
+                        weight: Weight::MEDIUM,
+                        ellipsis: true,
+                    },
+                );
+                hits.push(HitRegion {
+                    rect: Rect::new(x, y, max_w, h.1 + 4),
+                    hit: Hit::ContentLink(href.clone()),
+                });
+                y += h.1 + m.s(8.0);
+            }
+            PageItem::Field {
+                label,
+                value,
+                secret,
+                ..
+            } => {
+                text.draw(
+                    fb,
+                    label,
+                    DrawText {
+                        x,
+                        y,
+                        max_width: max_w as f32,
+                        font_size: m.font_ui_sm(),
+                        line_height: m.line_ui(),
+                        color: TEXT_CONTENT_MUTED,
+                        weight: Weight::NORMAL,
+                        ellipsis: true,
+                    },
+                );
+                y += m.s(18.0);
+                let box_h = m.s(28.0);
+                let boxr = Rect::new(x, y, max_w, box_h);
+                fb.fill_rect(boxr, BG_URL);
+                let focused = browser.field_focus == Some(i);
+                fb.stroke_rect(boxr, if focused { ACCENT } else { HAIRLINE });
+                let shown = if *secret {
+                    if value.is_empty() {
+                        ""
+                    } else {
+                        "••••••••"
+                    }
+                } else {
+                    value.as_str()
+                };
+                text.draw(
+                    fb,
+                    shown,
+                    DrawText {
+                        x: boxr.x + 8,
+                        y: boxr.y + 4,
+                        max_width: (boxr.w - 16) as f32,
+                        font_size: m.font_ui(),
+                        line_height: m.line_ui(),
+                        color: TEXT_CONTENT,
+                        weight: Weight::NORMAL,
+                        ellipsis: true,
+                    },
+                );
+                hits.push(HitRegion {
+                    rect: boxr,
+                    hit: if *secret {
+                        Hit::PassLaunch
+                    } else {
+                        Hit::Field(i)
+                    },
+                });
+                y += box_h + m.s(12.0);
+            }
         }
     }
 }

@@ -634,6 +634,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "frihart-autofill"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+ "frihart-html",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "frihart-blocker"
 version = "0.1.0"
 dependencies = [
@@ -646,6 +656,7 @@ name = "frihart-chrome"
 version = "0.1.0"
 dependencies = [
  "cosmic-text",
+ "frihart-autofill",
  "frihart-blocker",
  "frihart-config",
  "frihart-content",
@@ -673,10 +684,12 @@ dependencies = [
 name = "frihart-content"
 version = "0.1.0"
 dependencies = [
+ "frihart-autofill",
  "frihart-blocker",
  "frihart-config",
  "frihart-core",
  "frihart-extensions",
+ "frihart-html",
  "frihart-net",
  "frihart-platform",
  "frihart-privacy",
@@ -702,6 +715,13 @@ dependencies = [
  "serde_json",
  "toml",
  "zip",
+]
+
+[[package]]
+name = "frihart-html"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
 ]
 
 [[package]]

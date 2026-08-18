@@ -1,0 +1,12 @@
+[package]
+name = "frihart-html"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "HTML tokenizer and tree builder (subset)"
+publish.workspace = true
+
+[dependencies]
+frihart-core.workspace = true

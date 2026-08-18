@@ -13,6 +13,8 @@ members = [
     "crates/frihart-profile",
     "crates/frihart-search",
     "crates/frihart-extensions",
+    "crates/frihart-html",
+    "crates/frihart-autofill",
 ]
 
 [workspace.package]
@@ -36,6 +38,8 @@ frihart-privacy = { path = "crates/frihart-privacy" }
 frihart-profile = { path = "crates/frihart-profile" }
 frihart-search = { path = "crates/frihart-search" }
 frihart-extensions = { path = "crates/frihart-extensions" }
+frihart-html = { path = "crates/frihart-html" }
+frihart-autofill = { path = "crates/frihart-autofill" }
 
 clap = { version = "4.5", features = ["derive"] }
 cosmic-text = "0.14"

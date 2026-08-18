@@ -9,7 +9,9 @@ description = "Documents, about: pages, and session history"
 publish.workspace = true
 
 [dependencies]
+frihart-autofill.workspace = true
 frihart-blocker.workspace = true
+frihart-html.workspace = true
 frihart-extensions.workspace = true
 frihart-config.workspace = true
 frihart-core.workspace = true

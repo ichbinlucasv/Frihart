@@ -48,6 +48,7 @@ pub struct Prefs {
     pub extensions: ExtensionPrefs,
     pub support: SupportPrefs,
     pub pass: PassPrefs,
+    pub autofill: AutofillPrefs,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -258,6 +259,18 @@ pub struct ExtensionPrefs {
 }
 
 impl Default for ExtensionPrefs {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AutofillPrefs {
+    pub enabled: bool,
+}
+
+impl Default for AutofillPrefs {
     fn default() -> Self {
         Self { enabled: true }
     }

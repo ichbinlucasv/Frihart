@@ -481,3 +481,4 @@ A sustainable rhythm for a long project:
 - [x] rustls fetch + view-source (Phase 2)
 - [x] First-party partitioned cookies, 0600 profile files
 - [x] Tor tabs refuse clearnet (no silent fallback)
+- [x] HTML subset engine + identity autofill (no password store)

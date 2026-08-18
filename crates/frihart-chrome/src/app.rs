@@ -155,6 +155,9 @@ impl Handler {
                 }
             }
             Hit::ContentToggle(toggle) => self.browser.apply_toggle(toggle),
+            Hit::Field(i) => self.browser.focus_field(i),
+            Hit::Autofill => self.browser.autofill(),
+            Hit::PassLaunch => self.browser.launch_pass(""),
         }
         self.request_redraw();
     }
@@ -216,6 +219,11 @@ impl Handler {
                         self.request_redraw();
                         return;
                     }
+                    "a" if shift => {
+                        self.browser.autofill();
+                        self.request_redraw();
+                        return;
+                    }
                     "k" => {
                         self.browser.focus_url();
                         self.browser.url_text.clear();
@@ -273,6 +281,8 @@ impl Handler {
             Key::Named(NamedKey::Escape) => {
                 if self.browser.find_open {
                     self.browser.close_find();
+                } else if self.browser.field_focus.is_some() {
+                    self.browser.field_focus = None;
                 } else {
                     self.browser.blur_url();
                 }
@@ -291,6 +301,11 @@ impl Handler {
             }
             Key::Named(NamedKey::Enter) if self.browser.url_focused => {
                 self.browser.commit_url();
+                self.request_redraw();
+                return;
+            }
+            Key::Named(NamedKey::Backspace) if self.browser.field_focus.is_some() => {
+                self.browser.backspace_field();
                 self.request_redraw();
                 return;
             }
@@ -325,6 +340,16 @@ impl Handler {
                 return;
             }
             _ => {}
+        }
+
+        if self.browser.field_focus.is_some() && !ctrl && !alt {
+            if let Some(txt) = event.text.as_ref() {
+                if !txt.chars().any(|c| c.is_control()) {
+                    self.browser.insert_field_text(txt);
+                    self.request_redraw();
+                    return;
+                }
+            }
         }
 
         if self.browser.find_focused && !ctrl && !alt {
@@ -368,7 +393,8 @@ impl ApplicationHandler for Handler {
                 let next = hit_test(&self.hits, position.x as i32, position.y as i32);
                 let icon = match next {
                     Some(Hit::ContentLink(_)) | Some(Hit::ContentToggle(_)) => CursorIcon::Pointer,
-                    Some(Hit::UrlBar) => CursorIcon::Text,
+                    Some(Hit::UrlBar) | Some(Hit::Field(_)) => CursorIcon::Text,
+                    Some(Hit::Autofill) | Some(Hit::PassLaunch) => CursorIcon::Pointer,
                     _ => CursorIcon::Default,
                 };
                 if let Some(ws) = &self.window {
@@ -433,7 +459,10 @@ fn hits_eq(a: &Hit, b: &Hit) -> bool {
         | (Hit::UrlBar, Hit::UrlBar)
         | (Hit::PrivacyBadge, Hit::PrivacyBadge)
         | (Hit::ContainerBadge, Hit::ContainerBadge)
-        | (Hit::FindBar, Hit::FindBar) => true,
+        | (Hit::FindBar, Hit::FindBar)
+        | (Hit::Autofill, Hit::Autofill)
+        | (Hit::PassLaunch, Hit::PassLaunch) => true,
+        (Hit::Field(i), Hit::Field(j)) => i == j,
         (Hit::ContentLink(x), Hit::ContentLink(y)) => x == y,
         (Hit::ContentToggle(x), Hit::ContentToggle(y)) => x == y,
         _ => false,

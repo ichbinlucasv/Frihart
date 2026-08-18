@@ -1,7 +1,8 @@
 //! Browser session state: tabs, URL bar, navigation.
 
+use frihart_autofill::Identity;
 use frihart_blocker::FilterEngine;
-use frihart_content::{Document, FetchRequest, PrefToggle, SessionHistory, fetch, load};
+use frihart_content::{Document, FetchRequest, PageItem, PrefToggle, SessionHistory, fetch, load};
 use frihart_core::{ContainerId, TabId, display_url, looks_like_destination, parse_user_input};
 use frihart_net::{CookieJar, FetchMode, RustlsClient};
 use frihart_profile::Profile;
@@ -40,6 +41,9 @@ pub enum Hit {
     FindBar,
     ContentLink(String),
     ContentToggle(PrefToggle),
+    Field(usize),
+    Autofill,
+    PassLaunch,
 }
 
 pub struct Tab {
@@ -89,6 +93,8 @@ pub struct Browser {
     client: RustlsClient,
     jar: CookieJar,
     blocker: FilterEngine,
+    pub field_focus: Option<usize>,
+    identity: Identity,
 }
 
 impl Browser {
@@ -107,6 +113,7 @@ impl Browser {
             tab.circuit = Circuit::Private;
         }
         let url_text = tab.url_display();
+        let identity = Identity::load(&profile.root().join("autofill.toml")).unwrap_or_default();
         let enabled = profile.prefs().privacy.blocker;
         let jar = if profile.is_ephemeral() || !profile.prefs().privacy.persist_cookies {
             CookieJar::default()
@@ -130,6 +137,8 @@ impl Browser {
             client: RustlsClient::new(),
             jar,
             blocker: FilterEngine::new(enabled),
+            field_focus: None,
+            identity,
         }
     }
 
@@ -441,6 +450,7 @@ impl Browser {
         }
         self.sync_url_bar();
         self.persist_jar();
+        self.field_focus = None;
         self.status.clear();
     }
 
@@ -538,6 +548,9 @@ impl Browser {
         self.profile = profile;
         self.jar = jar;
         self.blocker = FilterEngine::new(enabled);
+        self.identity =
+            Identity::load(&self.profile.root().join("autofill.toml")).unwrap_or_default();
+        self.field_focus = None;
         self.reset_tabs();
     }
 
@@ -557,7 +570,7 @@ impl Browser {
         self.sync_url_bar();
     }
 
-    fn launch_pass(&mut self, id: &str) {
+    pub fn launch_pass(&mut self, id: &str) {
         let wanted = if id.is_empty() {
             self.profile.prefs().pass.manager.as_str()
         } else {
@@ -572,6 +585,68 @@ impl Browser {
             let _ = frihart_platform::launch_local(&mgr.path);
         }
         self.status.clear();
+    }
+
+    pub fn focus_field(&mut self, index: usize) {
+        self.field_focus = Some(index);
+        self.url_focused = false;
+        self.find_focused = false;
+    }
+
+    pub fn insert_field_text(&mut self, text: &str) {
+        let Some(i) = self.field_focus else {
+            return;
+        };
+        let Document::Page(page) = &mut self.active_tab_mut().document else {
+            return;
+        };
+        if let Some(PageItem::Field { value, secret, .. }) = page.items.get_mut(i) {
+            if *secret {
+                return;
+            }
+            value.push_str(text);
+        }
+    }
+
+    pub fn backspace_field(&mut self) {
+        let Some(i) = self.field_focus else {
+            return;
+        };
+        let Document::Page(page) = &mut self.active_tab_mut().document else {
+            return;
+        };
+        if let Some(PageItem::Field { value, secret, .. }) = page.items.get_mut(i) {
+            if *secret {
+                return;
+            }
+            value.pop();
+        }
+    }
+
+    pub fn autofill(&mut self) {
+        if !self.profile.prefs().autofill.enabled {
+            return;
+        }
+        let identity = self.identity.clone();
+        let Document::Page(page) = &mut self.active_tab_mut().document else {
+            return;
+        };
+        for item in &mut page.items {
+            if let PageItem::Field {
+                kind,
+                value,
+                secret,
+                ..
+            } = item
+            {
+                if *secret {
+                    continue;
+                }
+                if let Some(v) = identity.value_for(*kind) {
+                    *value = v.to_string();
+                }
+            }
+        }
     }
 
     fn persist_jar(&self) {
