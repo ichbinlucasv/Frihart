@@ -69,6 +69,12 @@ Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
 | --- | --- | --- |
 | `vpn.provider` | `none` | We do not connect a VPN until you pick Proton or Mullvad. |
 
+## Extensions
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `extensions.enabled` | `true` | Sideload and list Firefox-style add-ons. They do not execute yet. |
+
 ## Network
 
 | Pref | Default | Why |

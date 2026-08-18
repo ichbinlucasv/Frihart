@@ -1,18 +1,16 @@
 [package]
-name = "frihart-profile"
+name = "frihart-extensions"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "On-disk and ephemeral user profiles"
+description = "WebExtensions compatibility host (Firefox add-ons without forking Gecko)"
 publish.workspace = true
 
 [dependencies]
-frihart-config.workspace = true
 frihart-core.workspace = true
-frihart-extensions.workspace = true
-frihart-platform.workspace = true
 serde.workspace = true
-toml.workspace = true
 serde_json.workspace = true
+toml.workspace = true
+zip.workspace = true

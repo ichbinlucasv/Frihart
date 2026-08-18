@@ -1,30 +1,79 @@
-# Extensions and the community
+# Firefox extensions on Frihart — without a fork
 
-Frihart will have extensions. They will not look like the Chrome Web
-Store or AMO.
+**Short answer:** yes, compatibility is possible without forking Firefox.
+It is not possible *today* to *run* uBlock Origin, Dark Reader, or
+Bitwarden. We can already *install and audit* their `.xpi` files.
 
-## What we will do
+## What “compatible” means
 
-- Publish a small, documented API when the engine can isolate a
-  content process (Phase 6+) and bind script (Phase 7+).
-- Load extensions from the user's profile (`extensions/` as local
-  directories). No remote gallery that we host.
-- Welcome community add-ons as **separate open-source repos** people
-  can clone and load. Codeberg is the natural home.
-- Review security-sensitive APIs the way we review the blocker.
+A Firefox add-on is:
+
+1. A ZIP (`.xpi`) with a `manifest.json`
+2. JavaScript that calls `browser.*` / `chrome.*`
+3. Optional HTML popups, options pages, and content scripts
+
+LibreWolf runs those because it **is** Gecko. Frihart will not vendor
+Gecko. Compatibility means **Frihart implements the same API** on its
+own engine, the way Chrome, Firefox, and Edge all speak a related
+WebExtensions dialect without being the same program.
+
+That is original code. It is also a multi-year API surface.
+
+## What works now (Phase 1)
+
+```bash
+frihart --install-addon ./ublock_origin.xpi
+frihart about:addons
+```
+
+- Parse Manifest V2 / V3 (Firefox `browser_specific_settings.gecko.id`)
+- Unpack `.xpi` or an unpacked folder into the profile
+- Record permissions and mark the add-on **dormant**
+- Classify each permission: already native in Frihart, planned, or refused
+
+Nothing in the package is executed. There is no JS engine yet.
+
+## What already exists natively (so you do not wait)
+
+| Firefox add-on job | Frihart today |
+| --- | --- |
+| uBlock Origin style blocking | `frihart-blocker`, on by default |
+| Multi-Account Containers | first-class containers |
+| Resist fingerprinting / privacy | `frihart-privacy` prefs |
+| Dark theme | black / yellow chrome |
+
+When the WebExtensions host can run JS, those add-ons can *also* be
+sideloaded. The native path stays. An add-on must not be required for
+basic protection.
+
+## Compatibility ladder
+
+| When | What an add-on can do |
+| --- | --- |
+| Now | Be installed, listed, permission-audited |
+| Phase 2 | `webRequest` / `proxy` map onto `frihart-net` + blocker |
+| Phase 3–5 | Options / popup HTML |
+| Phase 6 | Out-of-process, cannot read the profile |
+| Phase 7 | Background scripts and content scripts actually run |
+
+We will publish the subset we claim. “Works with every AMO add-on” is
+not a milestone. “uBlock Origin’s network-blocking path works” is.
 
 ## What we will not do
 
-- Ship a "recommended extensions" feed from Frihart servers
-- Load unsigned remote blobs
-- Pretend we are Firefox so existing `.xpi` files just work
-- Give an extension chrome-process rights
+- Fork Gecko or embed Firefox to fake compatibility
+- Auto-download from addons.mozilla.org
+- A remote “recommended extensions” feed
+- Run privileged Firefox-only APIs (`debugger`, `geckoProfiler`, `mozillaAddons`)
+- Give an add-on the chrome process
 
-## Until the API exists
+## Community
 
-Containers, the native blocker, DeepL, Swisscows/DDG, Tor tabs, and
-VPN hooks live **in the browser**. That is intentional. Those jobs
-should not wait on an add-on store.
+Write Frihart-native add-ons or help implement `browser.*` APIs. Codeberg
+is the primary forge. Sideload from a git checkout:
 
-If you want to help, open an issue or a pull request on Codeberg.
-Read [CONTRIBUTING.md](../CONTRIBUTING.md).
+```
+frihart --install-addon ~/src/my-addon/
+```
+
+See [CONTRIBUTING.md](../CONTRIBUTING.md).

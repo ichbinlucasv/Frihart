@@ -320,6 +320,8 @@ a generic exploit runtime.
 - Decision document: subset interpreter vs. embedding a JS engine
   (the product remains Frihart; an embedded engine is a component, not a
   fork of a browser)
+- WebExtensions host: execute sideloaded Firefox add-ons against the
+  subset of `browser.*` we have implemented (see docs/extensions.md)
 - Start with no JIT if we embed; JIT is an opt-in later
 - Bindings: DOM read, simple mutation, events (`click`, `submit`,
   `DOMContentLoaded`)

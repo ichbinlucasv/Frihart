@@ -72,6 +72,7 @@ pub fn is_known(name: &str) -> bool {
             | "tor"
             | "vpn"
             | "extensions"
+            | "addons"
     )
 }
 
@@ -95,7 +96,7 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "search" => search(url, prefs),
         "tor" => tor(url, prefs),
         "vpn" => vpn(url, prefs),
-        "extensions" => extensions(url),
+        "extensions" | "addons" => extensions(url, profile),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -489,6 +490,8 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("socks_port", &socks_port),
         Block::Heading("vpn".into()),
         kv("provider", &prefs.vpn.provider),
+        Block::Heading("extensions".into()),
+        kv("enabled", bool_str(prefs.extensions.enabled)),
     ];
     let _ = FROZEN_USER_AGENT;
     blocks.push(Block::Link {
@@ -1032,37 +1035,72 @@ fn vpn(url: &Url, prefs: &Prefs) -> Document {
     })
 }
 
-fn extensions(url: &Url) -> Document {
+fn extensions(url: &Url, profile: &Profile) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Add-ons".into(),
+            subtitle: "Firefox-compatible host, original engine. Not a Gecko fork.".into(),
+        },
+        Block::Paragraph(
+            "Yes: Frihart can become compatible with Firefox extensions without \
+             being a fork. An .xpi is a ZIP plus manifest.json plus JavaScript \
+             that calls browser.*. We parse the package today. We will implement \
+             those APIs on our own engine. We will not vendor Gecko."
+                .into(),
+        ),
+        Block::Paragraph(
+            "Installed add-ons are dormant until Phase 7 (JS) and Phase 3–5 \
+             (DOM for popups and content scripts). Sideload only: \
+             frihart --install-addon ./something.xpi"
+                .into(),
+        ),
+        Block::Heading("Installed".into()),
+    ];
+    if profile.addons().items.is_empty() {
+        blocks.push(Block::Paragraph(
+            "None yet. Drop a Firefox .xpi or an unpacked folder onto \
+             --install-addon. uBlock Origin will install and stay dormant; \
+             Frihart already ships a native blocker for that job."
+                .into(),
+        ));
+    } else {
+        for addon in &profile.addons().items {
+            blocks.push(Block::KeyValue {
+                key: format!("{} {}", addon.name, addon.version),
+                value: format!("{} · {}", addon.id, addon.run_state),
+            });
+            blocks.push(Block::Note(addon.dormant_reason().into()));
+            for (perm, support) in addon.permission_report() {
+                blocks.push(Block::KeyValue {
+                    key: perm,
+                    value: support.label().into(),
+                });
+            }
+        }
+    }
+    blocks.extend([
+        Block::Heading("Compatibility ladder".into()),
+        Block::List(vec![
+            "Now — parse XPI / unpacked, install into the profile, audit permissions".into(),
+            "Phase 2 — webRequest maps onto frihart-net + the native blocker".into(),
+            "Phase 3–5 — options pages and popups need HTML".into(),
+            "Phase 6 — add-ons run out of process, cannot read prefs.toml".into(),
+            "Phase 7 — JS runtime executes background and content scripts".into(),
+        ]),
+        Block::Note(
+            "Full AMO compatibility is years of API work. We claim packages we \
+             can parse and APIs we implement, never “any Firefox add-on works.”"
+                .into(),
+        ),
+        Block::Link {
+            label: "Architecture notes".into(),
+            href: "about:credits".into(),
+        },
+    ]);
     Document::internal(InternalPage {
-        title: "Extensions".into(),
+        title: "Add-ons".into(),
         url: url.clone(),
-        blocks: vec![
-            Block::Hero {
-                title: "Extensions".into(),
-                subtitle: "Community later. No remote store. No Chrome Web Store clone.".into(),
-            },
-            Block::Paragraph(
-                "The engine is not ready for WebExtensions. When it is, Frihart \
-                 will take a small, documented, local-first API. The community \
-                 can write add-ons in the open. There will be no recommended \
-                 remote gallery that phones home."
-                    .into(),
-            ),
-            Block::List(vec![
-                "Phase 1 — this page, and CONTRIBUTING.md".into(),
-                "Phase 6+ — process isolation so an add-on cannot own the profile".into(),
-                "Phase 7+ — a reviewed extension API, signed locally".into(),
-            ]),
-            Block::Note(
-                "Until then, containers, the blocker, search, Tor, and VPN live \
-                 in the browser. That is the point of not being a Firefox fork."
-                    .into(),
-            ),
-            Block::Link {
-                label: "How to contribute".into(),
-                href: "about:credits".into(),
-            },
-        ],
+        blocks,
     })
 }
 

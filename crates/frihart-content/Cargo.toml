@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 frihart-blocker.workspace = true
+frihart-extensions.workspace = true
 frihart-config.workspace = true
 frihart-core.workspace = true
 frihart-privacy.workspace = true

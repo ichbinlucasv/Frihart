@@ -44,6 +44,7 @@ The full constitution is [PHILOSOPHY.md](PHILOSOPHY.md).
 - Tab strip with container stripes, URL bar, navigation keys
 - Native blocker, containers, DeepL translator, Swisscows search
 - Tor tabs (`--tor`, Ctrl+Shift+O) and Proton/Mullvad VPN detection
+- Firefox add-on sideload (`--install-addon`, `about:addons`) — dormant until JS
 - Find in page (Ctrl+F), bookmark (Ctrl+D), cycle container (Ctrl+Shift+C)
 - Privacy-first prefs persisted in an XDG profile
 - No network on startup, and no web rendering yet
@@ -67,6 +68,7 @@ Useful invocations:
 cargo run -- about:settings
 cargo run -- --private
 cargo run -- --tor
+cargo run -- --install-addon ./some-firefox-addon.xpi
 cargo run -- --profile ./profile-dev
 ```
 

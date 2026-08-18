@@ -28,6 +28,9 @@ further, as native features rather than add-ons:
 - **Tor tabs** use the system Tor daemon. We do not bundle the network.
 - **VPN** hooks official ProtonVPN and Mullvad CLIs. We do not ship a
   VPN protocol.
+- **Firefox add-ons** can be *compatible* without a Gecko fork: we
+  implement WebExtensions ourselves. Installed `.xpi` files are dormant
+  until we have JS. We do not pretend they run.
 
 If LibreWolf is "Firefox with the bad parts cut out," Frihart is a
 browser that never had those parts.

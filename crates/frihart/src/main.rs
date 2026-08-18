@@ -31,6 +31,10 @@ struct Args {
     /// Open the first tab as a Tor tab (system Tor SOCKS, default 127.0.0.1:9050).
     #[arg(long)]
     tor: bool,
+
+    /// Sideload a Firefox-style .xpi or unpacked add-on into the profile, then exit.
+    #[arg(long, value_name = "PATH")]
+    install_addon: Option<PathBuf>,
 }
 
 fn main() -> ExitCode {
@@ -52,6 +56,20 @@ fn try_main() -> frihart_core::Result<()> {
         .init();
 
     let args = Args::parse();
+
+    if let Some(addon) = &args.install_addon {
+        let mut profile = if let Some(path) = &args.profile {
+            Profile::open_dir(path)?
+        } else {
+            Profile::open_default()?
+        };
+        let installed = profile.install_addon(addon)?;
+        println!(
+            "installed {} {} ({}) — dormant until the JS engine exists",
+            installed.name, installed.version, installed.id
+        );
+        return Ok(());
+    }
 
     let profile = if args.private {
         tracing::info!("private window; profile stays in memory");

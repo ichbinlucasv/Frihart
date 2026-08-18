@@ -16,6 +16,7 @@ use frihart_platform::profiles_dir;
 
 pub use bookmarks::{Bookmark, BookmarkStore};
 pub use containers::{Container, ContainerStore};
+pub use frihart_extensions::{AddonStore, InstalledAddon};
 pub use history::{HistoryEntry, HistoryStore};
 
 use lock::ProfileLock;
@@ -29,6 +30,7 @@ pub struct Profile {
     bookmarks: BookmarkStore,
     history: HistoryStore,
     containers: ContainerStore,
+    addons: AddonStore,
     _lock: Option<ProfileLock>,
 }
 
@@ -64,6 +66,7 @@ impl Profile {
             bookmarks: BookmarkStore::defaults(),
             history: HistoryStore::default(),
             containers: ContainerStore::defaults(),
+            addons: AddonStore::default(),
             _lock: None,
         };
         profile.prefs.privacy.persist_history = false;
@@ -100,6 +103,11 @@ impl Profile {
         } else {
             ContainerStore::load(&root.join("containers.toml"))?
         };
+        let addons = if ephemeral {
+            AddonStore::default()
+        } else {
+            AddonStore::load(&AddonStore::registry_path(&root))?
+        };
         Ok(Self {
             root,
             name: name.to_string(),
@@ -108,6 +116,7 @@ impl Profile {
             bookmarks,
             history,
             containers,
+            addons,
             _lock: lock,
         })
     }
@@ -164,6 +173,22 @@ impl Profile {
 
     pub fn container(&self, id: ContainerId) -> Option<&Container> {
         self.containers.get(id)
+    }
+
+    pub fn addons(&self) -> &AddonStore {
+        &self.addons
+    }
+
+    pub fn install_addon(&mut self, source: &Path) -> Result<frihart_extensions::InstalledAddon> {
+        if self.ephemeral {
+            return Err(frihart_core::FrihartError::profile(
+                "private windows cannot install add-ons",
+            ));
+        }
+        let ext_dir = AddonStore::dir(&self.root);
+        let addon = self.addons.install(source, &ext_dir)?;
+        self.addons.save(&AddonStore::registry_path(&self.root))?;
+        Ok(addon)
     }
 
     pub fn record_visit(&mut self, url: &str, title: &str) -> Result<()> {

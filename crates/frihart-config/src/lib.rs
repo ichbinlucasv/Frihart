@@ -45,6 +45,7 @@ pub struct Prefs {
     pub search: SearchPrefs,
     pub tor: TorPrefs,
     pub vpn: VpnPrefs,
+    pub extensions: ExtensionPrefs,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -242,6 +243,19 @@ impl Default for VpnPrefs {
     }
 }
 
+/// WebExtensions compatibility host. Sideload only. No AMO fetch.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ExtensionPrefs {
+    pub enabled: bool,
+}
+
+impl Default for ExtensionPrefs {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
+
 impl Prefs {
     /// Load from TOML. Missing fields take defaults. A missing file is
     /// not an error — the caller gets `Prefs::default()`.
@@ -308,6 +322,7 @@ mod tests {
         assert!(p.tor.enabled);
         assert_eq!(p.tor.socks_port, 9050);
         assert_eq!(p.vpn.provider, "none");
+        assert!(p.extensions.enabled);
     }
 
     #[test]

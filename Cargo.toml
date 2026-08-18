@@ -12,6 +12,7 @@ members = [
     "crates/frihart-privacy",
     "crates/frihart-profile",
     "crates/frihart-search",
+    "crates/frihart-extensions",
 ]
 
 [workspace.package]
@@ -34,6 +35,7 @@ frihart-platform = { path = "crates/frihart-platform" }
 frihart-privacy = { path = "crates/frihart-privacy" }
 frihart-profile = { path = "crates/frihart-profile" }
 frihart-search = { path = "crates/frihart-search" }
+frihart-extensions = { path = "crates/frihart-extensions" }
 
 clap = { version = "4.5", features = ["derive"] }
 cosmic-text = "0.14"
@@ -46,6 +48,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.5"
 winit = "0.30"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [profile.release]
 lto = "thin"
