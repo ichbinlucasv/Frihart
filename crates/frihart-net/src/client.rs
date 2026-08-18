@@ -123,11 +123,17 @@ impl HttpClient for RustlsClient {
             }
         };
 
-        let mut current = crate::strip_tracking(&request.url);
+        let mut current = if policy.strip_tracking() {
+            crate::strip_tracking(&request.url)
+        } else {
+            request.url.clone()
+        };
         let first_party = current.host_str().unwrap_or("").to_ascii_lowercase();
 
         for _ in 0..=MAX_REDIRECTS {
-            current = crate::strip_tracking(&current);
+            if policy.strip_tracking() {
+                current = crate::strip_tracking(&current);
+            }
             if crate::private_redirect(&first_party, current.host_str().unwrap_or("")) {
                 return Err(FrihartError::network("blocked private"));
             }

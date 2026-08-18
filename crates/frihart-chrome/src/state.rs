@@ -486,7 +486,9 @@ impl Browser {
     }
 
     pub fn navigate(&mut self, url: Url) {
-        let url = if url.scheme() == "https" || url.scheme() == "http" {
+        let url = if (url.scheme() == "https" || url.scheme() == "http")
+            && self.profile.prefs().privacy.strip_tracking
+        {
             frihart_net::strip_tracking(&url)
         } else {
             url

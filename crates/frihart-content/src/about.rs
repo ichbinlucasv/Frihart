@@ -24,6 +24,18 @@ pub enum PrefToggle {
     Translate,
     DismissWelcome,
     Autofill,
+    StripTracking,
+    SearchSuggestions,
+    Prefetch,
+    SpeculativeConnect,
+    SendPings,
+    Geolocation,
+    Wasm,
+    WebGl,
+    Canvas,
+    ClearOnShutdown,
+    Autoplay,
+    PunycodeHosts,
 }
 
 impl PrefToggle {
@@ -48,6 +60,24 @@ impl PrefToggle {
             Self::Translate => prefs.translate.enabled = !prefs.translate.enabled,
             Self::DismissWelcome => prefs.general.welcome_seen = true,
             Self::Autofill => prefs.autofill.enabled = !prefs.autofill.enabled,
+            Self::StripTracking => prefs.privacy.strip_tracking = !prefs.privacy.strip_tracking,
+            Self::SearchSuggestions => {
+                prefs.privacy.search_suggestions = !prefs.privacy.search_suggestions;
+            }
+            Self::Prefetch => prefs.privacy.prefetch = !prefs.privacy.prefetch,
+            Self::SpeculativeConnect => {
+                prefs.privacy.speculative_connect = !prefs.privacy.speculative_connect;
+            }
+            Self::SendPings => prefs.privacy.send_pings = !prefs.privacy.send_pings,
+            Self::Geolocation => prefs.privacy.geolocation = !prefs.privacy.geolocation,
+            Self::Wasm => prefs.privacy.wasm = !prefs.privacy.wasm,
+            Self::WebGl => prefs.content.webgl = !prefs.content.webgl,
+            Self::Canvas => prefs.content.canvas = !prefs.content.canvas,
+            Self::ClearOnShutdown => {
+                prefs.privacy.clear_on_shutdown = !prefs.privacy.clear_on_shutdown;
+            }
+            Self::Autoplay => prefs.content.autoplay = !prefs.content.autoplay,
+            Self::PunycodeHosts => prefs.privacy.punycode_hosts = !prefs.privacy.punycode_hosts,
         }
     }
 }
@@ -888,104 +918,208 @@ fn settings(url: &Url, prefs: &Prefs) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Settings".into(),
-                subtitle: "Defaults protect you. Every toggle is local.".into(),
+                subtitle: "LibreWolf stance. Native prefs. Black and yellow.".into(),
             },
+            Block::Paragraph(
+                "Same privacy constitution as LibreWolf: no telemetry, no \
+                 Google Safe Browsing, no DRM, no password vault, HTTPS-only, \
+                 resist fingerprinting, first-party cookies, JS off. Frihart \
+                 is not a Firefox fork — these are our prefs, not about:config \
+                 soup."
+                    .into(),
+            ),
             Block::Heading("Look".into()),
             toggle(
                 PrefToggle::DarkMode,
                 "Dark mode",
-                "Black pages, yellow accents. This is the product look, not a theme store.",
+                "Black chrome, yellow accents. Not a theme store.",
                 prefs.content.dark_mode,
             ),
-            Block::Heading("Protection".into()),
+            Block::Heading("Tracking protection".into()),
             toggle(
                 PrefToggle::Blocker,
                 "Native blocker (uBlock-class)",
-                "On by default. Built into Frihart — not an add-on, not a store listing.",
+                "On at install. Host lists stay local. Not an add-on.",
                 prefs.privacy.blocker,
+            ),
+            toggle(
+                PrefToggle::StripTracking,
+                "Strip tracking parameters",
+                "utm_*, gclid, fbclid and kin. Native ClearURLs.",
+                prefs.privacy.strip_tracking,
             ),
             toggle(
                 PrefToggle::Containers,
                 "Identity containers",
-                "Tabs belong to Personal, Work, Banking, or Shopping. Cookies never cross.",
+                "Personal, Work, Banking, Shopping. Cookies never cross.",
                 prefs.privacy.containers,
             ),
             toggle(
-                PrefToggle::Autofill,
-                "Identity autofill",
-                "Fills name/email/address you saved. Never passwords.",
-                prefs.autofill.enabled,
+                PrefToggle::ThirdPartyCookies,
+                "Allow third-party cookies",
+                "Off. Cross-site cookies are tracking.",
+                prefs.privacy.third_party_cookies,
             ),
-            toggle(
-                PrefToggle::Translate,
-                "Built-in translator",
-                "DeepL by default. Add your API key in prefs.toml. No Google.",
-                prefs.translate.enabled,
-            ),
+            Block::Heading("HTTPS and identity".into()),
             toggle(
                 PrefToggle::HttpsOnly,
                 "HTTPS-only mode",
-                "Refuse cleartext HTTP. Exceptions will be per-site, when the network stack exists.",
+                "Refuse cleartext HTTP. No click-through on bad TLS.",
                 prefs.privacy.https_only,
             ),
             toggle(
                 PrefToggle::ResistFingerprinting,
                 "Resist fingerprinting",
-                "Clamp or deny high-entropy APIs. Frihart will not impersonate Chrome.",
+                "Clamp or deny high-entropy APIs. We do not impersonate Chrome.",
                 prefs.privacy.resist_fingerprinting,
             ),
             toggle(
-                PrefToggle::ThirdPartyCookies,
-                "Allow third-party cookies",
-                "Off. Cross-site cookies are tracking. Turn this on only if you mean it.",
-                prefs.privacy.third_party_cookies,
+                PrefToggle::PunycodeHosts,
+                "Show punycode hosts",
+                "IDN homograph defense. Always display xn-- form in the bar when set.",
+                prefs.privacy.punycode_hosts,
             ),
             toggle(
                 PrefToggle::SendGpc,
                 "Send Global Privacy Control",
-                "A single bit some jurisdictions treat as a legal signal. Do Not Track is not sent.",
+                "One legal bit. Do Not Track is not sent (it is a fingerprint).",
                 prefs.privacy.send_gpc,
             ),
-            Block::Heading("Local data".into()),
-            toggle(
-                PrefToggle::PersistHistory,
-                "Remember history",
-                "Stored only in your profile. Never uploaded. Private windows ignore this.",
-                prefs.privacy.persist_history,
-            ),
-            toggle(
-                PrefToggle::PersistCookies,
-                "Remember cookies",
-                "First-party only, when the network stack exists.",
-                prefs.privacy.persist_cookies,
-            ),
-            toggle(
-                PrefToggle::RestoreSession,
-                "Restore previous session",
-                "Off by default. The browser opens what you open.",
-                prefs.general.restore_session,
-            ),
-            Block::Heading("Attack surface".into()),
+            Block::Heading("Permissions".into()),
             toggle(
                 PrefToggle::Javascript,
                 "JavaScript",
-                "There is no engine yet. This pref exists so the permission model is real from day one.",
+                "Off. No engine. Flipping this is not a grant.",
                 prefs.privacy.javascript,
             ),
             toggle(
                 PrefToggle::WebRtc,
                 "WebRTC",
-                "Off. IP-leak surface. Stays off until implemented and reviewed.",
+                "Off. IP-leak surface.",
                 prefs.privacy.webrtc,
             ),
+            toggle(
+                PrefToggle::WebGl,
+                "WebGL",
+                "Off. GPU fingerprint.",
+                prefs.content.webgl,
+            ),
+            toggle(
+                PrefToggle::Canvas,
+                "Canvas readback",
+                "Off. Classic fingerprint surface.",
+                prefs.content.canvas,
+            ),
+            toggle(
+                PrefToggle::Wasm,
+                "WebAssembly",
+                "Off until reviewed.",
+                prefs.privacy.wasm,
+            ),
+            toggle(
+                PrefToggle::Geolocation,
+                "Geolocation",
+                "Off. No location API.",
+                prefs.privacy.geolocation,
+            ),
+            toggle(
+                PrefToggle::Autoplay,
+                "Autoplay media",
+                "Off. Nothing plays until you ask.",
+                prefs.content.autoplay,
+            ),
+            Block::Heading("Network".into()),
+            toggle(
+                PrefToggle::Prefetch,
+                "Link prefetch",
+                "Off. LibreWolf disables speculative loads. So do we.",
+                prefs.privacy.prefetch,
+            ),
+            toggle(
+                PrefToggle::SpeculativeConnect,
+                "Speculative connections",
+                "Off. The URL bar does not pre-connect to guesses.",
+                prefs.privacy.speculative_connect,
+            ),
+            toggle(
+                PrefToggle::SendPings,
+                "Hyperlink auditing (pings)",
+                "Off. <a ping> is tracking.",
+                prefs.privacy.send_pings,
+            ),
+            toggle(
+                PrefToggle::SearchSuggestions,
+                "Search suggestions",
+                "Off. Keystrokes do not leave the machine.",
+                prefs.privacy.search_suggestions,
+            ),
+            Block::Heading("Local data".into()),
+            toggle(
+                PrefToggle::PersistHistory,
+                "Remember history",
+                "Local only. Never uploaded.",
+                prefs.privacy.persist_history,
+            ),
+            toggle(
+                PrefToggle::PersistCookies,
+                "Remember cookies",
+                "First-party only.",
+                prefs.privacy.persist_cookies,
+            ),
+            toggle(
+                PrefToggle::ClearOnShutdown,
+                "Clear cookies on quit",
+                "LibreWolf optional. Off until you want a session-only jar.",
+                prefs.privacy.clear_on_shutdown,
+            ),
+            toggle(
+                PrefToggle::RestoreSession,
+                "Restore previous session",
+                "Off. You open what you open.",
+                prefs.general.restore_session,
+            ),
+            toggle(
+                PrefToggle::Autofill,
+                "Identity autofill",
+                "Name/email/address you saved. Never passwords.",
+                prefs.autofill.enabled,
+            ),
+            toggle(
+                PrefToggle::Translate,
+                "Built-in translator",
+                "DeepL default. Your key. No Google.",
+                prefs.translate.enabled,
+            ),
+            Block::Heading("Locked off".into()),
+            kv("telemetry", "false — no section, no ping, no crash upload"),
+            kv("safe_browsing", "false — no Google Safe Browsing"),
+            kv("drm_eme", "false — no Widevine, no CDM"),
+            kv(
+                "store_logins",
+                "false — Proton Pass / KeePassXC / pass only",
+            ),
+            kv("captive_portal", "false — no connectivity probe"),
+            kv(
+                "doh_vendor",
+                "none — system DNS; DoH is opt-in, you pick the resolver",
+            ),
+            kv("client_hints", "false"),
             Block::Note(
-                "More knobs live on about:config. There is no search-engine picker \
-                 because there is no default search deal."
+                "about:privacy is the constitution. about:config is the full \
+                 snapshot. about:shred wipes this profile."
                     .into(),
             ),
             Block::Link {
+                label: "Privacy".into(),
+                href: "about:privacy".into(),
+            },
+            Block::Link {
                 label: "All preferences".into(),
                 href: "about:config".into(),
+            },
+            Block::Link {
+                label: "Wipe / shred".into(),
+                href: "about:shred".into(),
             },
         ],
     })
@@ -1041,6 +1175,22 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
                 prefs.network.doh_mode.clone()
             },
         },
+        Block::Heading("LibreWolf map".into()),
+        Block::List(vec![
+            "RFP / resist fingerprinting — on".into(),
+            "HTTPS-Only — on".into(),
+            "First-party cookies, partitioned — on".into(),
+            "WebRTC / WebGL / canvas / WASM / geo — off".into(),
+            "No prefetch, no speculative connect, no pings — off".into(),
+            "No search suggestions — off".into(),
+            "No telemetry, no crash ping, no studies — absent".into(),
+            "No Google Safe Browsing — absent".into(),
+            "No DRM / Widevine — absent".into(),
+            "No Pocket, no sponsored tiles — absent".into(),
+            "DoH — off; you pick a resolver if you want one".into(),
+            "GPC on, DNT off".into(),
+            "JS off (LibreWolf leaves JS on; we are stricter)".into(),
+        ]),
         Block::Note(
             "DNT is off on purpose. It is a tracking bit. GPC is on. Client \
              Hints are never sent."
@@ -1113,6 +1263,28 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("containers", bool_str(prefs.privacy.containers)),
         kv("blocker", bool_str(prefs.privacy.blocker)),
         kv("store_logins", bool_str(prefs.privacy.store_logins)),
+        kv("strip_tracking", bool_str(prefs.privacy.strip_tracking)),
+        kv(
+            "search_suggestions",
+            bool_str(prefs.privacy.search_suggestions),
+        ),
+        kv("prefetch", bool_str(prefs.privacy.prefetch)),
+        kv(
+            "speculative_connect",
+            bool_str(prefs.privacy.speculative_connect),
+        ),
+        kv("send_pings", bool_str(prefs.privacy.send_pings)),
+        kv("geolocation", bool_str(prefs.privacy.geolocation)),
+        kv("wasm", bool_str(prefs.privacy.wasm)),
+        kv("drm", bool_str(prefs.privacy.drm)),
+        kv("telemetry", bool_str(prefs.privacy.telemetry)),
+        kv("safe_browsing", bool_str(prefs.privacy.safe_browsing)),
+        kv(
+            "clear_on_shutdown",
+            bool_str(prefs.privacy.clear_on_shutdown),
+        ),
+        kv("punycode_hosts", bool_str(prefs.privacy.punycode_hosts)),
+        kv("letterboxing", bool_str(prefs.privacy.letterboxing)),
         Block::Heading("network".into()),
         kv("user_agent", &prefs.network.user_agent),
         kv("client_hints", bool_str(prefs.network.client_hints)),
@@ -1127,12 +1299,19 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         ),
         kv("http2", bool_str(prefs.network.http2)),
         kv("http3", bool_str(prefs.network.http3)),
+        kv("captive_portal", bool_str(prefs.network.captive_portal)),
+        kv(
+            "connectivity_check",
+            bool_str(prefs.network.connectivity_check),
+        ),
+        kv("tls_0rtt", bool_str(prefs.network.tls_0rtt)),
         Block::Heading("content".into()),
         kv("images", bool_str(prefs.content.images)),
         kv("media", bool_str(prefs.content.media)),
         kv("webgl", bool_str(prefs.content.webgl)),
         kv("canvas", bool_str(prefs.content.canvas)),
         kv("dark_mode", bool_str(prefs.content.dark_mode)),
+        kv("autoplay", bool_str(prefs.content.autoplay)),
         Block::Heading("translate".into()),
         kv("enabled", bool_str(prefs.translate.enabled)),
         kv("provider", &prefs.translate.provider),

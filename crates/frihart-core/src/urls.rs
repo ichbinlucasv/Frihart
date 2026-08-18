@@ -36,6 +36,9 @@ pub fn looks_like_destination(input: &str) -> bool {
     if trimmed.starts_with('[') && trimmed.contains(']') {
         return true;
     }
+    if trimmed.starts_with("//") && trimmed.contains('.') {
+        return true;
+    }
     if let Ok(url) = Url::parse(trimmed) {
         if is_script_scheme(url.scheme()) || is_known_scheme(url.scheme()) {
             return true;
@@ -78,6 +81,14 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
         }
     }
 
+    if trimmed.starts_with("//") {
+        if let Ok(url) = Url::parse(&format!("https:{trimmed}")) {
+            if url.host_str().is_some() {
+                return Some(url);
+            }
+        }
+    }
+
     if trimmed.starts_with('[') {
         if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
             if url.host_str().is_some() {
@@ -97,6 +108,32 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
     }
 
     None
+}
+
+/// Resolve a document href against the page URL. `//host` becomes https.
+pub fn resolve_href(base: &Url, href: &str) -> Option<Url> {
+    let h = href.trim();
+    if h.is_empty() || h.starts_with('#') {
+        return Some(base.clone());
+    }
+    if h.starts_with("//") {
+        let scheme = if base.scheme() == "http" {
+            "http"
+        } else {
+            "https"
+        };
+        return Url::parse(&format!("{scheme}:{h}")).ok();
+    }
+    if let Ok(url) = base.join(h) {
+        if url.scheme() == "https"
+            || url.scheme() == "http"
+            || url.scheme() == "about"
+            || url.scheme() == "frihart"
+        {
+            return Some(url);
+        }
+    }
+    try_parse_user_input(h)
 }
 
 /// `javascript:` / `vbscript:` — parseable, never executed.
@@ -204,6 +241,16 @@ mod tests {
         assert!(looks_like_destination("example.com"));
         assert!(looks_like_destination("about:home"));
         assert!(looks_like_destination("[2001:db8::1]"));
+        assert!(looks_like_destination("//suckless.org/philosophy"));
+        let base = Url::parse("https://suckless.org/").unwrap();
+        assert_eq!(
+            resolve_href(&base, "//dwm.suckless.org/").unwrap().as_str(),
+            "https://dwm.suckless.org/"
+        );
+        assert_eq!(
+            resolve_href(&base, "/philosophy").unwrap().as_str(),
+            "https://suckless.org/philosophy"
+        );
         let v6 = parse_user_input("https://[2001:db8::1]/").unwrap();
         let host = v6.host_str().unwrap_or("");
         assert!(host.contains("2001:db8::1") || host.contains("2001:db8:"));

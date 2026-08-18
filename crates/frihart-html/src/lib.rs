@@ -270,7 +270,7 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     }
     if name == "a" && !has_block_child(node) {
         let t = node.text_content();
-        let href = node.attr("href").unwrap_or_default();
+        let href = normalize_href(&node.attr("href").unwrap_or_default());
         if !t.is_empty() {
             push_frag(out, qual.clone(), ancs, Block::Link { text: t, href });
         }
@@ -308,7 +308,7 @@ fn walk_inlines(node: &Node, ancs: &[Qual], container: &Qual, out: &mut Vec<Frag
             "a" => {
                 flush_text(&mut buf, container, ancs, out);
                 let t = child.text_content();
-                let href = child.attr("href").unwrap_or_default();
+                let href = normalize_href(&child.attr("href").unwrap_or_default());
                 if !t.is_empty() {
                     push_frag(out, qual_of(child), ancs, Block::Link { text: t, href });
                 }
@@ -526,6 +526,15 @@ fn field_from(node: &Node) -> Option<FormField> {
     })
 }
 
+fn normalize_href(href: &str) -> String {
+    let h = href.trim();
+    if let Some(rest) = h.strip_prefix("//") {
+        format!("https://{rest}")
+    } else {
+        h.to_string()
+    }
+}
+
 fn heading_level(name: &str) -> Option<u8> {
     match name {
         "h1" => Some(1),
@@ -594,6 +603,16 @@ mod tests {
                 .iter()
                 .any(|b| matches!(b, Block::Field(f) if f.input_type == "password"))
         );
+    }
+
+    #[test]
+    fn protocol_relative_href_is_https() {
+        let html = r#"<p><a href="//dwm.suckless.org/">dwm</a></p>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Link { href, .. } if href == "https://dwm.suckless.org/"
+        )));
     }
 
     #[test]

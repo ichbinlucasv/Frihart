@@ -98,6 +98,19 @@ pub struct PrivacyPrefs {
     pub blocker: bool,
     /// Always false. Frihart does not collect or store logins.
     pub store_logins: bool,
+    pub strip_tracking: bool,
+    pub search_suggestions: bool,
+    pub prefetch: bool,
+    pub speculative_connect: bool,
+    pub send_pings: bool,
+    pub geolocation: bool,
+    pub wasm: bool,
+    pub drm: bool,
+    pub telemetry: bool,
+    pub safe_browsing: bool,
+    pub clear_on_shutdown: bool,
+    pub punycode_hosts: bool,
+    pub letterboxing: bool,
 }
 
 impl Default for PrivacyPrefs {
@@ -119,6 +132,19 @@ impl Default for PrivacyPrefs {
             containers: true,
             blocker: true,
             store_logins: false,
+            strip_tracking: true,
+            search_suggestions: false,
+            prefetch: false,
+            speculative_connect: false,
+            send_pings: false,
+            geolocation: false,
+            wasm: false,
+            drm: false,
+            telemetry: false,
+            safe_browsing: false,
+            clear_on_shutdown: false,
+            punycode_hosts: true,
+            letterboxing: false,
         }
     }
 }
@@ -133,6 +159,9 @@ pub struct NetworkPrefs {
     pub doh_url: String,
     pub http2: bool,
     pub http3: bool,
+    pub captive_portal: bool,
+    pub connectivity_check: bool,
+    pub tls_0rtt: bool,
 }
 
 impl Default for NetworkPrefs {
@@ -144,6 +173,9 @@ impl Default for NetworkPrefs {
             doh_url: String::new(),
             http2: true,
             http3: false,
+            captive_portal: false,
+            connectivity_check: false,
+            tls_0rtt: false,
         }
     }
 }
@@ -157,6 +189,7 @@ pub struct ContentPrefs {
     pub canvas: bool,
     /// Dark pages and chrome. The product look is black and yellow.
     pub dark_mode: bool,
+    pub autoplay: bool,
 }
 
 impl Default for ContentPrefs {
@@ -167,6 +200,7 @@ impl Default for ContentPrefs {
             webgl: false,
             canvas: false,
             dark_mode: true,
+            autoplay: false,
         }
     }
 }
@@ -309,6 +343,9 @@ impl Prefs {
         let mut prefs: Self =
             toml::from_str(text).map_err(|e| FrihartError::config(e.to_string()))?;
         prefs.privacy.store_logins = false;
+        prefs.privacy.telemetry = false;
+        prefs.privacy.safe_browsing = false;
+        prefs.privacy.drm = false;
         Ok(prefs)
     }
 
@@ -363,6 +400,15 @@ mod tests {
         assert!(p.extensions.enabled);
         assert!(!p.privacy.store_logins);
         assert!(!p.general.welcome_seen);
+        assert!(p.privacy.strip_tracking);
+        assert!(!p.privacy.search_suggestions);
+        assert!(!p.privacy.prefetch);
+        assert!(!p.privacy.speculative_connect);
+        assert!(!p.privacy.telemetry);
+        assert!(!p.privacy.safe_browsing);
+        assert!(!p.privacy.drm);
+        assert!(!p.network.captive_portal);
+        assert!(!p.content.autoplay);
     }
 
     #[test]

@@ -249,6 +249,10 @@ impl Policy {
         self.prefs.privacy.javascript
     }
 
+    pub fn strip_tracking(&self) -> bool {
+        self.prefs.privacy.strip_tracking
+    }
+
     /// Human-readable summary for `about:privacy`.
     pub fn summary_lines(&self) -> Vec<(&'static str, String, bool)> {
         vec![
@@ -307,6 +311,42 @@ impl Policy {
                 bool_label(self.prefs.privacy.containers),
                 self.prefs.privacy.containers,
             ),
+            (
+                "Strip tracking URLs",
+                bool_label(self.prefs.privacy.strip_tracking),
+                self.prefs.privacy.strip_tracking,
+            ),
+            (
+                "Search suggestions",
+                bool_label(self.prefs.privacy.search_suggestions),
+                !self.prefs.privacy.search_suggestions,
+            ),
+            (
+                "Prefetch / speculative",
+                bool_label(self.prefs.privacy.prefetch || self.prefs.privacy.speculative_connect),
+                !self.prefs.privacy.prefetch && !self.prefs.privacy.speculative_connect,
+            ),
+            (
+                "WebGL",
+                bool_label(self.prefs.content.webgl),
+                !self.prefs.content.webgl,
+            ),
+            (
+                "Canvas readback",
+                bool_label(self.prefs.content.canvas),
+                !self.prefs.content.canvas,
+            ),
+            (
+                "WASM",
+                bool_label(self.prefs.privacy.wasm),
+                !self.prefs.privacy.wasm,
+            ),
+            (
+                "Geolocation",
+                bool_label(self.prefs.privacy.geolocation),
+                !self.prefs.privacy.geolocation,
+            ),
+            ("Telemetry / Safe Browsing / DRM", "off".into(), true),
         ]
     }
 }

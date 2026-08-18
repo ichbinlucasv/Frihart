@@ -395,4 +395,27 @@ mod tests {
         assert_eq!(wide.title, f.title);
         assert!(wide.boxes.iter().any(|b| b.text.contains("10.0.0.0")));
     }
+
+    #[test]
+    fn suckless_is_readable() {
+        let html = include_str!("../testdata/suckless.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.to_ascii_lowercase().contains("suckless"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("dwm") || f.boxes.iter().any(|b| b.text.contains("dwm")));
+        assert!(f.boxes.iter().any(|b| b.text.contains("News")));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("dwm.suckless.org"))
+        }));
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| b.href.as_deref() == Some("https://dwm.suckless.org/")
+                    || b.href.as_deref() == Some("https://dwm.suckless.org"))
+        );
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.to_ascii_lowercase().contains("suckless"));
+    }
 }

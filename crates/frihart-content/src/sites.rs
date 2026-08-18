@@ -62,8 +62,8 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://suckless.org/",
             name: "suckless.org",
-            status: ClaimStatus::Target,
-            note: "small static pages",
+            status: ClaimStatus::Claimed,
+            note: "title, News, dwm/dmenu links as https; live HTML 2026-08-18",
         },
         SiteClaim {
             url: "https://www.kernel.org/",
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 2);
+        assert_eq!(public_claimed(), 3);
         assert!(
             claims()
                 .iter()
@@ -128,6 +128,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc1918"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("suckless"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

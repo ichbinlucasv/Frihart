@@ -20,7 +20,7 @@ pub use opsec::{
 };
 pub use urls::{
     UrlKind, about_page, classify_url, display_url, is_script_scheme, looks_like_destination,
-    parse_user_input, try_parse_user_input,
+    parse_user_input, resolve_href, try_parse_user_input,
 };
 
 /// Product name shown in chrome and logs.

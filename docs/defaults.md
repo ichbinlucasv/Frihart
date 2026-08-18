@@ -36,6 +36,23 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.containers` | `true` | Identity isolation is a default, not an add-on. |
 | `privacy.blocker` | `true` | uBlock-class host blocking is on at install. |
 | `privacy.store_logins` | `false` | Forced. Frihart does not collect passwords or logins. |
+| `privacy.strip_tracking` | `true` | ClearURLs-style query strip. |
+| `privacy.search_suggestions` | `false` | Keystrokes stay local (LibreWolf). |
+| `privacy.prefetch` | `false` | No link prefetch. |
+| `privacy.speculative_connect` | `false` | URL bar does not pre-connect. |
+| `privacy.send_pings` | `false` | No `<a ping>`. |
+| `privacy.geolocation` | `false` | No location API. |
+| `privacy.wasm` | `false` | No WASM until reviewed. |
+| `privacy.drm` | `false` | Forced. No EME. |
+| `privacy.telemetry` | `false` | Forced. No section. |
+| `privacy.safe_browsing` | `false` | Forced. No Google list. |
+| `privacy.clear_on_shutdown` | `false` | Optional session-only jar. |
+| `privacy.punycode_hosts` | `true` | IDN shown as xn--. |
+| `privacy.letterboxing` | `false` | Pref exists; paint later. |
+| `content.autoplay` | `false` | Nothing plays until asked. |
+| `network.captive_portal` | `false` | No connectivity probe. |
+| `network.connectivity_check` | `false` | Same. |
+| `network.tls_0rtt` | `false` | No 0-RTT until reviewed. |
 | `pass.manager` | empty | External only: Proton Pass, KeePassXC, Bitwarden, pass. |
 | `autofill.enabled` | `true` | Fills identity you saved. Never passwords. |
 

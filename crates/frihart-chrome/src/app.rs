@@ -155,7 +155,8 @@ impl Handler {
                 self.browser.url_focused = false;
             }
             Hit::ContentLink(href) => {
-                if let Ok(url) = frihart_core::parse_user_input(&href) {
+                let base = self.browser.active_tab().url();
+                if let Some(url) = frihart_core::resolve_href(&base, &href) {
                     self.browser.navigate(url);
                 }
             }
