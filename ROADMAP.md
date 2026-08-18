@@ -592,6 +592,7 @@ A sustainable rhythm for a long project:
 - [x] suckless.org claimed (`//` hrefs → https)
 - [x] GNU philosophy claimed (entities, `@media` skip)
 - [x] kernel.org claimed (releases table, list-item links)
+- [x] docs.kernel.org claimed (Sphinx toctree, display:none, no ¶)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)

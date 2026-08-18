@@ -165,9 +165,15 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     if matches!(name, "script" | "style" | "noscript" | "head") {
         return;
     }
+    if style_hides(node) {
+        return;
+    }
     let qual = qual_of(node);
+    if name == "a" && qual.classes.iter().any(|c| c == "headerlink") {
+        return;
+    }
     if let Some(level) = heading_level(name) {
-        let t = node.text_content();
+        let t = heading_text(node);
         if !t.is_empty() {
             push_frag(out, qual, ancs, Block::Heading(level, t));
         }
@@ -576,6 +582,31 @@ fn field_from(node: &Node) -> Option<FormField> {
     })
 }
 
+fn style_hides(node: &Node) -> bool {
+    let s = node.attr("style").unwrap_or_default().to_ascii_lowercase();
+    s.replace(' ', "").contains("display:none")
+}
+
+fn heading_text(node: &Node) -> String {
+    let mut parts = Vec::new();
+    for child in &node.children {
+        if child.name == "a"
+            && child
+                .attr("class")
+                .unwrap_or_default()
+                .split_whitespace()
+                .any(|c| c == "headerlink")
+        {
+            continue;
+        }
+        let t = child.text_content();
+        if !t.is_empty() {
+            parts.push(t);
+        }
+    }
+    parts.join(" ")
+}
+
 fn normalize_href(href: &str) -> String {
     let h = href.trim();
     if let Some(rest) = h.strip_prefix("//") {
@@ -738,6 +769,27 @@ line2</pre>
                 .iter()
                 .any(|a| a.tag == "article" && a.id == "main")
         }));
+    }
+
+    #[test]
+    fn hides_display_none_and_strips_headerlink() {
+        let html = r##"<div style="display: none"><p>hidden search</p></div>
+            <h1>Docs<a class="headerlink" href="#top">¶</a></h1>"##;
+        let blocks = visible_blocks(&parse(html));
+        assert!(!blocks.iter().any(|b| match b {
+            Block::Text(t) | Block::Inline(t) | Block::Heading(_, t) => t.contains("hidden"),
+            _ => false,
+        }));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Heading(1, t) if t == "Docs"))
+        );
+        assert!(
+            !blocks
+                .iter()
+                .any(|b| matches!(b, Block::Link { text, .. } if text.contains('¶')))
+        );
     }
 
     #[test]

@@ -472,4 +472,31 @@ mod tests {
                 .any(|b| b.cell && b.text.contains("mainline"))
         );
     }
+
+    #[test]
+    fn docs_kernel_org_is_readable() {
+        let html = include_str!("../testdata/docs.kernel.org.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("Linux Kernel documentation"));
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| matches!(b.text.as_str(), t if t.contains("Linux Kernel documentation") && !t.contains('¶')))
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("work in progress") || blob.contains("development community"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("process/development-process.html"))
+        }));
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| b.text.contains("Submitting patches"))
+        );
+        assert!(!f.boxes.iter().any(|b| b.text.contains("Quick search")));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("Linux Kernel documentation"));
+    }
 }

@@ -39,8 +39,9 @@ a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`vw`/
 `vh`/`%`, `font-weight`, `border`, `:link`. Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
 `about:sites`: **example.com**, **RFC 1918**, **suckless.org**,
-**GNU philosophy**, and **kernel.org** are claimed. Settings is the
-LibreWolf-stance page (native prefs, black/yellow).
+**GNU philosophy**, **kernel.org**, and **docs.kernel.org** are
+claimed. Settings is the LibreWolf-stance page (native prefs,
+black/yellow).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -68,8 +69,9 @@ Not Chrome. Not Wikipedia. Not mail.
 3. ~~suckless.org~~ **done** (`//` hrefs → https).
 4. ~~GNU philosophy~~ **done** (`&mdash;`/`&ldquo;`; `@media` skipped).
 5. ~~kernel.org~~ **done** (releases table + list links).
-6. Next public claim is a **new** static document, not this list.
-7. Do **not** claim a site you have not opened.
+6. ~~docs.kernel.org~~ **done** (Sphinx toctree; hide `display:none`; no `¶`).
+7. Next named target: `https://www.ietf.org/` (not opened).
+8. Do **not** claim a site you have not opened.
 
 ### Milestone 2 — document CSS (still D)
 
@@ -100,8 +102,8 @@ Not Chrome. Not Wikipedia. Not mail.
 ### Milestone 5 — v0.2 tag
 
 17. Tag **v0.2.0** when: at least **3 named public static sites** are
-    claimed (**5 already**: example.com, RFC 1918, suckless, GNU
-    philosophy, kernel.org), worker sandbox is on, `cargo test --workspace` green,
+    claimed (**6 already**: example.com, RFC 1918, suckless, GNU
+    philosophy, kernel.org, docs.kernel.org), worker sandbox is on, `cargo test --workspace` green,
     Linux package files install on one reference distro.
 18. Then — and only then — discuss G (a tiny interpreter) or stay
     refuse-only another year. Recommendation: **stay refuse**.
@@ -130,10 +132,10 @@ Not Chrome. Not Wikipedia. Not mail.
 
 ## Next session — start here
 
-**D: pick a new static document (not the five already claimed), fetch
-live HTML, fix the subset, claim only if readable.** Five public
-sites are claimed (v0.2 document bar). Or stay on engine CSS
-(`font-family` from the engine list). Do not start H/I. JS stays off.
+**D: fetch live `https://www.ietf.org/` (or another unclaimed static
+document), lay out those bytes, claim only if readable.** Six public
+sites are claimed. Or stay on engine CSS (`font-family` from the
+engine list). Do not start H/I. JS stays off.
 
 ## Commands
 
