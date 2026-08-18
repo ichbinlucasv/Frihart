@@ -19,19 +19,13 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.rfc-editor.org/rfc/rfc1918.html | Live HTML 2026-08-18. No `<title>` — title from `span.h1`. Nine `<pre>` pages + `<hr>` page breaks. Private nets `10/8`, `172.16/12`, `192.168/16` visible. Also checked at 5120×1440 (G9-class). |
 | https://suckless.org/ | Live HTML 2026-08-18. Title, News, dwm/dmenu. Protocol-relative `//` links become https. No script. Also 5120×1440. |
 | https://www.gnu.org/philosophy/ | Live HTML 2026-08-18. Title, “four essential freedoms”, essay list, `/philosophy/free-sw.html` links. `&mdash;` / `&ldquo;` decode. `@media` two-column CSS ignored (stacks). No script. Also 5120×1440. |
+| https://www.kernel.org/ | Live HTML 2026-08-18. Title, About/Releases nav as clickable list links, releases table (`mainline` / `stable` / `7.2` cells). Download URLs in cells are text, not separate hits. External CSS not loaded (mobile header also shows). IE conditional scripts skipped. Also 5120×1440. |
 
 ## Target (open next)
 
-Static or mostly-static HTML that fits the current subset (headings,
-paragraphs, lists, `pre`, quotes, tables, `hr`, captions, links, img
-boxes, GET forms):
-
-| URL | Why |
-| --- | --- |
-| https://www.kernel.org/ | Simple landing + docs |
-
-None of these is **claimed** until someone has read it in this tree
-and the layout is honest.
+The first five public claims are in. Next named host on the list:
+`https://docs.kernel.org/` (not opened). Pick that or another static
+document, open it, claim only if the layout is honest.
 
 ## Will not claim
 

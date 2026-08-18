@@ -80,9 +80,10 @@ and paints the subset via a sandboxed `--content-worker` (`no_new_privs`
 dies). CSS understands `em`/`rem`, `font-weight`, and `border`. Find
 (Ctrl+F) searches the display list. JS is off. `javascript:` is refused.
 Tor tabs dial SOCKS only. `about:sites` claims `example.com`, RFC 1918,
-suckless.org, and GNU philosophy. `about:settings` is the LibreWolf-stance
-page. Tracking query keys are stripped. Private-IP redirects are refused.
-Content width follows the window up to 2400 CSS px (G9-class).
+suckless.org, GNU philosophy, and kernel.org. `about:settings` is the
+LibreWolf-stance page. Tracking query keys are stripped. Private-IP
+redirects are refused. Content width follows the window up to 2400 CSS
+px (G9-class).
 
 Next session: [docs/HANDOFF.md](docs/HANDOFF.md).
 

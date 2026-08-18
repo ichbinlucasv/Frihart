@@ -68,8 +68,14 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.kernel.org/",
             name: "kernel.org",
+            status: ClaimStatus::Claimed,
+            note: "title, nav links, releases table (mainline/stable); live HTML 2026-08-18",
+        },
+        SiteClaim {
+            url: "https://docs.kernel.org/",
+            name: "docs.kernel.org",
             status: ClaimStatus::Target,
-            note: "simple landing + docs",
+            note: "kernel documentation tree — not opened yet",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -113,7 +119,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 4);
+        assert_eq!(public_claimed(), 5);
         assert!(
             claims()
                 .iter()
@@ -138,6 +144,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("gnu.org/philosophy"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("kernel.org"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

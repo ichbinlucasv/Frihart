@@ -194,19 +194,7 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         let mut index = 1usize;
         for child in &node.children {
             if child.name == "li" {
-                let t = child.text_content();
-                if !t.is_empty() {
-                    push_frag(
-                        out,
-                        qual_of(child),
-                        &child_ancs,
-                        Block::ListItem {
-                            ordered,
-                            index,
-                            text: t,
-                        },
-                    );
-                }
+                emit_list_item(child, ordered, index, &child_ancs, out);
                 index += 1;
             }
         }
@@ -433,6 +421,7 @@ fn is_flow_container(name: &str) -> bool {
             | "header"
             | "footer"
             | "nav"
+            | "aside"
             | "td"
             | "th"
             | "dd"
@@ -457,6 +446,66 @@ fn is_phrasing(name: &str) -> bool {
             | "sup"
             | "label"
     )
+}
+
+fn emit_list_item(li: &Node, ordered: bool, index: usize, ancs: &[Qual], out: &mut Vec<Fragment>) {
+    let t = li.text_content();
+    let links = collect_links(li);
+    if links.len() == 1 && t.trim() == links[0].0.trim() {
+        let prefix = if ordered {
+            format!("{index}. ")
+        } else {
+            String::new()
+        };
+        push_frag(
+            out,
+            qual_of(li),
+            ancs,
+            Block::Link {
+                text: format!("{prefix}{}", links[0].0),
+                href: links[0].1.clone(),
+            },
+        );
+        return;
+    }
+    if !t.is_empty() {
+        push_frag(
+            out,
+            qual_of(li),
+            ancs,
+            Block::ListItem {
+                ordered,
+                index,
+                text: t,
+            },
+        );
+    }
+    for (text, href) in links {
+        if text.is_empty() {
+            continue;
+        }
+        push_frag(out, qual_of(li), ancs, Block::Link { text, href });
+    }
+}
+
+fn collect_links(node: &Node) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    collect_links_into(node, &mut out);
+    out
+}
+
+fn collect_links_into(node: &Node, out: &mut Vec<(String, String)>) {
+    if node.name == "a" {
+        let t = node.text_content();
+        let href = normalize_href(&node.attr("href").unwrap_or_default());
+        if !t.is_empty() && !href.is_empty() {
+            out.push((t, href));
+        }
+        return;
+    }
+    for child in &node.children {
+        collect_links_into(child, out);
+    }
 }
 
 fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
@@ -490,6 +539,7 @@ fn is_block(name: &str) -> bool {
                 | "header"
                 | "footer"
                 | "nav"
+                | "aside"
                 | "hr"
                 | "table"
                 | "dl"
@@ -688,6 +738,18 @@ line2</pre>
                 .iter()
                 .any(|a| a.tag == "article" && a.id == "main")
         }));
+    }
+
+    #[test]
+    fn list_item_that_is_a_link() {
+        let html =
+            r#"<ul><li><a href="https://www.kernel.org/category/about.html">About</a></li></ul>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Link { text, href }
+                if text.contains("About") && href.contains("/category/about.html")
+        )));
     }
 
     #[test]

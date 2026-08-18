@@ -441,4 +441,35 @@ mod tests {
         assert!(wide.title.contains("Philosophy of the GNU Project"));
         assert!(wide.boxes.iter().any(|b| b.text.contains("Free Software")));
     }
+
+    #[test]
+    fn kernel_org_is_readable() {
+        let html = include_str!("../testdata/kernel.org.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("Linux Kernel Archives"));
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| b.text.contains("Linux Kernel Archives"))
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("mainline"));
+        assert!(blob.contains("stable"));
+        assert!(blob.contains("7.2"));
+        assert!(f.boxes.iter().any(|b| b.cell && b.text.contains("7.2")));
+        assert!(
+            blob.contains("git.kernel.org")
+                || f.boxes.iter().any(|b| b.text.contains("git.kernel.org"))
+        );
+        assert!(f.boxes.iter().any(|b| b.href.as_deref().is_some_and(|h| {
+            h.contains("kernel.org") && (h.contains("about") || h.contains("releases"))
+        })));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("Linux Kernel Archives"));
+        assert!(
+            wide.boxes
+                .iter()
+                .any(|b| b.cell && b.text.contains("mainline"))
+        );
+    }
 }
