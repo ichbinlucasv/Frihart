@@ -25,6 +25,15 @@ pub enum DisplayOp {
         max_width: f32,
         wrap: bool,
     },
+    Field {
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        index: usize,
+        secret: bool,
+        label: String,
+    },
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -50,7 +59,7 @@ impl DisplayList {
     pub fn searchable(&self) -> String {
         let mut out = String::new();
         for op in &self.ops {
-            if let DisplayOp::Text { text, .. } = op {
+            if let DisplayOp::Text { text, .. } | DisplayOp::Field { label: text, .. } = op {
                 if !out.is_empty() {
                     out.push('\n');
                 }
@@ -67,13 +76,16 @@ impl DisplayList {
         }
         let n = n.to_ascii_lowercase();
         for op in &self.ops {
-            if let DisplayOp::Text { y, text, .. } = op {
-                if text.to_ascii_lowercase().contains(&n) {
-                    return Some(TextHit {
-                        y: *y,
-                        text: text.clone(),
-                    });
-                }
+            let (y, text) = match op {
+                DisplayOp::Text { y, text, .. } => (*y, text.as_str()),
+                DisplayOp::Field { y, label, .. } => (*y, label.as_str()),
+                DisplayOp::Fill { .. } => continue,
+            };
+            if text.to_ascii_lowercase().contains(&n) {
+                return Some(TextHit {
+                    y,
+                    text: text.to_string(),
+                });
             }
         }
         None
@@ -128,16 +140,28 @@ pub fn from_boxes(boxes: &[LayoutBox]) -> DisplayList {
                 },
             });
         }
-        list.ops.push(DisplayOp::Text {
-            x: b.x + b.style.padding,
-            y: b.y + b.style.padding,
-            color: b.style.color,
-            size: b.style.font_size,
-            text: b.text.clone(),
-            href: b.href.clone(),
-            max_width: (b.w - b.style.padding * 2.0).max(1.0),
-            wrap: !b.preserve,
-        });
+        if let Some(field) = &b.field {
+            list.ops.push(DisplayOp::Field {
+                x: b.x,
+                y: b.y,
+                w: b.w,
+                h: b.h,
+                index: field.index,
+                secret: field.secret,
+                label: b.text.clone(),
+            });
+        } else {
+            list.ops.push(DisplayOp::Text {
+                x: b.x + b.style.padding,
+                y: b.y + b.style.padding,
+                color: b.style.color,
+                size: b.style.font_size,
+                text: b.text.clone(),
+                href: b.href.clone(),
+                max_width: (b.w - b.style.padding * 2.0).max(1.0),
+                wrap: !b.preserve,
+            });
+        }
     }
     list
 }

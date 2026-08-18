@@ -108,6 +108,7 @@ pub struct Browser {
     pub field_focus: Option<usize>,
     identity: Identity,
     pub supervisor: Supervisor,
+    workers: crate::worker::WorkerPool,
 }
 
 impl Browser {
@@ -154,6 +155,7 @@ impl Browser {
             field_focus: None,
             identity,
             supervisor: Supervisor::default(),
+            workers: crate::worker::WorkerPool::default(),
         }
     }
 
@@ -201,7 +203,17 @@ impl Browser {
             self.active -= 1;
         }
         self.sync_url_bar();
+        self.reap_workers();
         false
+    }
+
+    fn reap_workers(&mut self) {
+        let keep: Vec<IsolationKey> = self
+            .tabs
+            .iter()
+            .map(|t| IsolationKey::from_url(&t.url(), t.container))
+            .collect();
+        self.workers.retain_keys(&keep);
     }
 
     pub fn activate(&mut self, index: usize) {
@@ -458,11 +470,15 @@ impl Browser {
         if tab.frame.is_some() && (tab.frame_w - width).abs() < 8.0 {
             return;
         }
-        let out = crate::worker::layout_isolated(&LayoutJob {
-            html,
-            extra_css: extra,
-            viewport_w: width,
-        });
+        let key = IsolationKey::from_url(&tab.url(), tab.container);
+        let out = self.workers.layout(
+            key,
+            &LayoutJob {
+                html,
+                extra_css: extra,
+                viewport_w: width,
+            },
+        );
         let tab = self.active_tab_mut();
         tab.frame = Some(out.display);
         tab.frame_w = width;
@@ -576,6 +592,7 @@ impl Browser {
         self.jar.clear();
         let _ = self.profile.wipe_session();
         self.persist_jar();
+        self.workers.drop_all();
         self.reset_tabs();
         self.status = "wiped".into();
     }
@@ -592,6 +609,7 @@ impl Browser {
     pub fn shred(&mut self) {
         self.jar.clear();
         let _ = self.profile.shred();
+        self.workers.drop_all();
         self.reset_tabs();
         self.status = "shredded".into();
     }
@@ -635,6 +653,7 @@ impl Browser {
             Identity::load(&self.profile.root().join("autofill.toml")).unwrap_or_default();
         self.field_focus = None;
         self.supervisor = Supervisor::default();
+        self.workers.drop_all();
         self.reset_tabs();
     }
 

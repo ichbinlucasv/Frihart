@@ -49,15 +49,16 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
     let user = parse_stylesheet(extra_css);
     let author_sheet = parse_stylesheet(&author);
     let mut items: Vec<FlowItem> = Vec::new();
+    let mut field_i = 0usize;
     for frag in visible_fragments(&tree) {
         let el = element_from(&frag);
         let style = style_element(&el, &user, &author_sheet);
-        let (text, href, preserve, image, cells) = match frag.kind {
+        let (text, href, preserve, image, cells, field) = match frag.kind {
             Block::Heading(_, t) | Block::Text(t) | Block::Quote(t) => {
-                (t, None, false, false, Vec::new())
+                (t, None, false, false, Vec::new(), None)
             }
-            Block::Pre(t) => (t, None, true, false, Vec::new()),
-            Block::Link { text, href } => (text, Some(href), false, false, Vec::new()),
+            Block::Pre(t) => (t, None, true, false, Vec::new(), None),
+            Block::Link { text, href } => (text, Some(href), false, false, Vec::new(), None),
             Block::ListItem {
                 ordered,
                 index,
@@ -68,7 +69,14 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                 } else {
                     "• ".into()
                 };
-                (format!("{prefix}{text}"), None, false, false, Vec::new())
+                (
+                    format!("{prefix}{text}"),
+                    None,
+                    false,
+                    false,
+                    Vec::new(),
+                    None,
+                )
             }
             Block::Image { alt, src } => {
                 let label = if alt.is_empty() {
@@ -76,13 +84,19 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                 } else {
                     format!("[img] {alt}")
                 };
-                (label, None, false, true, Vec::new())
+                (label, None, false, true, Vec::new(), None)
             }
             Block::Field(f) => {
                 let name = if f.label.is_empty() { f.name } else { f.label };
-                (name, None, false, false, Vec::new())
+                let secret = f.input_type == "password";
+                let slot = Some(frihart_layout::FieldSlot {
+                    index: field_i,
+                    secret,
+                });
+                field_i += 1;
+                (name, None, false, false, Vec::new(), slot)
             }
-            Block::TableRow { cells } => (String::new(), None, false, false, cells),
+            Block::TableRow { cells } => (String::new(), None, false, false, cells, None),
         };
         items.push(FlowItem {
             text,
@@ -91,6 +105,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
             preserve,
             image,
             cells,
+            field,
         });
     }
     let boxes = block_flow(&items, viewport_w, 0.0);
@@ -191,6 +206,21 @@ mod tests {
         assert!(one.y > left.y);
         assert!((one.x - left.x).abs() < 0.5);
         assert!(left.cell && right.cell);
+    }
+
+    #[test]
+    fn fields_are_display_ops() {
+        let f = layout_html(
+            r#"<form><input name="email" type="email" placeholder="mail"></form>"#,
+            "",
+            400.0,
+        );
+        assert!(
+            f.display
+                .ops
+                .iter()
+                .any(|op| matches!(op, frihart_gfx::DisplayOp::Field { index: 0, .. }))
+        );
     }
 
     #[test]

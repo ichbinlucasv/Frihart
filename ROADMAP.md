@@ -579,6 +579,8 @@ A sustainable rhythm for a long project:
 - [x] Content sandbox: no_new_privs + landlock (child only)
 - [x] Find-in-page on the display list
 - [x] `frihart --content-worker` sandboxed layout process
+- [x] One long-lived worker per isolation key
+- [x] Form fields on the display list (no second paint path)
 - [x] Tails / Qubes-DVM default to private profile
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages besides the Arch PKGBUILD

@@ -29,7 +29,7 @@ pub fn to_ps(job: &Job) -> Result<Vec<u8>> {
                     break;
                 }
             }
-            DisplayOp::Fill { .. } => {}
+            DisplayOp::Fill { .. } | DisplayOp::Field { .. } => {}
         }
     }
     out.push_str("showpage\n%%EOF\n");

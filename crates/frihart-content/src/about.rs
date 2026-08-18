@@ -552,9 +552,10 @@ fn processes_page(url: &Url) -> Document {
                 },
             },
             Block::Note(
-                "HTML layout runs in `frihart --content-worker` with no_new_privs \
-                 + landlock. Chrome never applies the sandbox. A worker crash \
-                 falls back in-process. seccomp comes next."
+                "One long-lived `frihart --content-worker` per isolation key. \
+                 no_new_privs + landlock. Chrome never applies the sandbox. \
+                 Crash falls back in-process. Fields live on the display list. \
+                 seccomp comes next."
                     .into(),
             ),
         ],

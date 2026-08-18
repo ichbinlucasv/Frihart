@@ -63,18 +63,30 @@ fn try_main() -> frihart_core::Result<()> {
 }
 
 fn run_content_worker() -> frihart_core::Result<()> {
-    use std::io::{Read, Write};
+    use std::io::{BufRead, Write};
 
     let report = frihart_platform::SandboxSpec::content_default().apply()?;
-    let mut raw = Vec::new();
-    std::io::stdin().read_to_end(&mut raw)?;
-    let job: frihart_pipeline::LayoutJob = serde_json::from_slice(&raw)
-        .map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
-    let mut out = frihart_pipeline::execute(&job);
-    out.sandboxed = report.no_new_privs || report.landlock;
-    out.detail = report.detail;
-    let bytes =
-        serde_json::to_vec(&out).map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
-    std::io::stdout().write_all(&bytes)?;
+    let stdin = std::io::stdin();
+    let mut stdout = std::io::stdout();
+    let lines = stdin.lock().lines();
+    for line in lines {
+        let line = line?;
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        if line == "quit" {
+            break;
+        }
+        let job: frihart_pipeline::LayoutJob = serde_json::from_str(line)
+            .map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
+        let mut out = frihart_pipeline::execute(&job);
+        out.sandboxed = report.no_new_privs || report.landlock;
+        out.detail = report.detail.clone();
+        let bytes = serde_json::to_string(&out)
+            .map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
+        writeln!(stdout, "{bytes}")?;
+        stdout.flush()?;
+    }
     Ok(())
 }

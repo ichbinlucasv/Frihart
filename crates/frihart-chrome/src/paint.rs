@@ -458,21 +458,29 @@ fn paint_page(
     });
     y += m.s(36.0);
     if let Some(frame) = &browser.active_tab().frame {
-        y = paint_display_list(fb, text, frame, x, y, viewport, m, hits);
+        y = paint_display_list(fb, text, frame, x, y, viewport, m, hits, browser, page);
     } else if !page.html.is_empty() {
         let extra = browser.profile.user_css();
         let frame = layout_html(&page.html, &extra, max_w as f32);
-        y = paint_display_list(fb, text, &frame.display, x, y, viewport, m, hits);
+        y = paint_display_list(
+            fb,
+            text,
+            &frame.display,
+            x,
+            y,
+            viewport,
+            m,
+            hits,
+            browser,
+            page,
+        );
+    }
+    if browser.active_tab().frame.is_some() || !page.html.is_empty() {
+        return;
     }
     for (i, item) in page.items.iter().enumerate() {
         if y > viewport.bottom() {
             break;
-        }
-        if !page.html.is_empty() {
-            match item {
-                PageItem::Heading(_, _) | PageItem::Text(_) | PageItem::Link { .. } => continue,
-                PageItem::Field { .. } => {}
-            }
         }
         match item {
             PageItem::Heading(level, t) => {
@@ -599,6 +607,8 @@ fn paint_display_list(
     viewport: Rect,
     m: &Metrics,
     hits: &mut Vec<HitRegion>,
+    browser: &Browser,
+    page: &frihart_content::Page,
 ) -> i32 {
     let mut bottom = origin_y;
     for op in &list.ops {
@@ -653,6 +663,82 @@ fn paint_display_list(
                     });
                 }
                 bottom = bottom.max(py + drawn.1);
+            }
+            DisplayOp::Field {
+                x,
+                y,
+                w,
+                h,
+                index,
+                secret,
+                label,
+            } => {
+                let px = origin_x + *x as i32;
+                let py = origin_y + *y as i32;
+                text.draw(
+                    fb,
+                    label,
+                    DrawText {
+                        x: px,
+                        y: py,
+                        max_width: *w,
+                        font_size: m.font_ui_sm(),
+                        line_height: m.line_ui(),
+                        color: TEXT_CONTENT_MUTED,
+                        weight: Weight::NORMAL,
+                        ellipsis: true,
+                        wrap: false,
+                    },
+                );
+                let box_h = m.s(28.0);
+                let boxr = Rect::new(px, py + m.s(18.0), (*w as i32).max(8), box_h);
+                fb.fill_rect(boxr, BG_URL);
+                fb.stroke_rect(
+                    boxr,
+                    if browser.field_focus == Some(*index) {
+                        ACCENT
+                    } else {
+                        HAIRLINE
+                    },
+                );
+                let value = match page.items.get(*index) {
+                    Some(PageItem::Field { value, .. }) => value.as_str(),
+                    _ => "",
+                };
+                let shown = if *secret {
+                    if value.is_empty() {
+                        ""
+                    } else {
+                        "••••••••"
+                    }
+                } else {
+                    value
+                };
+                text.draw(
+                    fb,
+                    shown,
+                    DrawText {
+                        x: boxr.x + 8,
+                        y: boxr.y + 4,
+                        max_width: (boxr.w - 16) as f32,
+                        font_size: m.font_ui(),
+                        line_height: m.line_ui(),
+                        color: TEXT_CONTENT,
+                        weight: Weight::NORMAL,
+                        ellipsis: true,
+                        wrap: false,
+                    },
+                );
+                hits.push(HitRegion {
+                    rect: boxr,
+                    hit: if *secret {
+                        Hit::PassLaunch
+                    } else {
+                        Hit::Field(*index)
+                    },
+                });
+                let _ = h;
+                bottom = bottom.max(boxr.bottom());
             }
         }
     }

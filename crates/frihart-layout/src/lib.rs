@@ -17,6 +17,13 @@ pub struct FlowItem {
     pub image: bool,
     /// Non-empty: this item is a table row. Cells are laid out in columns.
     pub cells: Vec<String>,
+    pub field: Option<FieldSlot>,
+}
+
+#[derive(Clone, Debug)]
+pub struct FieldSlot {
+    pub index: usize,
+    pub secret: bool,
 }
 
 impl FlowItem {
@@ -28,6 +35,7 @@ impl FlowItem {
             preserve: false,
             image: false,
             cells: Vec::new(),
+            field: None,
         }
     }
 }
@@ -44,6 +52,7 @@ pub struct LayoutBox {
     pub preserve: bool,
     pub image: bool,
     pub cell: bool,
+    pub field: Option<FieldSlot>,
 }
 
 thread_local! {
@@ -131,17 +140,22 @@ fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
             !item.preserve,
         )
     };
+    let mut h = text_h + item.style.padding * 2.0;
+    if item.field.is_some() {
+        h += lh + 20.0;
+    }
     LayoutBox {
         x,
         y: y + item.style.margin,
         w: width,
-        h: text_h + item.style.padding * 2.0,
+        h,
         text: item.text.clone(),
         style: item.style.clone(),
         href: item.href.clone(),
         preserve: item.preserve,
         image: item.image,
         cell: false,
+        field: item.field.clone(),
     }
 }
 
@@ -173,6 +187,7 @@ fn layout_table(rows: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f32)
                 preserve: false,
                 image: false,
                 cell: true,
+                field: None,
             });
         }
         y += row.style.margin + row_h + row.style.margin;
