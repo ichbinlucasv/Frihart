@@ -418,4 +418,27 @@ mod tests {
         let wide = layout_html_ex(html, "", 5120.0, 1440.0);
         assert!(wide.title.to_ascii_lowercase().contains("suckless"));
     }
+
+    #[test]
+    fn gnu_philosophy_is_readable() {
+        let html = include_str!("../testdata/gnu-philosophy.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("Philosophy of the GNU Project"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Free software") || blob.contains("free software"));
+        assert!(blob.contains("four essential freedoms"));
+        assert!(f.boxes.iter().any(|b| b.text.contains("Introduction")));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("/philosophy/free-sw.html"))
+        }));
+        assert!(
+            blob.contains('—') || blob.contains("copied and changed"),
+            "mdash or surrounding sentence"
+        );
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("Philosophy of the GNU Project"));
+        assert!(wide.boxes.iter().any(|b| b.text.contains("Free Software")));
+    }
 }

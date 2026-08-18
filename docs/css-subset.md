@@ -14,6 +14,9 @@ ignored. They are never guessed into a broken layout.
 - comma lists (`h1, h2`)
 - `:link` and `:visited` (same color; no history leak)
 
+`@media` / other at-rules are skipped. Nested rules inside them are
+not applied. That is honest: we do not fake a two-column table layout.
+
 ## Selectors (later)
 
 - `:root`

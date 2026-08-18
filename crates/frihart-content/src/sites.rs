@@ -56,8 +56,8 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.gnu.org/philosophy/",
             name: "GNU philosophy",
-            status: ClaimStatus::Target,
-            note: "mostly static essays",
+            status: ClaimStatus::Claimed,
+            note: "title, four freedoms, essay list; mdash/ldquo; live HTML 2026-08-18",
         },
         SiteClaim {
             url: "https://suckless.org/",
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 3);
+        assert_eq!(public_claimed(), 4);
         assert!(
             claims()
                 .iter()
@@ -133,6 +133,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("suckless"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("gnu.org/philosophy"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

@@ -227,7 +227,19 @@ fn map_entity(ent: &str) -> Option<char> {
         "gt" => Some('>'),
         "quot" => Some('"'),
         "apos" => Some('\''),
-        "nbsp" => Some(' '),
+        "nbsp" => Some('\u{00a0}'),
+        "mdash" => Some('—'),
+        "ndash" => Some('–'),
+        "ldquo" => Some('“'),
+        "rdquo" => Some('”'),
+        "laquo" => Some('«'),
+        "raquo" => Some('»'),
+        "lsquo" => Some('\u{2018}'),
+        "rsquo" => Some('\u{2019}'),
+        "hellip" => Some('…'),
+        "copy" => Some('©'),
+        "reg" => Some('®'),
+        "trade" => Some('™'),
         other => {
             if let Some(hex) = other
                 .strip_prefix("#x")
@@ -253,6 +265,12 @@ mod tests {
         assert!(matches!(&t[0], Token::Start { name, .. } if name == "p"));
         assert!(matches!(&t[1], Token::Text(s) if s.contains('&')));
         assert!(matches!(&t[2], Token::End { name } if name == "p"));
+    }
+
+    #[test]
+    fn decodes_named_dashes_and_quotes() {
+        let t = tokenize("<p>a&mdash;b &ldquo;x&rdquo;</p>");
+        assert!(matches!(&t[1], Token::Text(s) if s.contains('—') && s.contains('“')));
     }
 
     #[test]

@@ -590,6 +590,7 @@ A sustainable rhythm for a long project:
 - [x] `:link` / `vw`/`vh` / body column; example.com claimed
 - [x] RFC 1918 claimed (`pre` pages, `span.h1` title, 5120×1440)
 - [x] suckless.org claimed (`//` hrefs → https)
+- [x] GNU philosophy claimed (entities, `@media` skip)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)

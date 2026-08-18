@@ -38,9 +38,9 @@ HTML → CSS → style → layout → display list → chrome paint. Tables are
 a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`vw`/
 `vh`/`%`, `font-weight`, `border`, `:link`. Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
-`about:sites`: **example.com**, **RFC 1918**, and **suckless.org**
-are claimed. GNU / kernel.org stay targets. Settings is the
-LibreWolf-stance page (native prefs, black/yellow).
+`about:sites`: **example.com**, **RFC 1918**, **suckless.org**, and
+**GNU philosophy** are claimed. kernel.org stays a target. Settings
+is the LibreWolf-stance page (native prefs, black/yellow).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -66,8 +66,9 @@ Not Chrome. Not Wikipedia. Not mail.
 2. ~~Open RFC 1918 HTML~~ **done** (pre pages + `span.h1` title;
    also 5120×1440).
 3. ~~suckless.org~~ **done** (`//` hrefs → https).
-4. Repeat for GNU philosophy or kernel.org.
-5. Do **not** claim a site you have not opened.
+4. ~~GNU philosophy~~ **done** (`&mdash;`/`&ldquo;`; `@media` skipped).
+5. Repeat for kernel.org if you want a fifth public claim.
+6. Do **not** claim a site you have not opened.
 
 ### Milestone 2 — document CSS (still D)
 
@@ -98,7 +99,8 @@ Not Chrome. Not Wikipedia. Not mail.
 ### Milestone 5 — v0.2 tag
 
 17. Tag **v0.2.0** when: at least **3 named public static sites** are
-    claimed, worker sandbox is on, `cargo test --workspace` green,
+    claimed (**4 already**: example.com, RFC 1918, suckless, GNU
+    philosophy), worker sandbox is on, `cargo test --workspace` green,
     Linux package files install on one reference distro.
 18. Then — and only then — discuss G (a tiny interpreter) or stay
     refuse-only another year. Recommendation: **stay refuse**.
@@ -127,9 +129,9 @@ Not Chrome. Not Wikipedia. Not mail.
 
 ## Next session — start here
 
-**D: open `https://www.gnu.org/philosophy/`, lay out the live HTML,
-fix what the subset mangles, claim only if readable.** Do not start
-H/I. JS stays off. Do not execute Firefox add-ons.
+**D: open `https://www.kernel.org/`, lay out the live HTML, fix what
+the subset mangles, claim only if readable.** Four public sites are
+already claimed (v0.2 document bar). Do not start H/I. JS stays off.
 
 ## Commands
 

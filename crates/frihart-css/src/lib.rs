@@ -79,6 +79,10 @@ pub fn parse_stylesheet(input: &str) -> Stylesheet {
     while let Some(open) = rest.find('{') {
         let selector = rest[..open].trim().to_string();
         rest = &rest[open + 1..];
+        if selector.starts_with('@') {
+            rest = skip_balanced(rest);
+            continue;
+        }
         let Some(close) = rest.find('}') else {
             break;
         };
@@ -215,6 +219,26 @@ fn read_ident(s: &str, start: usize) -> (String, usize) {
     (s[start..i].to_ascii_lowercase(), i)
 }
 
+fn skip_balanced(input: &str) -> &str {
+    let mut depth = 1usize;
+    let bytes = input.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'{' => depth += 1,
+            b'}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return &input[i + 1..];
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    ""
+}
+
 fn strip_comments(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     let bytes = input.as_bytes();
@@ -277,5 +301,15 @@ mod tests {
                 .any(|s| matches!(s, Simple::Pseudo(p) if p == "link"))
         );
         assert!(parse_selector("a:hover").is_none());
+    }
+
+    #[test]
+    fn skips_media_queries() {
+        let s = parse_stylesheet(
+            "@media (min-width: 55em) { .table { display: table } } .lead { color: red }",
+        );
+        assert!(s.rules.iter().any(|r| r.selector == ".lead"));
+        assert!(!s.rules.iter().any(|r| r.selector.contains("@media")));
+        assert!(!s.rules.iter().any(|r| r.selector == ".table"));
     }
 }

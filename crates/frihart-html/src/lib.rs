@@ -606,6 +606,17 @@ mod tests {
     }
 
     #[test]
+    fn named_entities_in_text() {
+        let blocks = visible_blocks(&parse(
+            "<p>objects&mdash;such &ldquo;Open Source&rdquo;</p>",
+        ));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Inline(t) | Block::Text(t) if t.contains('—') && t.contains('“')
+        )));
+    }
+
+    #[test]
     fn protocol_relative_href_is_https() {
         let html = r#"<p><a href="//dwm.suckless.org/">dwm</a></p>"#;
         let blocks = visible_blocks(&parse(html));
