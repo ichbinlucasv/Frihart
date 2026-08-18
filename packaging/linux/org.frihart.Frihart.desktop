@@ -10,3 +10,8 @@ MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
 StartupWMClass=frihart
 Keywords=browser;privacy;librewolf;container;
 Icon=web-browser
+Actions=new-private-window;
+
+[Desktop Action new-private-window]
+Name=New Private Window
+Exec=frihart --private

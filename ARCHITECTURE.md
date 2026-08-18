@@ -234,7 +234,7 @@ OS seams:
 
 - config/data/cache directories
 - window creation parameters
-- later: seccomp-bpf, landlock, user namespaces, pledge-like helpers
+- content worker: seccomp-bpf deny-list, landlock, no_new_privs; later user namespaces
 
 Linux implementation is real. Other OSes return `Unsupported` until their
 phase.
@@ -384,7 +384,7 @@ shows a clear permission / capability page rather than a blank viewport.
 
 `frihart-platform` exposes traits. Implementations:
 
-1. **Linux** (now) — Wayland + X11 via winit, XDG dirs, later landlock/seccomp
+1. **Linux** (now) — Wayland + X11 via winit, XDG dirs, landlock + seccomp on content children
 2. **Windows** — after Linux is a daily driver for simple sites
 3. **macOS** — after Windows
 4. **Android** — embedding the same engine; chrome will be a different crate

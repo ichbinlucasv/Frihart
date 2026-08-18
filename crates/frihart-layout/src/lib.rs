@@ -15,6 +15,7 @@ pub struct FlowItem {
     pub href: Option<String>,
     pub preserve: bool,
     pub image: bool,
+    pub rule: bool,
     /// Non-empty: this item is a table row. Cells are laid out in columns.
     pub cells: Vec<String>,
     pub field: Option<FieldSlot>,
@@ -34,6 +35,7 @@ impl FlowItem {
             href: None,
             preserve: false,
             image: false,
+            rule: false,
             cells: Vec::new(),
             field: None,
         }
@@ -51,6 +53,7 @@ pub struct LayoutBox {
     pub href: Option<String>,
     pub preserve: bool,
     pub image: bool,
+    pub rule: bool,
     pub cell: bool,
     pub field: Option<FieldSlot>,
 }
@@ -129,7 +132,9 @@ fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
     };
     let inner_w = (width - item.style.padding * 2.0).max(1.0);
     let lh = item.style.line_height();
-    let text_h = if item.image {
+    let text_h = if item.rule {
+        2.0
+    } else if item.image {
         72.0
     } else {
         measure_wrapped(
@@ -154,6 +159,7 @@ fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
         href: item.href.clone(),
         preserve: item.preserve,
         image: item.image,
+        rule: item.rule,
         cell: false,
         field: item.field.clone(),
     }
@@ -186,6 +192,7 @@ fn layout_table(rows: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f32)
                 href: None,
                 preserve: false,
                 image: false,
+                rule: false,
                 cell: true,
                 field: None,
             });

@@ -113,6 +113,15 @@ pub fn ua_style(tag: &str) -> Computed {
             c.margin = 8.0;
             c.background = 0x00202020;
         }
+        "hr" => {
+            c.margin = 8.0;
+            c.background = 0x00333333;
+        }
+        "caption" => {
+            c.font_size = 14.0;
+            c.margin = 4.0;
+            c.text_align = Align::Center;
+        }
         "a" => {
             c.display = Display::Inline;
             c.color = 0x00F5C400;
@@ -351,5 +360,14 @@ mod tests {
         assert_eq!(c.font_size, 22.0);
         assert_eq!(c.max_width, Some(400.0));
         assert!((c.line_height() - 33.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn ua_hr_and_caption() {
+        let hr = ua_style("hr");
+        assert_eq!(hr.background, 0x00333333);
+        let cap = ua_style("caption");
+        assert_eq!(cap.text_align, Align::Center);
+        assert_eq!(cap.font_size, 14.0);
     }
 }

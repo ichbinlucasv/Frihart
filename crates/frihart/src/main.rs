@@ -81,7 +81,7 @@ fn run_content_worker() -> frihart_core::Result<()> {
         let job: frihart_pipeline::LayoutJob = serde_json::from_str(line)
             .map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;
         let mut out = frihart_pipeline::execute(&job);
-        out.sandboxed = report.no_new_privs || report.landlock;
+        out.sandboxed = report.no_new_privs || report.landlock || report.seccomp;
         out.detail = report.detail.clone();
         let bytes = serde_json::to_string(&out)
             .map_err(|e| frihart_core::FrihartError::Message(e.to_string()))?;

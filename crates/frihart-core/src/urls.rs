@@ -42,7 +42,7 @@ pub fn looks_like_destination(input: &str) -> bool {
         return true;
     }
     if let Ok(url) = Url::parse(trimmed) {
-        if is_known_scheme(url.scheme()) {
+        if is_script_scheme(url.scheme()) || is_known_scheme(url.scheme()) {
             return true;
         }
     }
@@ -65,6 +65,11 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
     }
 
     if let Ok(url) = Url::parse(trimmed) {
+        // Script schemes must parse so load() can refuse them. They
+        // must never become a search query (`javascript:…` to Swisscows).
+        if is_script_scheme(url.scheme()) {
+            return Some(url);
+        }
         if url.scheme() != "http"
             || trimmed.contains("://")
             || trimmed.starts_with("http:")
@@ -94,6 +99,11 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
     None
 }
 
+/// `javascript:` / `vbscript:` — parseable, never executed.
+pub fn is_script_scheme(scheme: &str) -> bool {
+    matches!(scheme, "javascript" | "vbscript")
+}
+
 fn is_known_scheme(scheme: &str) -> bool {
     matches!(
         scheme,
@@ -119,6 +129,7 @@ pub fn classify_url(url: &Url) -> UrlKind {
         "https" => UrlKind::Https,
         "http" => UrlKind::Http,
         "file" => UrlKind::File,
+        s if is_script_scheme(s) => UrlKind::Other,
         _ => UrlKind::Other,
     }
 }
@@ -192,5 +203,16 @@ mod tests {
         assert!(!looks_like_destination("librewolf"));
         assert!(looks_like_destination("example.com"));
         assert!(looks_like_destination("about:home"));
+    }
+
+    #[test]
+    fn javascript_is_a_destination_not_search() {
+        assert!(looks_like_destination("javascript:alert(1)"));
+        assert!(looks_like_destination("javascript://host/%0Aalert(1)"));
+        let url = parse_user_input("javascript:alert(1)").unwrap();
+        assert!(is_script_scheme(url.scheme()));
+        assert_eq!(classify_url(&url), UrlKind::Other);
+        let bypass = parse_user_input("javascript://x.test/%0Aalert(1)").unwrap();
+        assert!(is_script_scheme(bypass.scheme()));
     }
 }

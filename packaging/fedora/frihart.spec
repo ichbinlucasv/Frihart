@@ -16,7 +16,8 @@ Requires:       freetype
 %description
 Frihart is an original privacy-first web browser written in Rust.
 LibreWolf-inspired, not a fork. Arch / CachyOS is the reference;
-this spec is the Fedora family package.
+this spec is the Fedora family package, including Qubes Fedora
+templates. Tails and DisposableVMs should use a private profile.
 
 %prep
 %autosetup -n Frihart

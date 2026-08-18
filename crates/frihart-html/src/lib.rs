@@ -55,6 +55,8 @@ pub enum Block {
     TableRow {
         cells: Vec<String>,
     },
+    Caption(String),
+    Rule,
 }
 
 pub fn document_title(root: &Node) -> String {
@@ -206,7 +208,12 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         let mut child_ancs = ancs.to_vec();
         child_ancs.push(qual);
         for child in &node.children {
-            if child.name == "tr" {
+            if child.name == "caption" {
+                let t = child.text_content();
+                if !t.is_empty() {
+                    push_frag(out, qual_of(child), &child_ancs, Block::Caption(t));
+                }
+            } else if child.name == "tr" {
                 emit_table_row(child, &child_ancs, out);
             } else if matches!(child.name.as_str(), "thead" | "tbody" | "tfoot") {
                 for tr in &child.children {
@@ -216,6 +223,23 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
                 }
             }
         }
+        return;
+    }
+    if name == "dl" {
+        let mut child_ancs = ancs.to_vec();
+        child_ancs.push(qual);
+        for child in &node.children {
+            if child.name == "dt" || child.name == "dd" {
+                let t = child.text_content();
+                if !t.is_empty() {
+                    push_frag(out, qual_of(child), &child_ancs, Block::Text(t));
+                }
+            }
+        }
+        return;
+    }
+    if name == "hr" {
+        push_frag(out, qual, ancs, Block::Rule);
         return;
     }
     if name == "img" {
@@ -438,6 +462,7 @@ fn is_block(name: &str) -> bool {
                 | "nav"
                 | "hr"
                 | "table"
+                | "dl"
         )
 }
 
@@ -591,6 +616,34 @@ line2</pre>
             blocks
                 .iter()
                 .any(|b| matches!(b, Block::TableRow { cells } if cells.first().map(String::as_str) == Some("1")))
+        );
+    }
+
+    #[test]
+    fn hr_and_caption() {
+        let html = "<p>a</p><hr><table><caption>nums</caption><tr><td>1</td></tr></table>";
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(b, Block::Rule)));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Caption(t) if t == "nums"))
+        );
+    }
+
+    #[test]
+    fn definition_list() {
+        let html = "<dl><dt>term</dt><dd>def</dd></dl>";
+        let blocks = visible_blocks(&parse(html));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Text(t) if t == "term"))
+        );
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Text(t) if t == "def"))
         );
     }
 }

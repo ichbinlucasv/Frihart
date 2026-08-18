@@ -65,7 +65,7 @@ pub fn window_title(page_title: &str) -> String {
     }
 }
 
-pub use sandbox::{SandboxReport, SandboxSpec, landlock_abi};
+pub use sandbox::{SandboxReport, SandboxSpec, landlock_abi, seccomp_denies};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Os {
@@ -159,7 +159,7 @@ pub fn parse_os_release(text: &str) -> LinuxHome {
     if id == "cachyos" || name.contains("cachy") {
         return LinuxHome::Cachyos;
     }
-    if id == "arch" {
+    if id == "arch" || id == "manjaro" || id == "endeavouros" || like.contains("arch") {
         return LinuxHome::Arch;
     }
     if id == "fedora" {
@@ -336,6 +336,14 @@ mod tests {
         assert_eq!(parse_os_release("ID=linuxmint\n"), LinuxHome::Mint);
         assert_eq!(parse_os_release("ID=fedora\n"), LinuxHome::Fedora);
         assert_eq!(parse_os_release("ID=arch\n"), LinuxHome::Arch);
+        assert_eq!(
+            parse_os_release("ID=manjaro\nID_LIKE=arch\n"),
+            LinuxHome::Arch
+        );
+        assert_eq!(
+            parse_os_release("ID=endeavouros\nID_LIKE=arch\n"),
+            LinuxHome::Arch
+        );
         assert!(LinuxHome::Tails.tor_is_the_network());
         assert!(LinuxHome::Tails.prefer_ephemeral());
         assert!(ephemeral_decision(false, false, true));

@@ -12,8 +12,12 @@ homes with extra OPSEC rules — see [distros.md](distros.md).
 | Tails | Debian `.deb` + amnesic notes | persistence optional |
 | Qubes OS | Fedora + Debian templates | AppVM / DisposableVM |
 
-All produce `/usr/bin/frihart` and a desktop file. They do not phone
+All produce `/usr/bin/frihart` and a desktop file (including a
+**New Private Window** action: `frihart --private`). They do not phone
 home. Updates come from the distro or from git.
+
+Tails/Qubes `.deb`/RPM **publication** is later. The files and the
+amnesic default already exist.
 
 ## Build from source (any distro)
 

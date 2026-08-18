@@ -9,7 +9,8 @@ and Qubes. The engine does not.
 - Install system `tor` if you want Tor tabs: `pacman -S tor`
 - Wayland first (Sway, Hyprland, KDE, GNOME). X11 still works.
 
-CachyOS is treated as Arch. Same package, same paths.
+CachyOS is treated as Arch. Same package, same paths. Manjaro and
+EndeavourOS detect as Arch (`ID_LIKE=arch`).
 
 ## Fedora
 
@@ -37,6 +38,9 @@ Frihart on Tails must:
 - Write nothing to the root filesystem that survives reboot.
 - Ship as a `.deb` the user can install to persistence if they want.
 
+Detection: `ID=tails`. The binary already defaults to a memory-only
+profile unless `--profile` is set. SOCKS is still Tails' Tor.
+
 We do not replace Tor Browser on Tails in v1. We sit beside it for
 people who want Frihart's chrome and policy on a Tails stick.
 
@@ -54,6 +58,10 @@ Frihart on Qubes must:
   Whonix gateway). Fail closed if SOCKS is down
 - Package for **Fedora** and **Debian** templates — the two people
   actually use
+
+Detection: `/usr/share/qubes` or `/etc/qubes-rpc`. A DisposableVM is
+`/run/qubes/this-is-dvm` or `QUBES_DVM` set — same memory-only default
+as Tails.
 
 We will not invent qrexec features in v1. Isolation is Qubes' job;
 Frihart must not punch holes in it.

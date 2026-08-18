@@ -46,8 +46,10 @@ Target (Phase 6 / campaign E):
 - One content process per isolation key.
 - Network process has no DOM.
 - Linux sandbox on **content children**: `no_new_privs` + landlock
-  (read `/usr` `/lib` `/bin` `/etc`). Not applied in chrome.
-- seccomp-bpf next.
+  (read `/usr` `/lib` `/bin` `/etc`) + **seccomp-bpf** deny-list
+  (`socket`, `connect`, `clone`, `exec`, `ptrace`, `mount` → EPERM).
+  Not applied in chrome. Apply only after the worker has started
+  (seccomp denies `execve`).
 - A tab crash reloads that tab, not the browser.
 
 Tails and Qubes DisposableVMs open a private (memory-only) profile

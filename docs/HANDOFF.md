@@ -36,8 +36,10 @@ Leftovers that did **not** block close: multi-window, HTTP/2, partitioned HTTP c
 **D Engine (long pole)**  
 HTML subset → CSS (class/id/descendant, user.css) → block layout +
 cosmic-text wrap → display list → chrome paint. Tables are a **column
-grid**. Forms GET/POST encode (secrets skipped). Identity autofill
-only. JS off. Img is a box (no decode).
+grid**. `hr` is a rule fill. `<caption>` and definition lists work.
+Forms GET/POST encode (secrets skipped). Identity autofill only. JS
+off. Img is a box (no decode). `about:sites` + `docs/sites.md` is the
+honest claim list (nothing on the public internet claimed yet).
 
 Done recently: find-in-page on the display list; **one worker process
 per isolation key** (newline JSON jobs); form fields are display-list
@@ -45,26 +47,31 @@ ops (no second paint path). Crash falls back in-process.
 
 Next D slices:
 
-1. More document fidelity (`hr`, caption)
-2. Named “sites we claim” list of static pages
+1. Verify a Target site from `about:sites` by actually opening it
+2. More CSS (`border`, `em`/`rem`, `font-weight`)
 
 **E Isolation**  
-One long-lived `--content-worker` per `IsolationKey`. Sandbox on the
-child only. Closing the last tab for a key kills that worker.
+One long-lived `--content-worker` per `IsolationKey`. Child applies
+`no_new_privs` + landlock + **seccomp-bpf** (EPERM on socket / connect /
+clone / exec / ptrace / mount). Chrome never applies the sandbox.
+Closing the last tab for a key kills that worker.
 
 Next E slices:
 
-1. seccomp-bpf on that child
-2. Killing a slot must not take chrome down (already true for workers)
+1. Resource limits (fds, memory) per worker
+2. Network process split (crate seam exists)
 
 **F Linux homes**  
-Detect Arch/Cachy/Fedora/Mint/Tails/Qubes (`about:linux`). Tails and
-Qubes-DVM default to ephemeral profile unless `--profile`. Packaging
-notes exist; full Tails/Qubes packages do not.
+Detect Arch/Cachy/Manjaro/Endeavour, Fedora, Mint, Tails, Qubes
+(`about:linux`). Tails and Qubes-DVM default to ephemeral unless
+`--profile`. Desktop file has a Private action. Packaging notes exist;
+full Tails/Qubes packages are not published.
 
 **G Script**  
-Refuse-only. Pref flip does not execute. Fingerprint APIs denied.
-`about:script`.
+Refuse-only. Pref flip does not execute and does not open cookie /
+storage / WebRTC / WebSocket. `javascript:` URLs (including
+`javascript://`) parse then refuse — they never become a search query.
+`about:script` lists every `HostApi`.
 
 ## Commands
 
@@ -73,6 +80,7 @@ cargo test --workspace
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 cargo run -- about:campaigns
+cargo run -- about:sites
 cargo run -- --tor
 ```
 
@@ -82,7 +90,7 @@ Tails/Qubes-DVM: omit `--profile` → memory-only profile.
 
 `PHILOSOPHY.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `docs/opsec.md`,
 `docs/distros.md`, `docs/engine.md`, `docs/css-subset.md`,
-`docs/defaults.md`.
+`docs/sites.md`, `docs/defaults.md`.
 
 ## Hard rules
 
@@ -98,5 +106,6 @@ Tails/Qubes-DVM: omit `--profile` → memory-only profile.
 
 ## About pages that matter
 
-`about:home`, `about:campaigns`, `about:engine`, `about:processes`,
-`about:linux`, `about:script`, `about:shred`, `about:tor`.
+`about:home`, `about:campaigns`, `about:engine`, `about:sites`,
+`about:processes`, `about:linux`, `about:script`, `about:shred`,
+`about:tor`.

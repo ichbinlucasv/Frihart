@@ -115,6 +115,20 @@ impl DisplayList {
 pub fn from_boxes(boxes: &[LayoutBox]) -> DisplayList {
     let mut list = DisplayList::default();
     for b in boxes {
+        if b.rule {
+            list.ops.push(DisplayOp::Fill {
+                x: b.x,
+                y: b.y,
+                w: b.w,
+                h: b.h.max(1.0),
+                color: if b.style.background != 0 {
+                    b.style.background
+                } else {
+                    0x00333333
+                },
+            });
+            continue;
+        }
         if b.cell {
             list.ops.push(DisplayOp::Fill {
                 x: b.x,
@@ -190,5 +204,20 @@ mod tests {
         assert!(list.hit_test(1000.0, 1000.0).is_none());
         assert!(list.find("HERE").is_some());
         assert!(list.find("zzzz").is_none());
+    }
+
+    #[test]
+    fn rule_is_a_fill() {
+        let mut item = FlowItem::text("", ua_style("hr"));
+        item.rule = true;
+        let boxes = block_flow(&[item], 200.0, 0.0);
+        let list = from_boxes(&boxes);
+        assert!(matches!(
+            list.ops[0],
+            DisplayOp::Fill {
+                color: 0x00333333,
+                ..
+            }
+        ));
     }
 }

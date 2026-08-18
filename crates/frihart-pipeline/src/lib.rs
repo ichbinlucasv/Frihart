@@ -53,12 +53,13 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
     for frag in visible_fragments(&tree) {
         let el = element_from(&frag);
         let style = style_element(&el, &user, &author_sheet);
-        let (text, href, preserve, image, cells, field) = match frag.kind {
-            Block::Heading(_, t) | Block::Text(t) | Block::Quote(t) => {
-                (t, None, false, false, Vec::new(), None)
+        let (text, href, preserve, image, cells, field, rule) = match frag.kind {
+            Block::Heading(_, t) | Block::Text(t) | Block::Quote(t) | Block::Caption(t) => {
+                (t, None, false, false, Vec::new(), None, false)
             }
-            Block::Pre(t) => (t, None, true, false, Vec::new(), None),
-            Block::Link { text, href } => (text, Some(href), false, false, Vec::new(), None),
+            Block::Pre(t) => (t, None, true, false, Vec::new(), None, false),
+            Block::Link { text, href } => (text, Some(href), false, false, Vec::new(), None, false),
+            Block::Rule => (String::new(), None, false, false, Vec::new(), None, true),
             Block::ListItem {
                 ordered,
                 index,
@@ -76,6 +77,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                     false,
                     Vec::new(),
                     None,
+                    false,
                 )
             }
             Block::Image { alt, src } => {
@@ -84,7 +86,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                 } else {
                     format!("[img] {alt}")
                 };
-                (label, None, false, true, Vec::new(), None)
+                (label, None, false, true, Vec::new(), None, false)
             }
             Block::Field(f) => {
                 let name = if f.label.is_empty() { f.name } else { f.label };
@@ -94,9 +96,9 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                     secret,
                 });
                 field_i += 1;
-                (name, None, false, false, Vec::new(), slot)
+                (name, None, false, false, Vec::new(), slot, false)
             }
-            Block::TableRow { cells } => (String::new(), None, false, false, cells, None),
+            Block::TableRow { cells } => (String::new(), None, false, false, cells, None, false),
         };
         items.push(FlowItem {
             text,
@@ -104,6 +106,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
             href,
             preserve,
             image,
+            rule,
             cells,
             field,
         });
@@ -221,6 +224,26 @@ mod tests {
                 .iter()
                 .any(|op| matches!(op, frihart_gfx::DisplayOp::Field { index: 0, .. }))
         );
+    }
+
+    #[test]
+    fn hr_is_a_rule_fill() {
+        let f = layout_html("<p>a</p><hr><p>b</p>", "", 400.0);
+        assert!(f.boxes.iter().any(|b| b.rule));
+        assert!(f.display.ops.iter().any(|op| matches!(
+            op,
+            frihart_gfx::DisplayOp::Fill { h, .. } if *h <= 4.0
+        )));
+    }
+
+    #[test]
+    fn caption_is_text() {
+        let f = layout_html(
+            "<table><caption>Nums</caption><tr><td>1</td></tr></table>",
+            "",
+            400.0,
+        );
+        assert!(f.boxes.iter().any(|b| b.text == "Nums"));
     }
 
     #[test]

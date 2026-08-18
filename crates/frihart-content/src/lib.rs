@@ -5,10 +5,11 @@
 mod about;
 mod document;
 mod session;
+mod sites;
 
 use frihart_autofill::{FieldKind, classify};
 use frihart_blocker::FilterEngine;
-use frihart_core::{ContainerId, UrlKind, about_page, classify_url, safe_host};
+use frihart_core::{ContainerId, UrlKind, about_page, classify_url, is_script_scheme, safe_host};
 use frihart_html::{document_title, parse, visible_blocks};
 use frihart_net::{
     CookieJar, DownloadLog, DownloadRecord, FetchMode, HttpClient, Request, RustlsClient,
@@ -29,7 +30,9 @@ pub fn load(url: &Url, profile: &Profile) -> Document {
         UrlKind::Https | UrlKind::Http => https_only_or_empty(url, prefs),
         UrlKind::File => Document::unavailable(url.clone(), "file scheme disabled"),
         UrlKind::Other => {
-            if url.scheme() == "view-source" {
+            if is_script_scheme(url.scheme()) {
+                Document::unavailable(url.clone(), "javascript: refused")
+            } else if url.scheme() == "view-source" {
                 Document::unavailable(url.clone(), "view-source")
             } else {
                 Document::unavailable(url.clone(), "scheme refused")
@@ -149,7 +152,9 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
             frihart_html::Block::Heading(l, t) => items.push(PageItem::Heading(l, t)),
             frihart_html::Block::Text(t)
             | frihart_html::Block::Pre(t)
-            | frihart_html::Block::Quote(t) => items.push(PageItem::Text(t)),
+            | frihart_html::Block::Quote(t)
+            | frihart_html::Block::Caption(t) => items.push(PageItem::Text(t)),
+            frihart_html::Block::Rule => {}
             frihart_html::Block::ListItem { text, .. } => items.push(PageItem::Text(text)),
             frihart_html::Block::Image { alt, src } => {
                 items.push(PageItem::Text(if alt.is_empty() { src } else { alt }));
@@ -276,5 +281,21 @@ mod tests {
         assert_eq!(load(&about_url("linux"), &profile).title(), "Linux");
         assert_eq!(load(&about_url("campaigns"), &profile).title(), "Campaigns");
         assert_eq!(load(&about_url("script"), &profile).title(), "Script");
+        assert_eq!(load(&about_url("sites"), &profile).title(), "Sites");
+    }
+
+    #[test]
+    fn javascript_url_is_refused() {
+        let profile = Profile::ephemeral().unwrap();
+        let url = Url::parse("javascript:alert(1)").unwrap();
+        let doc = load(&url, &profile);
+        assert_eq!(doc.title(), "Unavailable");
+        assert!(doc.searchable_text().contains("javascript: refused"));
+        let bypass = Url::parse("javascript://x.test/%0Aalert(1)").unwrap();
+        assert!(
+            load(&bypass, &profile)
+                .searchable_text()
+                .contains("javascript: refused")
+        );
     }
 }

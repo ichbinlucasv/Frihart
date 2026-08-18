@@ -19,8 +19,8 @@ pub use opsec::{
     write_private_str,
 };
 pub use urls::{
-    UrlKind, about_page, classify_url, display_url, looks_like_destination, parse_user_input,
-    try_parse_user_input,
+    UrlKind, about_page, classify_url, display_url, is_script_scheme, looks_like_destination,
+    parse_user_input, try_parse_user_input,
 };
 
 /// Product name shown in chrome and logs.

@@ -94,6 +94,7 @@ pub fn is_known(name: &str) -> bool {
             | "campaigns"
             | "script"
             | "js"
+            | "sites"
     )
 }
 
@@ -131,6 +132,7 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "linux" | "distros" => linux_page(url),
         "campaigns" => campaigns_page(url),
         "script" | "js" => script_page(url, prefs),
+        "sites" => sites_page(url),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -187,6 +189,10 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Engine".into(),
             href: "about:engine".into(),
+        },
+        Block::Link {
+            label: "Sites we claim".into(),
+            href: "about:sites".into(),
         },
         Block::Link {
             label: "Campaigns".into(),
@@ -502,7 +508,7 @@ fn engine_page(url: &Url) -> Document {
             Block::List(vec![
                 "1 chrome / profiles / wipe / HiDPI scale".into(),
                 "2 rustls / cookies / HTTPS-only / downloads dest".into(),
-                "3 html tokenizer + arena DOM + tables".into(),
+                "3 html tokenizer + arena DOM + tables + hr/caption".into(),
                 "4 css / style / block layout / gfx ops".into(),
                 "5 forms GET + POST encode (secrets skipped)".into(),
                 "6 ipc envelopes (in-process bus)".into(),
@@ -551,11 +557,15 @@ fn processes_page(url: &Url) -> Document {
                     None => "unavailable".into(),
                 },
             },
+            Block::KeyValue {
+                key: "seccomp deny".into(),
+                value: frihart_platform::seccomp_denies().join(", "),
+            },
             Block::Note(
                 "One long-lived `frihart --content-worker` per isolation key. \
-                 no_new_privs + landlock. Chrome never applies the sandbox. \
-                 Crash falls back in-process. Fields live on the display list. \
-                 seccomp comes next."
+                 no_new_privs + landlock + seccomp-bpf (EPERM on socket/connect/\
+                 clone/exec/ptrace/mount). Chrome never applies the sandbox. \
+                 Crash falls back in-process. Fields live on the display list."
                     .into(),
             ),
         ],
@@ -569,16 +579,16 @@ fn campaigns_page(url: &Url) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Campaigns".into(),
-                subtitle: "A B C closed (v0.1.0). D+E next. H and I parked.".into(),
+                subtitle: "A B C closed (v0.1.0). D E F G open. H and I parked.".into(),
             },
             Block::List(vec![
                 "A Foundation — closed".into(),
                 "B Chrome — closed".into(),
                 "C Network OPSEC — closed".into(),
-                "D Engine — open (you are here)".into(),
-                "E Isolation — open (landlock in child; no process split yet)".into(),
-                "F Linux homes — open (detect + Tails private default)".into(),
-                "G Script — refuse-only".into(),
+                "D Engine — open (hr, caption, tables, about:sites)".into(),
+                "E Isolation — open (nnp + landlock + seccomp in child)".into(),
+                "F Linux homes — open (detect + Tails/Qubes private default)".into(),
+                "G Script — refuse-only (pref flip is not a grant)".into(),
             ]),
             Block::Note(
                 "H Other OS (Windows, macOS, Android) and I Depth (media, i18n, \
@@ -590,6 +600,37 @@ fn campaigns_page(url: &Url) -> Document {
                 href: "about:linux".into(),
             },
         ],
+    })
+}
+
+fn sites_page(url: &Url) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Sites".into(),
+            subtitle: "Compatibility is claimed per document, not \"the web\".".into(),
+        },
+        Block::Paragraph(format!(
+            "{} internal pages are readable. A host moves from target to \
+             claimed only after a person has read it in Frihart without \
+             JavaScript. Nothing on the public internet is claimed yet. \
+             See docs/sites.md.",
+            crate::sites::claimed_count()
+        )),
+    ];
+    for site in crate::sites::claims() {
+        blocks.push(Block::KeyValue {
+            key: format!("{} — {}", site.name, site.status.label()),
+            value: format!("{} · {}", site.url, site.note),
+        });
+    }
+    blocks.push(Block::Link {
+        label: "Engine".into(),
+        href: "about:engine".into(),
+    });
+    Document::internal(InternalPage {
+        title: "Sites".into(),
+        url: url.clone(),
+        blocks,
     })
 }
 
@@ -620,13 +661,17 @@ fn linux_page(url: &Url) -> Document {
                 },
             },
             Block::List(vec![
-                "Arch / CachyOS — reference".into(),
-                "Fedora — RPM family".into(),
-                "Mint — Debian family".into(),
-                "Tails — amnesic, system Tor only".into(),
-                "Qubes — AppVM / DisposableVM, no NIC".into(),
+                "Arch / CachyOS / Manjaro / EndeavourOS — reference (PKGBUILD)".into(),
+                "Fedora — packaging/fedora/frihart.spec (Qubes Fedora template too)".into(),
+                "Mint / Debian / Ubuntu — packaging/debian/".into(),
+                "Tails — amnesic default; system Tor only; packaging/tails/".into(),
+                "Qubes — AppVM / DisposableVM; packaging/qubes/".into(),
             ]),
-            Block::Note("docs/distros.md in the source tree.".into()),
+            Block::Note(
+                "Tails and Qubes-DVM open a memory-only profile unless --profile. \
+                 Desktop file has a Private action. docs/distros.md."
+                    .into(),
+            ),
         ],
     })
 }
@@ -656,14 +701,17 @@ fn script_page(url: &Url, prefs: &Prefs) -> Document {
                     "refused".into()
                 },
             },
-            Block::List(vec![
-                "eval denied".into(),
-                "wasm later".into(),
-                "canvas / WebGL / audio / battery / plugins denied".into(),
-            ]),
+            Block::List(
+                frihart_js::HostApi::ALL
+                    .iter()
+                    .map(|api| format!("{api:?} — {}", api.reason()))
+                    .collect(),
+            ),
             Block::Note(
-                "Flipping the pref does not start a JS engine. Fingerprint APIs \
-                 stay denied after a runtime exists."
+                "Flipping the pref does not start a JS engine and does not \
+                 open cookie, storage, WebRTC, or WebSocket. javascript: URLs \
+                 are refused (including javascript://). Fingerprint APIs stay \
+                 denied after a runtime exists."
                     .into(),
             ),
         ],

@@ -72,12 +72,13 @@ Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.m
 ## Current status
 
 **v0.1.0.** Campaigns **A, B, C** (crate phases 0–2) are **closed**.
-**D + E** are the open pole. **H** and **I** are parked.
+**D, E, F, G** are open. **H** and **I** are parked.
 
 On Linux, `cargo run` opens a real window. `https://` fetches over rustls
-and paints the subset via a sandboxed `--content-worker` (in-process
-fallback if the worker dies). Find (Ctrl+F) searches the display list.
-JS is off. Tor tabs dial SOCKS only.
+and paints the subset via a sandboxed `--content-worker` (`no_new_privs`
++ landlock + seccomp-bpf; in-process fallback if the worker dies). Find
+(Ctrl+F) searches the display list. JS is off. `javascript:` is refused.
+Tor tabs dial SOCKS only. `about:sites` is the honest claim list.
 
 Next session: [docs/HANDOFF.md](docs/HANDOFF.md).
 

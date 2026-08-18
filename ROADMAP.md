@@ -58,8 +58,8 @@ sites Frihart claims at that time.
 | **A Foundation** | 0 | **Closed** (tag v0.1.0) | Identity, license, crates, constitution |
 | **B Chrome** | 1 | **Closed** | Black/yellow shell. Containers, blocker, wipe |
 | **C Network OPSEC** | 2 | **Closed** | rustls, cookies, Tor fail-closed, safe downloads |
-| **D Engine** | 3–5, 12 | **Open** — next | HTML/CSS/layout/forms. Documents, not webapps |
-| **E Isolation** | 6 | **Open** | Process split, seccomp, landlock |
+| **D Engine** | 3–5, 12 | **Open** | HTML/CSS/layout/forms. Documents, not webapps |
+| **E Isolation** | 6 | **Open** | Worker per site key; nnp + landlock + seccomp |
 | **F Linux homes** | packaging | **Open** | Arch, Cachy, Fedora, Mint, Tails, Qubes |
 | **G Script** | 7 | **Open** (refuse-only) | Last. Fingerprint APIs stay denied |
 | **H Other OS** | 8–10 | **Parked** | Windows, macOS, Android |
@@ -574,13 +574,16 @@ A sustainable rhythm for a long project:
 - [x] class/id/descendant CSS, max-width, line-height, user.css
 - [x] cosmic-text wrap + display-list link hits
 - [x] Tor SOCKS5 (fail closed) + Downloads 0600 never execute
-- [ ] Chrome paints only the pipeline (fields still overlay)
+- [x] Chrome paints only the pipeline (fields on the display list)
 - [x] Table grid (cells in columns)
 - [x] Content sandbox: no_new_privs + landlock (child only)
+- [x] seccomp-bpf deny-list on the content worker
 - [x] Find-in-page on the display list
 - [x] `frihart --content-worker` sandboxed layout process
 - [x] One long-lived worker per isolation key
 - [x] Form fields on the display list (no second paint path)
 - [x] Tails / Qubes-DVM default to private profile
+- [x] `hr`, caption, definition lists
+- [x] Honest `about:sites` claim list
 - [ ] Distro packages for Tails/Qubes beyond the notes
-- [ ] Fedora + Mint packages besides the Arch PKGBUILD
+- [ ] Fedora + Mint packages published (spec/debian exist)

@@ -34,6 +34,8 @@ ignored. They are never guessed into a broken layout.
 - `list-style`, `white-space`
 - `em`, `rem`, `%`
 
+UA extras: `hr` is a 2px rule fill; `caption` is centered 14px.
+
 ## Origins
 
 1. User-agent (`frihart-style::ua_style`)
