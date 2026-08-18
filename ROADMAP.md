@@ -595,6 +595,7 @@ A sustainable rhythm for a long project:
 - [x] docs.kernel.org claimed (Sphinx toctree, display:none, no ¶)
 - [x] ietf.org claimed (heading-links, card list items)
 - [x] rfc-editor.org index claimed (SSR, UTF-8 text, heading-link+title, skip svg)
+- [x] w3.org claimed (Making the web work, TPAC 2026, ARIA news link)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)

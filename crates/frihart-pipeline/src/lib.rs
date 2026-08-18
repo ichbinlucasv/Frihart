@@ -542,4 +542,30 @@ mod tests {
         let wide = layout_html_ex(html, "", 5120.0, 1440.0);
         assert!(wide.title.contains("RFC Editor"));
     }
+
+    #[test]
+    fn w3_org_is_readable() {
+        let html = include_str!("../testdata/w3.org.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("W3C"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Making the web work"));
+        assert!(blob.contains("World Wide Web Consortium"));
+        assert!(blob.contains("TPAC 2026") || blob.contains("Web standards"));
+        assert!(blob.contains("ARIA in HTML") || blob.contains("standards and guidelines"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| h.contains("/standards"))
+                && b.text.contains("standards")
+        }));
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| h.contains("/news/")) && b.text.contains("ARIA")
+        }));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("W3C"));
+        assert!(
+            wide.boxes
+                .iter()
+                .any(|b| b.text.contains("Making the web work"))
+        );
+    }
 }

@@ -14,6 +14,10 @@ engine.
   Apache-2.0`). No telemetry, no account, no password vault.
 - **Linux first:** Arch/CachyOS reference, then Fedora, Mint, Tails,
   Qubes. Same binary. Linux free; other OS €100 later, no license server.
+- **The engine is Frihart, in Rust** (locked). Never embed V8,
+  SpiderMonkey, JavaScriptCore, QuickJS, Gecko, Blink, WebKit, Servo,
+  or CEF. Campaign G, if it ever starts, is a small interpreter we write
+  here. It has **not** been started.
 
 Repos:
 
@@ -38,12 +42,12 @@ HTML → CSS → style → layout → display list → chrome paint. Tables are
 a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`vw`/
 `vh`/`%`, `font-weight`, `border`, `:link`. Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
-`about:sites`: **example.com**, **RFC 1918**, **suckless.org**,
-**GNU philosophy**, **kernel.org**, **docs.kernel.org**,
-**ietf.org**, and **rfc-editor.org** (the index) are claimed.
-Settings is the LibreWolf-stance page (native prefs, black/yellow).
-JS stays off. **The engine is Frihart in Rust** (locked). If G ever
-starts it is our interpreter — not V8/SpiderMonkey/an embed. Not started.
+UTF-8 text (not Latin-1 bytes). Heading with one destination (link-only
+or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
+`about:sites` claimed: **example.com**, **RFC 1918**, **suckless.org**,
+**GNU philosophy**, **kernel.org**, **docs.kernel.org**, **ietf.org**,
+**rfc-editor.org** (index), **w3.org** (landing). Settings is the
+LibreWolf-stance page (native prefs, black/yellow).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -58,92 +62,64 @@ not published.
 Refuse-only. Pref flip is not a grant. `javascript:` refused.
 **Locked:** no foreign JS engine. A future G is Frihart Rust only.
 
-## Plan to finish (honest)
+## Plan (do these, in this order)
 
-A general-purpose engine is a decade. “Finish” here means **v0.2:
-Linux daily-driver for an honest, named list of static documents**.
-Not Chrome. Not Wikipedia. Not mail.
-
-### Milestone 1 — first claimed public site
-
-1. ~~Open `https://example.com/`~~ **done**.
-2. ~~Open RFC 1918 HTML~~ **done** (pre pages + `span.h1` title;
-   also 5120×1440).
-3. ~~suckless.org~~ **done** (`//` hrefs → https).
-4. ~~GNU philosophy~~ **done** (`&mdash;`/`&ldquo;`; `@media` skipped).
-5. ~~kernel.org~~ **done** (releases table + list links).
-6. ~~docs.kernel.org~~ **done** (Sphinx toctree; hide `display:none`; no `¶`).
-7. ~~ietf.org~~ **done** (heading-links; card list items walked).
-8. ~~rfc-editor.org index~~ **done** (SSR; UTF-8 text; latest RFC
-   cards are one hit each; skip svg).
-9. Next named target: `https://www.w3.org/` (not opened).
-10. Do **not** claim a site you have not opened.
-
-### Milestone 2 — document CSS (still D)
-
-6. `%` width against the viewport (containing block = layout width).
-7. `font-family` only from the engine font list (no web fonts).
-8. `white-space` / `pre-wrap` already partly exists via `preserve`.
-9. Nested inline style (`<strong>` inside a paragraph) as a separate
-   fragment, so UA bold actually paints.
-10. `th` vs `td` weight in the table grid.
-
-### Milestone 3 — isolation you can audit (E)
-
-11. Network stays in chrome until a **network process** exists. Next
-    real split: chrome talks rustls only through `frihart-ipc` to a
-    `--net-worker` that holds cookies. Do not start this until 1–5
-    work; it is a large cut.
-12. Worker death must reload **that** tab only (already mostly true).
-13. Audit test: worker cannot `open()` the profile `prefs.toml`
-    (landlock should already deny `$HOME`).
-
-### Milestone 4 — Linux you can install (F)
-
-14. Build the Arch PKGBUILD on CachyOS/Arch and install locally.
-15. Same for Fedora spec and Debian package.
-16. Tails/Qubes stay notes until 14–15 are real packages a stranger
-    can install.
-
-### Milestone 5 — v0.2 tag
-
-17. Tag **v0.2.0** when: at least **3 named public static sites** are
-    claimed (**8 already**: example.com, RFC 1918, suckless, GNU
-    philosophy, kernel.org, docs.kernel.org, ietf.org, rfc-editor.org), worker sandbox is on, `cargo test --workspace` green,
-    Linux package files install on one reference distro.
-18. Then — and only then — discuss G (a tiny **Frihart** interpreter in
-    Rust) or stay refuse-only another year. Recommendation: **stay
-    refuse**. Embedding V8/SpiderMonkey is off the table.
-
-### Parked until Linux is a daily driver
-
-- **H** Windows → macOS → Android
-- **I** media decode, i18n depth, print/PDF, extension JS runtime
-- Multi-window, HTTP/2 (leftovers, not blockers)
+1. **This / next session — D only.** Fetch live `https://www.w3.org/TR/`
+   (the TR index, not the already-claimed landing). Lay out those exact
+   bytes. Fix what the subset mangles. Claim only if honestly readable.
+   Write why on `about:sites` and `docs/sites.md`.
+2. **Keep claiming static documents** one host/path per session until
+   the named list feels like a daily driver for docs/RFCs/homepages.
+   Do not claim Wikipedia, GitHub, mail, or any JS app.
+3. **Document CSS leftovers (still D, after a few more claims):**
+   `font-family` from the engine font list only (no web fonts);
+   `th` vs `td` weight if a table page needs it; letterboxing paint
+   (pref exists, paint does not).
+4. **E — isolation you can audit.** After more claims, add a test that
+   the content worker cannot `open()` the profile `prefs.toml`. Do
+   **not** split a network process yet.
+5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
+   CachyOS/Arch. Fedora spec and Debian files exist; do not publish
+   Tails/Qubes packages until a stranger can install from those files.
+6. **v0.2.0** when: named static list is claimed (9 already), worker
+   sandbox on, `cargo test --workspace` green, one reference distro
+   package actually installs.
+7. **Then — and only then — discuss G.** Recommendation: stay refuse
+   another year. If G starts, it is a tiny Frihart interpreter in Rust.
+8. **H and I stay parked** until Linux is a daily driver.
 
 ## Recommendations
 
-1. **One crate-visible slice per session.** Engine morning, chrome
-   only if something is unreadable.
-2. **Claim sites by opening them**, not by adding URLs to a list.
-3. **Do not start a JS engine this session.** When G starts, it is
-   Frihart Rust — not an embed. It will eat a year and leak.
-4. **Do not split the network process** until three sites are claimed.
-   Isolation theater is worse than a documented in-process rustls.
-5. **Do not publish Tails/Qubes packages** until Arch/Fedora/Debian
+1. **One crate-visible slice per session.** Engine morning. Chrome only
+   if something is unreadable.
+2. **Claim sites by opening live HTML**, never by adding a URL to a
+   list. Compatibility is per document, not “the web.”
+3. **Do not start a JS engine.** Locked: Frihart Rust only. Starting G
+   now eats a year and leaks. Pref flip is not a grant.
+4. **Do not embed** V8, SpiderMonkey, JavaScriptCore, QuickJS, Gecko,
+   Blink, WebKit, Servo, or CEF. Do not execute Firefox add-ons.
+5. **Do not split the network process** until the claim list is useful.
+   Isolation theater is worse than documented in-process rustls.
+6. **Do not publish Tails/Qubes packages** until Arch/Fedora/Debian
    install from the files we already have.
-6. **Keep H and I parked.** Ports before Linux is useful waste the
+7. **Keep H and I parked.** Ports before Linux is useful waste the
    one-to-two-year commitment.
-7. **Unsafe stays in `sandbox.rs` only.**
-8. **Policy before I/O.** Tor fail-closed. Downloads never execute.
+8. **Unsafe stays in `sandbox.rs` only.**
+9. **Policy before I/O.** Tor fail-closed. Downloads never execute.
    Passwords never stored.
+10. **Do not reopen** claimed sites unless they regress.
+
+## Claimed (do not reopen unless they regress)
+
+example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
+docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing.
 
 ## Next session — start here
 
-**D: fetch live `https://www.w3.org/` (or another unclaimed static
-document), lay out those bytes, claim only if readable.** Eight
-public sites are claimed. Do not start a JS engine. The engine stays
-Frihart in Rust; G stays refuse. Do not start H/I.
+**D: fetch live `https://www.w3.org/TR/` (or another unclaimed static
+document), lay out those bytes, claim only if readable.** Nine public
+sites are claimed. Do not start a JS engine. The engine stays Frihart
+in Rust; G stays refuse. Do not start H/I.
 
 ## Commands
 
