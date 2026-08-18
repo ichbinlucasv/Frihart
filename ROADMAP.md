@@ -62,11 +62,10 @@ sites Frihart claims at that time.
 | **E Isolation** | 6 | Process split, seccomp, landlock. A tab cannot own the profile |
 | **F Linux homes** | packaging | Arch, Cachy, Fedora, Mint, then Tails and Qubes |
 | **G Script** | 7 | Last. Default conservative. Fingerprint APIs stay denied |
-| **H Other OS** | 8–10 | Windows, macOS, Android — after Linux is real |
-| **I Depth** | 11, 13–15 | Media sniff, i18n, print, extension runtime |
+| **H Other OS** | 8–10 | **Parked.** Windows, macOS, Android after Linux is real |
+| **I Depth** | 11, 13–15 | **Parked.** Media, i18n, print, extension runtime |
 
-Standing work in every campaign: [docs/opsec.md](docs/opsec.md).
-No telemetry. No password vault. Policy before I/O.
+Work now is **A–G only**. Standing OPSEC: [docs/opsec.md](docs/opsec.md).
 
 ---
 

@@ -101,6 +101,18 @@ impl IsolationKey {
             container,
         }
     }
+
+    pub fn from_url(url: &url::Url, container: ContainerId) -> Self {
+        Self::new(
+            url.scheme(),
+            url.host_str().unwrap_or("").to_ascii_lowercase(),
+            container,
+        )
+    }
+
+    pub fn label(&self) -> String {
+        format!("{}://{} · {}", self.scheme, self.host, self.container)
+    }
 }
 
 /// Identifier of a loaded document instance.
@@ -128,5 +140,23 @@ mod tests {
         let a = IsolationKey::new("https", "bank.example", ContainerId::BANKING);
         let b = IsolationKey::new("https", "bank.example", ContainerId::SHOPPING);
         assert_ne!(a, b);
+    }
+
+    #[test]
+    fn scheme_splits_isolation() {
+        let a = IsolationKey::from_url(
+            &url::Url::parse("https://a.test").unwrap(),
+            ContainerId::PERSONAL,
+        );
+        let b = IsolationKey::from_url(
+            &url::Url::parse("http://a.test").unwrap(),
+            ContainerId::PERSONAL,
+        );
+        let c = IsolationKey::from_url(
+            &url::Url::parse("https://b.test").unwrap(),
+            ContainerId::PERSONAL,
+        );
+        assert_ne!(a, b);
+        assert_ne!(a, c);
     }
 }

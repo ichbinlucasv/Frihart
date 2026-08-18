@@ -52,6 +52,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                 let name = if f.label.is_empty() { f.name } else { f.label };
                 (name, None, false, false)
             }
+            Block::TableRow { cells } => (cells.join("  ·  "), None, true, false),
         };
         items.push(FlowItem {
             text,
@@ -142,5 +143,19 @@ mod tests {
                     .any(|b| b.href.as_deref() == Some("https://ex.test/x"))
         );
         assert!(f.boxes.iter().any(|b| b.text.starts_with('•')));
+    }
+
+    #[test]
+    fn tables_become_rows() {
+        let f = layout_html(
+            "<table><tr><td>left</td><td>right</td></tr></table>",
+            "",
+            400.0,
+        );
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| b.text.contains("left") && b.text.contains("right"))
+        );
     }
 }

@@ -71,6 +71,9 @@ Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.m
 
 ## Current status
 
+Campaigns **A–G** are in progress. **H** (other OS) and **I** (media,
+i18n, print, extension runtime) are parked.
+
 On Linux, `cargo run` opens a real window. `https://` fetches over rustls
 and paints the subset. JS is off. Tor tabs dial SOCKS only.
 

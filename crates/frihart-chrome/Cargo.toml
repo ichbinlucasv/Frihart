@@ -18,6 +18,7 @@ frihart-forms.workspace = true
 frihart-core.workspace = true
 frihart-gfx.workspace = true
 frihart-i18n.workspace = true
+frihart-ipc.workspace = true
 frihart-net.workspace = true
 frihart-pipeline.workspace = true
 frihart-platform.workspace = true

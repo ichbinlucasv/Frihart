@@ -64,9 +64,34 @@ impl BookmarkStore {
     }
 
     pub fn add(&mut self, title: impl Into<String>, url: impl Into<String>) {
+        let url = url.into();
+        if self.items.iter().any(|b| b.url == url) {
+            return;
+        }
         self.items.push(Bookmark {
             title: title.into(),
-            url: url.into(),
+            url,
         });
+    }
+
+    pub fn remove_url(&mut self, url: &str) -> bool {
+        let before = self.items.len();
+        self.items.retain(|b| b.url != url);
+        self.items.len() != before
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_is_deduped_and_removable() {
+        let mut s = BookmarkStore::default();
+        s.add("A", "about:home");
+        s.add("A2", "about:home");
+        assert_eq!(s.items.len(), 1);
+        assert!(s.remove_url("about:home"));
+        assert!(s.items.is_empty());
     }
 }

@@ -12,7 +12,7 @@ use frihart_core::{ContainerId, UrlKind, about_page, classify_url, safe_host};
 use frihart_html::{document_title, parse, visible_blocks};
 use frihart_net::{
     CookieJar, DownloadLog, DownloadRecord, FetchMode, HttpClient, Request, RustlsClient,
-    content_type, decode_body, save_download, should_save,
+    classify_error, content_type, decode_body, save_download, should_save,
 };
 use frihart_privacy::Policy;
 use frihart_profile::Profile;
@@ -102,8 +102,32 @@ pub fn fetch(req: FetchRequest<'_>) -> Document {
                 }
             }
         }
-        Err(err) => Document::unavailable(req.url.clone(), err.to_string()),
+        Err(err) => network_error(req.url, err),
     }
+}
+
+fn network_error(url: &url::Url, err: frihart_core::FrihartError) -> Document {
+    let kind = classify_error(&err);
+    Document::internal(InternalPage {
+        title: kind.title().into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: kind.title().into(),
+                subtitle: safe_host(url),
+            },
+            Block::Paragraph(kind.hint().into()),
+            Block::Note(err.to_string()),
+            Block::Link {
+                label: "Tor".into(),
+                href: "about:tor".into(),
+            },
+            Block::Link {
+                label: "Privacy".into(),
+                href: "about:privacy".into(),
+            },
+        ],
+    })
 }
 
 fn is_html(content_type: &str, body: &str) -> bool {
@@ -129,6 +153,9 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
             frihart_html::Block::ListItem { text, .. } => items.push(PageItem::Text(text)),
             frihart_html::Block::Image { alt, src } => {
                 items.push(PageItem::Text(if alt.is_empty() { src } else { alt }));
+            }
+            frihart_html::Block::TableRow { cells } => {
+                items.push(PageItem::Text(cells.join("  ·  ")));
             }
             frihart_html::Block::Link { text, href } => items.push(PageItem::Link { text, href }),
             frihart_html::Block::Field(f) => {
@@ -246,5 +273,8 @@ mod tests {
         assert_eq!(load(&about_url("processes"), &profile).title(), "Processes");
         assert_eq!(load(&about_url("print"), &profile).title(), "Print");
         assert_eq!(load(&about_url("downloads"), &profile).title(), "Downloads");
+        assert_eq!(load(&about_url("linux"), &profile).title(), "Linux");
+        assert_eq!(load(&about_url("campaigns"), &profile).title(), "Campaigns");
+        assert_eq!(load(&about_url("script"), &profile).title(), "Script");
     }
 }

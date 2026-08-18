@@ -117,6 +117,101 @@ pub fn profile_root_for(os: Os) -> PathBuf {
     }
 }
 
+/// Which Linux home we think we are on. Used for OPSEC hints, not branding.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LinuxHome {
+    Arch,
+    Cachyos,
+    Fedora,
+    Mint,
+    Debian,
+    Tails,
+    Qubes,
+    Other(String),
+}
+
+impl LinuxHome {
+    pub fn label(&self) -> String {
+        match self {
+            Self::Arch => "Arch Linux".into(),
+            Self::Cachyos => "CachyOS".into(),
+            Self::Fedora => "Fedora".into(),
+            Self::Mint => "Linux Mint".into(),
+            Self::Debian => "Debian".into(),
+            Self::Tails => "Tails".into(),
+            Self::Qubes => "Qubes OS".into(),
+            Self::Other(id) => {
+                if id.is_empty() {
+                    "Linux".into()
+                } else {
+                    id.clone()
+                }
+            }
+        }
+    }
+
+    pub fn prefer_ephemeral(&self) -> bool {
+        matches!(self, Self::Tails) || (matches!(self, Self::Qubes) && is_qubes_disposable())
+    }
+
+    pub fn tor_is_the_network(&self) -> bool {
+        matches!(self, Self::Tails)
+    }
+}
+
+pub fn detect_linux_home() -> LinuxHome {
+    if Path::new("/usr/share/qubes").is_dir() || Path::new("/etc/qubes-rpc").exists() {
+        return LinuxHome::Qubes;
+    }
+    let text = std::fs::read_to_string("/etc/os-release").unwrap_or_default();
+    parse_os_release(&text)
+}
+
+pub fn parse_os_release(text: &str) -> LinuxHome {
+    let id = os_kv(text, "ID");
+    let like = os_kv(text, "ID_LIKE");
+    let name = os_kv(text, "NAME").to_ascii_lowercase();
+    if id == "tails" || name.contains("tails") {
+        return LinuxHome::Tails;
+    }
+    if id == "qubes" || name.contains("qubes") {
+        return LinuxHome::Qubes;
+    }
+    if id == "cachyos" || name.contains("cachy") {
+        return LinuxHome::Cachyos;
+    }
+    if id == "arch" {
+        return LinuxHome::Arch;
+    }
+    if id == "fedora" {
+        return LinuxHome::Fedora;
+    }
+    if id == "linuxmint" || id == "mint" {
+        return LinuxHome::Mint;
+    }
+    if id == "debian" || like.contains("debian") {
+        return LinuxHome::Debian;
+    }
+    LinuxHome::Other(id)
+}
+
+fn os_kv(text: &str, key: &str) -> String {
+    for line in text.lines() {
+        let Some((k, v)) = line.split_once('=') else {
+            continue;
+        };
+        if k.trim() != key {
+            continue;
+        }
+        return v.trim().trim_matches('"').to_ascii_lowercase();
+    }
+    String::new()
+}
+
+pub fn is_qubes_disposable() -> bool {
+    Path::new("/run/qubes/this-is-dvm").exists() || env::var_os("QUBES_DVM").is_some()
+}
+
 pub fn is_linux() -> bool {
     matches!(current_os(), Os::Linux)
 }
@@ -234,5 +329,19 @@ mod tests {
         );
         assert!(downloads_dir().ends_with("Downloads") || env::var("XDG_DOWNLOAD_DIR").is_ok());
         assert!(SandboxSpec::content_default().enabled);
+    }
+
+    #[test]
+    fn os_release_homes() {
+        assert_eq!(
+            parse_os_release("ID=tails\nNAME=\"Tails\"\n"),
+            LinuxHome::Tails
+        );
+        assert_eq!(parse_os_release("ID=cachyos\n"), LinuxHome::Cachyos);
+        assert_eq!(parse_os_release("ID=linuxmint\n"), LinuxHome::Mint);
+        assert_eq!(parse_os_release("ID=fedora\n"), LinuxHome::Fedora);
+        assert_eq!(parse_os_release("ID=arch\n"), LinuxHome::Arch);
+        assert!(LinuxHome::Tails.tor_is_the_network());
+        assert!(LinuxHome::Tails.prefer_ephemeral());
     }
 }

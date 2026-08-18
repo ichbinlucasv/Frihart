@@ -9,6 +9,52 @@ use crate::cookie::CookieJar;
 use crate::headers::apply_identity_headers;
 use crate::{HttpClient, Request, Response};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NetFail {
+    Tor,
+    Tls,
+    Blocked,
+    Timeout,
+    Other,
+}
+
+pub fn classify_error(err: &FrihartError) -> NetFail {
+    let s = err.to_string().to_ascii_lowercase();
+    if s.contains("tor") {
+        NetFail::Tor
+    } else if s.contains("certificate") || s.contains("tls") || s.contains("ssl") {
+        NetFail::Tls
+    } else if s.contains("blocked") {
+        NetFail::Blocked
+    } else if s.contains("timed out") || s.contains("timeout") {
+        NetFail::Timeout
+    } else {
+        NetFail::Other
+    }
+}
+
+impl NetFail {
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Tor => "Tor",
+            Self::Tls => "Certificate",
+            Self::Blocked => "Blocked",
+            Self::Timeout => "Timeout",
+            Self::Other => "Unavailable",
+        }
+    }
+
+    pub fn hint(self) -> &'static str {
+        match self {
+            Self::Tor => "SOCKS refused. No clearnet fallback. Start the system tor daemon.",
+            Self::Tls => "TLS failed. Frihart will not click through a bad certificate.",
+            Self::Blocked => "Policy or the native blocker stopped this request.",
+            Self::Timeout => "The host did not answer in time.",
+            Self::Other => "The request did not complete.",
+        }
+    }
+}
+
 const MAX_REDIRECTS: usize = 5;
 const MAX_BODY: usize = 8 * 1024 * 1024;
 const TIMEOUT_SECS: u64 = 20;
@@ -275,5 +321,17 @@ mod tests {
             )
             .unwrap_err();
         assert!(err.to_string().contains("blocked"));
+    }
+
+    #[test]
+    fn classifies_tor_and_block() {
+        assert_eq!(
+            classify_error(&FrihartError::network("tor refused: no socks")),
+            NetFail::Tor
+        );
+        assert_eq!(
+            classify_error(&FrihartError::network("blocked")),
+            NetFail::Blocked
+        );
     }
 }

@@ -52,6 +52,9 @@ pub enum Block {
         alt: String,
         src: String,
     },
+    TableRow {
+        cells: Vec<String>,
+    },
 }
 
 pub fn document_title(root: &Node) -> String {
@@ -195,6 +198,22 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
                     );
                 }
                 index += 1;
+            }
+        }
+        return;
+    }
+    if name == "table" {
+        let mut child_ancs = ancs.to_vec();
+        child_ancs.push(qual);
+        for child in &node.children {
+            if child.name == "tr" {
+                emit_table_row(child, &child_ancs, out);
+            } else if matches!(child.name.as_str(), "thead" | "tbody" | "tfoot") {
+                for tr in &child.children {
+                    if tr.name == "tr" {
+                        emit_table_row(tr, &child_ancs, out);
+                    }
+                }
             }
         }
         return;
@@ -387,6 +406,20 @@ fn is_phrasing(name: &str) -> bool {
     )
 }
 
+fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
+    let cells: Vec<String> = tr
+        .children
+        .iter()
+        .filter(|c| c.name == "td" || c.name == "th")
+        .map(|c| c.text_content())
+        .filter(|t| !t.is_empty())
+        .collect();
+    if cells.is_empty() {
+        return;
+    }
+    push_frag(out, qual_of(tr), ancs, Block::TableRow { cells });
+}
+
 fn is_block(name: &str) -> bool {
     heading_level(name).is_some()
         || matches!(
@@ -544,5 +577,21 @@ line2</pre>
                 .iter()
                 .any(|a| a.tag == "article" && a.id == "main")
         }));
+    }
+
+    #[test]
+    fn table_rows() {
+        let html = "<table><tr><th>A</th><th>B</th></tr><tr><td>1</td><td>2</td></tr></table>";
+        let blocks = visible_blocks(&parse(html));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::TableRow { cells } if cells.as_slice() == ["A", "B"]))
+        );
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::TableRow { cells } if cells.first().map(String::as_str) == Some("1")))
+        );
     }
 }

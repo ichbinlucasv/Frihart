@@ -89,6 +89,11 @@ pub fn is_known(name: &str) -> bool {
             | "processes"
             | "print"
             | "downloads"
+            | "linux"
+            | "distros"
+            | "campaigns"
+            | "script"
+            | "js"
     )
 }
 
@@ -123,6 +128,9 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "processes" => processes_page(url),
         "print" => print_page(url),
         "downloads" => downloads_page(url, profile),
+        "linux" | "distros" => linux_page(url),
+        "campaigns" => campaigns_page(url),
+        "script" | "js" => script_page(url, prefs),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -179,6 +187,18 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Engine".into(),
             href: "about:engine".into(),
+        },
+        Block::Link {
+            label: "Campaigns".into(),
+            href: "about:campaigns".into(),
+        },
+        Block::Link {
+            label: "Linux homes".into(),
+            href: "about:linux".into(),
+        },
+        Block::Link {
+            label: "Script (off)".into(),
+            href: "about:script".into(),
         },
         Block::Link {
             label: "Processes".into(),
@@ -482,7 +502,7 @@ fn engine_page(url: &Url) -> Document {
             Block::List(vec![
                 "1 chrome / profiles / wipe / HiDPI scale".into(),
                 "2 rustls / cookies / HTTPS-only / downloads dest".into(),
-                "3 html tokenizer + arena DOM + serialize".into(),
+                "3 html tokenizer + arena DOM + tables".into(),
                 "4 css / style / block layout / gfx ops".into(),
                 "5 forms GET + POST encode (secrets skipped)".into(),
                 "6 ipc envelopes (in-process bus)".into(),
@@ -514,16 +534,127 @@ fn processes_page(url: &Url) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Processes".into(),
-                subtitle: "Single process today. Crate seams match the target tree.".into(),
+                subtitle: "Campaign E. One content slot per isolation key.".into(),
             },
             Block::List(vec![
-                "chrome — windows, tabs, profile".into(),
-                "network — rustls, cookies (same process)".into(),
-                "content — documents, engine crates (same process)".into(),
+                "chrome — only process that may touch the full profile".into(),
+                "network — rustls, cookies (same process until split)".into(),
+                "content — one slot per scheme + host + container".into(),
+                "https://a.test and https://b.test never share a slot".into(),
+                "http and https of the same host never share a slot".into(),
+                "content may not read prefs.toml or open a raw socket".into(),
             ]),
             Block::Note(
-                "Phase 6 splits network and one content process per isolation key. \
-                 Killing content must not take the chrome down."
+                "Supervisor types exist in frihart-ipc. OS split (seccomp, landlock) \
+                 is the rest of campaign E."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn campaigns_page(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Campaigns".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Campaigns".into(),
+                subtitle: "A–G now. H and I wait.".into(),
+            },
+            Block::List(vec![
+                "A Foundation — identity, license, crates".into(),
+                "B Chrome — black/yellow, containers, blocker, wipe".into(),
+                "C Network OPSEC — rustls, Tor fail-closed, safe downloads".into(),
+                "D Engine — HTML/CSS/layout (you are here)".into(),
+                "E Isolation — one content slot per site key".into(),
+                "F Linux homes — Arch, Cachy, Fedora, Mint, Tails, Qubes".into(),
+                "G Script — off. Fingerprint APIs stay denied.".into(),
+            ]),
+            Block::Note(
+                "H Other OS (Windows, macOS, Android) and I Depth (media, i18n, \
+                 print, extension runtime) are parked."
+                    .into(),
+            ),
+            Block::Link {
+                label: "Linux homes".into(),
+                href: "about:linux".into(),
+            },
+        ],
+    })
+}
+
+fn linux_page(url: &Url) -> Document {
+    let home = frihart_platform::detect_linux_home();
+    Document::internal(InternalPage {
+        title: "Linux".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Linux homes".into(),
+                subtitle: format!("detected: {}", home.label()),
+            },
+            Block::KeyValue {
+                key: "amnesic default".into(),
+                value: if home.prefer_ephemeral() {
+                    "yes — use --private or a ram profile".into()
+                } else {
+                    "no".into()
+                },
+            },
+            Block::KeyValue {
+                key: "Tor is the network".into(),
+                value: if home.tor_is_the_network() {
+                    "yes — use Tails SOCKS, never a second daemon".into()
+                } else {
+                    "optional system tor".into()
+                },
+            },
+            Block::List(vec![
+                "Arch / CachyOS — reference".into(),
+                "Fedora — RPM family".into(),
+                "Mint — Debian family".into(),
+                "Tails — amnesic, system Tor only".into(),
+                "Qubes — AppVM / DisposableVM, no NIC".into(),
+            ]),
+            Block::Note("docs/distros.md in the source tree.".into()),
+        ],
+    })
+}
+
+fn script_page(url: &Url, prefs: &Prefs) -> Document {
+    Document::internal(InternalPage {
+        title: "Script".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Script".into(),
+                subtitle: "Campaign G. Execution is off.".into(),
+            },
+            Block::KeyValue {
+                key: "pref javascript".into(),
+                value: if prefs.privacy.javascript {
+                    "on — still not executed".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::KeyValue {
+                key: "untrusted eval".into(),
+                value: if frihart_js::untrusted_eval_allowed() {
+                    "allowed".into()
+                } else {
+                    "refused".into()
+                },
+            },
+            Block::List(vec![
+                "eval denied".into(),
+                "wasm later".into(),
+                "canvas / WebGL / audio / battery / plugins denied".into(),
+            ]),
+            Block::Note(
+                "Flipping the pref does not start a JS engine. Fingerprint APIs \
+                 stay denied after a runtime exists."
                     .into(),
             ),
         ],
@@ -1244,6 +1375,10 @@ fn bookmarks(url: &Url, profile: &Profile) -> Document {
             blocks.push(Block::Link {
                 label: format!("{}  ·  {}", mark.title, mark.url),
                 href: mark.url.clone(),
+            });
+            blocks.push(Block::Link {
+                label: format!("remove {}", mark.title),
+                href: format!("frihart:unbookmark/{}", mark.url),
             });
         }
     }

@@ -4,8 +4,10 @@ use frihart_autofill::Identity;
 use frihart_blocker::FilterEngine;
 use frihart_content::{Document, FetchRequest, PageItem, PrefToggle, SessionHistory, fetch, load};
 use frihart_core::{
-    ContainerId, TabId, WindowId, display_url, looks_like_destination, parse_user_input,
+    ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
+    parse_user_input,
 };
+use frihart_ipc::Supervisor;
 use frihart_net::{CookieJar, FetchMode, RustlsClient};
 use frihart_profile::Profile;
 use frihart_search::{by_id, primary, resolve};
@@ -100,6 +102,7 @@ pub struct Browser {
     blocker: FilterEngine,
     pub field_focus: Option<usize>,
     identity: Identity,
+    pub supervisor: Supervisor,
 }
 
 impl Browser {
@@ -145,6 +148,7 @@ impl Browser {
             blocker: FilterEngine::new(enabled),
             field_focus: None,
             identity,
+            supervisor: Supervisor::default(),
         }
     }
 
@@ -360,6 +364,20 @@ impl Browser {
         }
     }
 
+    pub fn remove_bookmark(&mut self, url: &str) {
+        if self.profile.bookmarks_mut().remove_url(url) {
+            let _ = self.profile.save_bookmarks();
+        }
+        self.status.clear();
+        if self
+            .active_tab()
+            .url_display()
+            .starts_with("about:bookmarks")
+        {
+            self.reload();
+        }
+    }
+
     pub fn bookmark_current(&mut self) {
         let url = self.active_tab().url_display();
         let title = self.active_tab().title();
@@ -442,9 +460,15 @@ impl Browser {
                 self.launch_pass(id);
                 return;
             }
+            if let Some(target) = spec.strip_prefix("unbookmark/") {
+                self.remove_bookmark(target);
+                return;
+            }
         }
         let doc = self.open_url(&url);
         let title = doc.title().to_string();
+        let container = self.active_tab().container;
+        let key = IsolationKey::from_url(&url, container);
         if self.active_tab().circuit == Circuit::Direct {
             let _ = self.profile.record_visit(url.as_str(), &title);
         }
@@ -457,6 +481,7 @@ impl Browser {
         self.sync_url_bar();
         self.persist_jar();
         self.field_focus = None;
+        let _ = self.supervisor.slot_for(key);
         self.status.clear();
     }
 
@@ -562,6 +587,7 @@ impl Browser {
         self.identity =
             Identity::load(&self.profile.root().join("autofill.toml")).unwrap_or_default();
         self.field_focus = None;
+        self.supervisor = Supervisor::default();
         self.reset_tabs();
     }
 

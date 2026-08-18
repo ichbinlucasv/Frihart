@@ -7,7 +7,7 @@ mod cookie;
 mod download;
 mod headers;
 
-pub use client::{FetchMode, RustlsClient, content_type, decode_body};
+pub use client::{FetchMode, NetFail, RustlsClient, classify_error, content_type, decode_body};
 pub use cookie::{CookieJar, StoredCookie};
 pub use download::{DownloadLog, DownloadRecord, filename_for, save_download, should_save};
 pub use headers::apply_identity_headers;

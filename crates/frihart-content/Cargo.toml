@@ -12,6 +12,7 @@ publish.workspace = true
 frihart-autofill.workspace = true
 frihart-blocker.workspace = true
 frihart-html.workspace = true
+frihart-js.workspace = true
 frihart-extensions.workspace = true
 frihart-config.workspace = true
 frihart-core.workspace = true

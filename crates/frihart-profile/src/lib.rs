@@ -377,7 +377,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("frihart-wipe-{stamp}"));
         {
             let mut p = Profile::open_dir(&root).unwrap();
-            p.bookmarks_mut().add("Keep", "about:home");
+            p.bookmarks_mut().add("Keep", "https://keep.test/");
             p.save_bookmarks().unwrap();
             p.record_visit("about:privacy", "Privacy").unwrap();
             assert!(!p.history().is_empty());
@@ -402,7 +402,7 @@ mod tests {
         let root = std::env::temp_dir().join(format!("frihart-reset-{stamp}"));
         {
             let mut p = Profile::open_dir(&root).unwrap();
-            p.bookmarks_mut().add("Keep", "about:home");
+            p.bookmarks_mut().add("Keep", "https://keep.test/");
             p.save_bookmarks().unwrap();
             p.prefs_mut().privacy.javascript = true;
             p.save_prefs().unwrap();

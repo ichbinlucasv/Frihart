@@ -102,6 +102,57 @@ impl Bus {
     }
 }
 
+/// In-process stand-in for "one content process per isolation key."
+#[derive(Clone, Debug)]
+pub struct ContentSlot {
+    pub id: u32,
+    pub key: IsolationKey,
+    pub alive: bool,
+    /// Content never sees the profile path.
+    pub may_read_profile: bool,
+    /// Content never opens a raw socket.
+    pub may_open_socket: bool,
+}
+
+#[derive(Debug, Default)]
+pub struct Supervisor {
+    next: u32,
+    pub slots: Vec<ContentSlot>,
+}
+
+impl Supervisor {
+    pub fn slot_for(&mut self, key: IsolationKey) -> &ContentSlot {
+        if let Some(i) = self.slots.iter().position(|s| s.alive && s.key == key) {
+            return &self.slots[i];
+        }
+        self.next += 1;
+        self.slots.push(ContentSlot {
+            id: self.next,
+            key,
+            alive: true,
+            may_read_profile: false,
+            may_open_socket: false,
+        });
+        self.slots.last().expect("just pushed")
+    }
+
+    pub fn kill(&mut self, key: &IsolationKey) {
+        for s in &mut self.slots {
+            if s.key.eq(key) {
+                s.alive = false;
+            }
+        }
+    }
+
+    pub fn live(&self) -> impl Iterator<Item = &ContentSlot> + '_ {
+        self.slots.iter().filter(|s| s.alive)
+    }
+
+    pub fn live_count(&self) -> usize {
+        self.live().count()
+    }
+}
+
 pub fn navigate_msg(tab: TabId, url: &str, key: &IsolationKey) -> Message {
     Message::Navigate {
         tab: tab.0,
@@ -134,5 +185,20 @@ mod tests {
             bus.last_to(ProcessKind::Network).map(|e| &e.message),
             Some(Message::Ping)
         ));
+    }
+
+    #[test]
+    fn one_slot_per_isolation_key() {
+        let mut sup = Supervisor::default();
+        let a = IsolationKey::new("https", "a.test", ContainerId::PERSONAL);
+        let b = IsolationKey::new("https", "b.test", ContainerId::PERSONAL);
+        let id_a = sup.slot_for(a.clone()).id;
+        assert_eq!(sup.slot_for(a.clone()).id, id_a);
+        assert_ne!(sup.slot_for(b.clone()).id, id_a);
+        assert_eq!(sup.live_count(), 2);
+        sup.kill(&a);
+        assert_eq!(sup.live_count(), 1);
+        assert!(!sup.slot_for(b).may_read_profile);
+        assert!(!sup.slots.iter().any(|s| s.may_open_socket));
     }
 }
