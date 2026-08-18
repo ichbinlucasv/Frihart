@@ -378,4 +378,21 @@ mod tests {
             }
         )));
     }
+
+    #[test]
+    fn rfc1918_is_readable() {
+        let html = include_str!("../testdata/rfc1918.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert_eq!(f.title, "Address Allocation for Private Internets");
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("10.0.0.0"));
+        assert!(blob.contains("172.16"));
+        assert!(blob.contains("192.168"));
+        assert!(blob.contains("private"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        assert!(f.boxes.iter().any(|b| b.rule));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert_eq!(wide.title, f.title);
+        assert!(wide.boxes.iter().any(|b| b.text.contains("10.0.0.0")));
+    }
 }

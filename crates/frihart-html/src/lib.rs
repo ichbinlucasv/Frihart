@@ -68,6 +68,12 @@ pub fn document_title(root: &Node) -> String {
             return t;
         }
     }
+    if let Some(t) = find_class_text(root, "h1") {
+        let t = t.split_whitespace().collect::<Vec<_>>().join(" ");
+        if !t.is_empty() {
+            return t;
+        }
+    }
     String::new()
 }
 
@@ -532,6 +538,22 @@ fn heading_level(name: &str) -> Option<u8> {
     }
 }
 
+fn find_class_text(node: &Node, class: &str) -> Option<String> {
+    let classes = node.attr("class").unwrap_or_default();
+    if classes.split_whitespace().any(|c| c == class) {
+        let t = node.text_content();
+        if !t.is_empty() {
+            return Some(t);
+        }
+    }
+    for child in &node.children {
+        if let Some(t) = find_class_text(child, class) {
+            return Some(t);
+        }
+    }
+    None
+}
+
 fn find_text(node: &Node, tag: &str) -> Option<String> {
     if node.name == tag {
         return Some(node.text_content());
@@ -571,6 +593,17 @@ mod tests {
             blocks
                 .iter()
                 .any(|b| matches!(b, Block::Field(f) if f.input_type == "password"))
+        );
+    }
+
+    #[test]
+    fn title_falls_back_to_h1_class() {
+        let html = r#"<pre>RFC 1918
+<span class="h1">Address Allocation for Private Internets</span>
+        </pre>"#;
+        assert_eq!(
+            document_title(&parse(html)),
+            "Address Allocation for Private Internets"
         );
     }
 

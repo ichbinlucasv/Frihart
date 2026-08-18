@@ -50,8 +50,8 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.rfc-editor.org/rfc/rfc1918.html",
             name: "RFC 1918 HTML",
-            status: ClaimStatus::Target,
-            note: "plain RFC document",
+            status: ClaimStatus::Claimed,
+            note: "9 pre pages, span.h1 title, 10/8 172.16/12 192.168/16; live HTML 2026-08-18",
         },
         SiteClaim {
             url: "https://www.gnu.org/philosophy/",
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 1);
+        assert_eq!(public_claimed(), 2);
         assert!(
             claims()
                 .iter()
@@ -123,6 +123,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("example.com"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc1918"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

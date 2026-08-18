@@ -27,6 +27,12 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
 
 ## Network
 
+- Tracking query keys (`utm_*`, `gclid`, `fbclid`, …) stripped on
+  every http(s) URL. Native ClearURLs. No list server.
+- A public-name page that redirects to loopback, link-local, or
+  RFC1918 / ULA is refused (no IMDS, no LAN scan).
+- Dual-stack: IPv4 and IPv6 literals and names. System resolver
+  (A + AAAA). No IPv4-only force.
 - Zero connections on startup.
 - rustls only. No system CA surprises as the product default.
 - Frozen User-Agent. No Client Hints.

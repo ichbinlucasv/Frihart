@@ -16,6 +16,7 @@ These are our chrome. They do not prove the HTML engine.
 | URL | Why |
 | --- | --- |
 | https://example.com/ | Live HTML 2026-08-18. Title, `h1` at `1.5em` of parent, two paragraphs, IANA link via `a:link`. Body `60vw` + `margin: auto` centers the column. Light `#eee` canvas gets dark ink so it stays readable. `opacity` and `font-family` are ignored. |
+| https://www.rfc-editor.org/rfc/rfc1918.html | Live HTML 2026-08-18. No `<title>` — title from `span.h1`. Nine `<pre>` pages + `<hr>` page breaks. Private nets `10/8`, `172.16/12`, `192.168/16` visible. Also checked at 5120×1440 (G9-class). |
 
 ## Target (open next)
 
@@ -25,7 +26,6 @@ boxes, GET forms):
 
 | URL | Why |
 | --- | --- |
-| https://www.rfc-editor.org/rfc/rfc1918.html | Plain RFC document |
 | https://www.gnu.org/philosophy/ | Essays |
 | https://suckless.org/ | Small static pages |
 | https://www.kernel.org/ | Simple landing + docs |

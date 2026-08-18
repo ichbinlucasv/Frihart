@@ -486,6 +486,11 @@ impl Browser {
     }
 
     pub fn navigate(&mut self, url: Url) {
+        let url = if url.scheme() == "https" || url.scheme() == "http" {
+            frihart_net::strip_tracking(&url)
+        } else {
+            url
+        };
         if url.scheme() == "frihart" {
             let spec = url.as_str().trim_start_matches("frihart:");
             if let Some(slug) = spec.strip_prefix("container/") {
@@ -541,7 +546,7 @@ impl Browser {
         self.persist_jar();
         self.field_focus = None;
         let _ = self.supervisor.slot_for(key);
-        self.prepare_frame(720.0);
+        self.prepare_frame(self.active_tab().frame_w.max(960.0));
         self.status.clear();
     }
 
@@ -558,12 +563,17 @@ impl Browser {
         }
         self.sync_url_bar();
         self.persist_jar();
-        self.prepare_frame(720.0);
+        self.prepare_frame(self.active_tab().frame_w.max(960.0));
         self.status.clear();
     }
 
     fn open_url(&mut self, url: &Url) -> Document {
-        let (target, _view_source) = strip_view_source(url);
+        let cleaned = if url.scheme() == "https" || url.scheme() == "http" {
+            frihart_net::strip_tracking(url)
+        } else {
+            url.clone()
+        };
+        let (target, _view_source) = strip_view_source(&cleaned);
         if target.scheme() == "about" {
             return load(&target, &self.profile);
         }

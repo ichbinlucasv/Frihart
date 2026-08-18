@@ -102,7 +102,11 @@ impl Metrics {
     }
 
     pub fn content_max_w(&self) -> i32 {
-        self.s(720.0)
+        self.s(2400.0)
+    }
+
+    pub fn content_min_w(&self) -> i32 {
+        self.s(320.0)
     }
 
     pub fn content_pad(&self) -> i32 {

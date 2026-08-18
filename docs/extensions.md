@@ -37,10 +37,18 @@ Nothing in the package is executed. There is no JS engine yet.
 
 | Firefox add-on job | Frihart today |
 | --- | --- |
-| uBlock Origin style blocking | `frihart-blocker`, on by default |
+| uBlock Origin / Disconnect / Privacy Badger | `frihart-blocker`, on by default |
+| ClearURLs / Don't track me Google | strip `utm_*` / click ids |
+| Consent-O-Matic | CMP hosts in the blocker seed |
+| NoScript / PopUpOFF | JS off; `javascript:` refused |
 | Multi-Account Containers | first-class containers |
-| Resist fingerprinting / privacy | `frihart-privacy` prefs |
-| Dark theme | black / yellow chrome |
+| Dark Reader | black / yellow chrome |
+| DeepL | `about:translate` |
+| Swisscows | `about:search` |
+| Proton Pass / Proton VPN | external CLIs, `about:pass` / `about:vpn` |
+| Clear Cache / History Cleaner | wipe / reset / shred |
+| Port Authority | private/loopback redirect refuse |
+| TrafficLight | no cloud reputation; local blocker only |
 
 When the WebExtensions host can run JS, those add-ons can *also* be
 sideloaded. The native path stays. An add-on must not be required for

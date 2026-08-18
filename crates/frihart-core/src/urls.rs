@@ -33,6 +33,9 @@ pub fn looks_like_destination(input: &str) -> bool {
     if trimmed.starts_with("about:") || trimmed.starts_with("file:") {
         return true;
     }
+    if trimmed.starts_with('[') && trimmed.contains(']') {
+        return true;
+    }
     if let Ok(url) = Url::parse(trimmed) {
         if is_script_scheme(url.scheme()) || is_known_scheme(url.scheme()) {
             return true;
@@ -75,16 +78,21 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
         }
     }
 
+    if trimmed.starts_with('[') {
+        if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
+            if url.host_str().is_some() {
+                return Some(url);
+            }
+        }
+    }
+
     if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
         if url
             .host_str()
-            .is_some_and(|h| h.contains('.') || h == "localhost")
+            .is_some_and(|h| h.contains('.') || h == "localhost" || h.contains(':'))
         {
             return Some(url);
         }
-        // Bare words such as "settings" become about: pages if they match,
-        // otherwise still https://word — the content crate will explain
-        // that the network stack is not ready.
         return Some(url);
     }
 
@@ -195,6 +203,12 @@ mod tests {
         assert!(!looks_like_destination("librewolf"));
         assert!(looks_like_destination("example.com"));
         assert!(looks_like_destination("about:home"));
+        assert!(looks_like_destination("[2001:db8::1]"));
+        let v6 = parse_user_input("https://[2001:db8::1]/").unwrap();
+        let host = v6.host_str().unwrap_or("");
+        assert!(host.contains("2001:db8::1") || host.contains("2001:db8:"));
+        let bare = parse_user_input("[::1]").unwrap();
+        assert!(bare.host_str().is_some_and(|h| h.contains("::1")));
     }
 
     #[test]

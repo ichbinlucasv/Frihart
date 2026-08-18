@@ -58,7 +58,7 @@ impl Handler {
         let title = window_title(&self.browser.active_tab().title());
         let attrs = Window::default_attributes()
             .with_title(title)
-            .with_inner_size(winit::dpi::LogicalSize::new(1120.0, 780.0));
+            .with_inner_size(winit::dpi::LogicalSize::new(1600.0, 900.0));
         let window = match event_loop.create_window(attrs) {
             Ok(w) => Arc::new(w),
             Err(_) => {
@@ -113,7 +113,7 @@ impl Handler {
         let scale = ws.window.scale_factor() as f32;
         let m = Metrics::new(scale);
         let pad = m.content_pad();
-        let content_w = m.content_max_w().min(width as i32 - pad * 2);
+        let content_w = (width as i32 - pad * 2).clamp(m.content_min_w(), m.content_max_w());
         self.browser.prepare_frame(content_w as f32);
         self.hits = paint(&mut fb, &mut self.text, &self.browser, scale);
         if buffer.len() == fb.pixels.len() {

@@ -1784,6 +1784,25 @@ fn extensions(url: &Url, profile: &Profile) -> Document {
         }
     }
     blocks.extend([
+        Block::Heading("Native (these jobs, no .xpi)".into()),
+        Block::List(vec![
+            "uBlock Origin / Disconnect / Privacy Badger / TrafficLight — frihart-blocker".into(),
+            "ClearURLs / Don't track me Google — strip utm_*, gclid, fbclid on every URL".into(),
+            "Consent-O-Matic — CMP hosts blocked (Cookiebot, OneTrust, …)".into(),
+            "NoScript / PopUpOFF — JS off; javascript: refused".into(),
+            "Firefox Multi-Account Containers — about:containers".into(),
+            "Dark Reader — black/yellow chrome; light pages get dark ink".into(),
+            "DeepL — about:translate (your key, no Google)".into(),
+            "Swisscows — about:search".into(),
+            "Proton Pass / Proton VPN — about:pass / about:vpn (external CLIs)".into(),
+            "Clear Cache / History Cleaner — about:shred wipe / reset / shred".into(),
+            "Port Authority — private/loopback/link-local redirect refused".into(),
+        ]),
+        Block::Note(
+            "Firefox add-ons are not executed. Frihart does the same jobs \
+             natively. Sideload an .xpi only to audit it."
+                .into(),
+        ),
         Block::Heading("Compatibility ladder".into()),
         Block::List(vec![
             "Now — parse XPI / unpacked, install into the profile, audit permissions".into(),
