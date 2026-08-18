@@ -24,10 +24,12 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
     for frag in visible_fragments(&tree) {
         let el = element_from(&frag);
         let style = style_element(&el, &user, &author_sheet);
-        let (text, href, preserve, image) = match frag.kind {
-            Block::Heading(_, t) | Block::Text(t) | Block::Quote(t) => (t, None, false, false),
-            Block::Pre(t) => (t, None, true, false),
-            Block::Link { text, href } => (text, Some(href), false, false),
+        let (text, href, preserve, image, cells) = match frag.kind {
+            Block::Heading(_, t) | Block::Text(t) | Block::Quote(t) => {
+                (t, None, false, false, Vec::new())
+            }
+            Block::Pre(t) => (t, None, true, false, Vec::new()),
+            Block::Link { text, href } => (text, Some(href), false, false, Vec::new()),
             Block::ListItem {
                 ordered,
                 index,
@@ -38,7 +40,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                 } else {
                     "• ".into()
                 };
-                (format!("{prefix}{text}"), None, false, false)
+                (format!("{prefix}{text}"), None, false, false, Vec::new())
             }
             Block::Image { alt, src } => {
                 let label = if alt.is_empty() {
@@ -46,13 +48,13 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
                 } else {
                     format!("[img] {alt}")
                 };
-                (label, None, false, true)
+                (label, None, false, true, Vec::new())
             }
             Block::Field(f) => {
                 let name = if f.label.is_empty() { f.name } else { f.label };
-                (name, None, false, false)
+                (name, None, false, false, Vec::new())
             }
-            Block::TableRow { cells } => (cells.join("  ·  "), None, true, false),
+            Block::TableRow { cells } => (String::new(), None, false, false, cells),
         };
         items.push(FlowItem {
             text,
@@ -60,6 +62,7 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
             href,
             preserve,
             image,
+            cells,
         });
     }
     let boxes = block_flow(&items, viewport_w, 0.0);
@@ -146,16 +149,19 @@ mod tests {
     }
 
     #[test]
-    fn tables_become_rows() {
+    fn tables_become_columns() {
         let f = layout_html(
-            "<table><tr><td>left</td><td>right</td></tr></table>",
+            "<table><tr><td>left</td><td>right</td></tr><tr><td>1</td><td>2</td></tr></table>",
             "",
             400.0,
         );
-        assert!(
-            f.boxes
-                .iter()
-                .any(|b| b.text.contains("left") && b.text.contains("right"))
-        );
+        let left = f.boxes.iter().find(|b| b.text == "left").expect("left");
+        let right = f.boxes.iter().find(|b| b.text == "right").expect("right");
+        let one = f.boxes.iter().find(|b| b.text == "1").expect("1");
+        assert!(right.x > left.x);
+        assert!((left.y - right.y).abs() < 0.5);
+        assert!(one.y > left.y);
+        assert!((one.x - left.x).abs() < 0.5);
+        assert!(left.cell && right.cell);
     }
 }

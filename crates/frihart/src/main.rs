@@ -44,7 +44,7 @@ fn try_main() -> frihart_core::Result<()> {
         return Ok(());
     }
 
-    let profile = if args.private {
+    let profile = if frihart_platform::should_open_ephemeral(args.private, args.profile.is_some()) {
         Profile::ephemeral()?
     } else if let Some(path) = args.profile {
         Profile::open_dir(path)?

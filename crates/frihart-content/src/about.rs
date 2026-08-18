@@ -544,9 +544,16 @@ fn processes_page(url: &Url) -> Document {
                 "http and https of the same host never share a slot".into(),
                 "content may not read prefs.toml or open a raw socket".into(),
             ]),
+            Block::KeyValue {
+                key: "landlock abi".into(),
+                value: match frihart_platform::landlock_abi() {
+                    Some(v) => format!("{v}"),
+                    None => "unavailable".into(),
+                },
+            },
             Block::Note(
-                "Supervisor types exist in frihart-ipc. OS split (seccomp, landlock) \
-                 is the rest of campaign E."
+                "Content children get no_new_privs + landlock (read /usr /lib /bin \
+                 /etc). Do not apply that in chrome. seccomp comes next."
                     .into(),
             ),
         ],

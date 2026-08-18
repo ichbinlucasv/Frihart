@@ -2,7 +2,9 @@
 //!
 //! Other platforms return `Unsupported` until their roadmap phase.
 
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
+
+mod sandbox;
 
 use std::env;
 use std::path::{Path, PathBuf};
@@ -63,30 +65,7 @@ pub fn window_title(page_title: &str) -> String {
     }
 }
 
-/// Sandbox hooks. Phase 1 records intent; Phase 6 applies.
-#[derive(Clone, Debug, Default)]
-pub struct SandboxSpec {
-    pub enabled: bool,
-    pub seccomp: bool,
-    pub landlock: bool,
-    pub no_new_privs: bool,
-}
-
-impl SandboxSpec {
-    pub fn content_default() -> Self {
-        Self {
-            enabled: true,
-            seccomp: true,
-            landlock: true,
-            no_new_privs: true,
-        }
-    }
-
-    pub fn apply(&self) -> Result<()> {
-        let _ = (self.enabled, self.seccomp, self.landlock, self.no_new_privs);
-        Ok(())
-    }
-}
+pub use sandbox::{SandboxReport, SandboxSpec, landlock_abi};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Os {
@@ -210,6 +189,22 @@ fn os_kv(text: &str, key: &str) -> String {
 
 pub fn is_qubes_disposable() -> bool {
     Path::new("/run/qubes/this-is-dvm").exists() || env::var_os("QUBES_DVM").is_some()
+}
+
+/// Tails / Qubes-DVM: open memory-only unless the user passed `--profile`.
+pub fn should_open_ephemeral(private_flag: bool, explicit_profile: bool) -> bool {
+    ephemeral_decision(
+        private_flag,
+        explicit_profile,
+        detect_linux_home().prefer_ephemeral(),
+    )
+}
+
+pub fn ephemeral_decision(private_flag: bool, explicit_profile: bool, prefer: bool) -> bool {
+    if explicit_profile {
+        return false;
+    }
+    private_flag || prefer
 }
 
 pub fn is_linux() -> bool {
@@ -343,5 +338,8 @@ mod tests {
         assert_eq!(parse_os_release("ID=arch\n"), LinuxHome::Arch);
         assert!(LinuxHome::Tails.tor_is_the_network());
         assert!(LinuxHome::Tails.prefer_ephemeral());
+        assert!(ephemeral_decision(false, false, true));
+        assert!(!ephemeral_decision(false, true, true));
+        assert!(ephemeral_decision(true, false, false));
     }
 }

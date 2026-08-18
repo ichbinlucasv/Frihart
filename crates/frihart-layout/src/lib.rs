@@ -15,6 +15,8 @@ pub struct FlowItem {
     pub href: Option<String>,
     pub preserve: bool,
     pub image: bool,
+    /// Non-empty: this item is a table row. Cells are laid out in columns.
+    pub cells: Vec<String>,
 }
 
 impl FlowItem {
@@ -25,6 +27,7 @@ impl FlowItem {
             href: None,
             preserve: false,
             image: false,
+            cells: Vec::new(),
         }
     }
 }
@@ -40,6 +43,7 @@ pub struct LayoutBox {
     pub href: Option<String>,
     pub preserve: bool,
     pub image: bool,
+    pub cell: bool,
 }
 
 thread_local! {
@@ -77,47 +81,103 @@ pub fn block_flow(items: &[FlowItem], viewport_w: f32, origin_y: f32) -> Vec<Lay
     let mut y = origin_y;
     let mut out = Vec::new();
     let vw = viewport_w.max(1.0);
-    for item in items {
-        if matches!(item.style.display, Display::None) {
+    let mut i = 0;
+    while i < items.len() {
+        if matches!(items[i].style.display, Display::None) {
+            i += 1;
             continue;
         }
-        let mut width = item.style.width.unwrap_or(vw).min(vw);
-        if let Some(max_w) = item.style.max_width {
-            width = width.min(max_w);
+        if !items[i].cells.is_empty() {
+            let start = i;
+            while i < items.len()
+                && !items[i].cells.is_empty()
+                && !matches!(items[i].style.display, Display::None)
+            {
+                i += 1;
+            }
+            let (boxes, next_y) = layout_table(&items[start..i], vw, y);
+            out.extend(boxes);
+            y = next_y;
+            continue;
         }
-        let x = match item.style.text_align {
-            Align::Start => 0.0,
-            Align::Center => ((vw - width) / 2.0).max(0.0),
-            Align::End => (vw - width).max(0.0),
-        };
-        let inner_w = (width - item.style.padding * 2.0).max(1.0);
-        let lh = item.style.line_height();
-        let text_h = if item.image {
-            72.0
-        } else {
-            measure_wrapped(
-                &item.text,
-                item.style.font_size,
-                lh,
-                inner_w,
-                !item.preserve,
-            )
-        };
-        let h = text_h + item.style.padding * 2.0;
-        out.push(LayoutBox {
-            x,
-            y: y + item.style.margin,
-            w: width,
-            h,
-            text: item.text.clone(),
-            style: item.style.clone(),
-            href: item.href.clone(),
-            preserve: item.preserve,
-            image: item.image,
-        });
-        y += item.style.margin + h + item.style.margin;
+        out.push(layout_block(&items[i], vw, y));
+        let last = out.last().expect("just pushed");
+        y = last.y + last.h + items[i].style.margin;
+        i += 1;
     }
     out
+}
+
+fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
+    let mut width = item.style.width.unwrap_or(vw).min(vw);
+    if let Some(max_w) = item.style.max_width {
+        width = width.min(max_w);
+    }
+    let x = match item.style.text_align {
+        Align::Start => 0.0,
+        Align::Center => ((vw - width) / 2.0).max(0.0),
+        Align::End => (vw - width).max(0.0),
+    };
+    let inner_w = (width - item.style.padding * 2.0).max(1.0);
+    let lh = item.style.line_height();
+    let text_h = if item.image {
+        72.0
+    } else {
+        measure_wrapped(
+            &item.text,
+            item.style.font_size,
+            lh,
+            inner_w,
+            !item.preserve,
+        )
+    };
+    LayoutBox {
+        x,
+        y: y + item.style.margin,
+        w: width,
+        h: text_h + item.style.padding * 2.0,
+        text: item.text.clone(),
+        style: item.style.clone(),
+        href: item.href.clone(),
+        preserve: item.preserve,
+        image: item.image,
+        cell: false,
+    }
+}
+
+fn layout_table(rows: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f32) {
+    let cols = rows.iter().map(|r| r.cells.len()).max().unwrap_or(0).max(1);
+    let gap = 2.0;
+    let col_w = ((vw - gap * (cols.saturating_sub(1) as f32)) / cols as f32).max(8.0);
+    let mut out = Vec::new();
+    for row in rows {
+        let pad = row.style.padding.max(4.0);
+        let lh = row.style.line_height();
+        let inner = (col_w - pad * 2.0).max(1.0);
+        let mut row_h = lh + pad * 2.0;
+        for cell in 0..cols {
+            let text = row.cells.get(cell).cloned().unwrap_or_default();
+            let h = measure_wrapped(&text, row.style.font_size, lh, inner, true) + pad * 2.0;
+            row_h = row_h.max(h);
+        }
+        for cell in 0..cols {
+            let text = row.cells.get(cell).cloned().unwrap_or_default();
+            out.push(LayoutBox {
+                x: cell as f32 * (col_w + gap),
+                y: y + row.style.margin,
+                w: col_w,
+                h: row_h,
+                text,
+                style: row.style.clone(),
+                href: None,
+                preserve: false,
+                image: false,
+                cell: true,
+            });
+        }
+        y += row.style.margin + row_h + row.style.margin;
+    }
+    (out, y)
 }
 
 pub fn content_height(boxes: &[LayoutBox]) -> f32 {
@@ -156,5 +216,19 @@ mod tests {
         let wide = measure_wrapped(&long, style.font_size, style.line_height(), 800.0, true);
         let narrow = measure_wrapped(&long, style.font_size, style.line_height(), 80.0, true);
         assert!(narrow > wide + style.line_height() * 0.5);
+    }
+
+    #[test]
+    fn table_cells_sit_in_columns() {
+        let mut row = FlowItem::text("", ua_style("td"));
+        row.cells = vec!["left".into(), "right".into()];
+        let boxes = block_flow(&[row.clone(), row], 400.0, 0.0);
+        assert_eq!(boxes.len(), 4);
+        assert!(boxes[0].cell && boxes[1].cell);
+        assert!(boxes[1].x > boxes[0].x);
+        assert!((boxes[0].y - boxes[1].y).abs() < 0.5);
+        assert!(boxes[2].y > boxes[0].y);
+        assert_eq!(boxes[0].text, "left");
+        assert_eq!(boxes[1].text, "right");
     }
 }

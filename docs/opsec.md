@@ -40,13 +40,18 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
 Rust removes a class of RCEs that still ship in Gecko and Blink. It
 does not remove logic bugs.
 
-Target (Phase 6):
+Target (Phase 6 / campaign E):
 
 - Chrome is the only process that touches the full profile.
 - One content process per isolation key.
 - Network process has no DOM.
-- Linux sandbox: seccomp-bpf, landlock, `no_new_privs`.
+- Linux sandbox on **content children**: `no_new_privs` + landlock
+  (read `/usr` `/lib` `/bin` `/etc`). Not applied in chrome.
+- seccomp-bpf next.
 - A tab crash reloads that tab, not the browser.
+
+Tails and Qubes DisposableVMs open a private (memory-only) profile
+unless `--profile` is set.
 
 Until then, crate seams are written as if IPC already existed.
 

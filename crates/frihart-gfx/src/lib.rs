@@ -63,7 +63,19 @@ impl DisplayList {
 pub fn from_boxes(boxes: &[LayoutBox]) -> DisplayList {
     let mut list = DisplayList::default();
     for b in boxes {
-        if b.image || b.style.background != 0 {
+        if b.cell {
+            list.ops.push(DisplayOp::Fill {
+                x: b.x,
+                y: b.y,
+                w: b.w,
+                h: b.h,
+                color: if b.style.background != 0 {
+                    b.style.background
+                } else {
+                    0x00181818
+                },
+            });
+        } else if b.image || b.style.background != 0 {
             list.ops.push(DisplayOp::Fill {
                 x: b.x,
                 y: b.y,

@@ -412,9 +412,8 @@ fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         .iter()
         .filter(|c| c.name == "td" || c.name == "th")
         .map(|c| c.text_content())
-        .filter(|t| !t.is_empty())
         .collect();
-    if cells.is_empty() {
+    if cells.iter().all(|t| t.is_empty()) {
         return;
     }
     push_frag(out, qual_of(tr), ancs, Block::TableRow { cells });

@@ -636,6 +636,7 @@ dependencies = [
  "clap",
  "frihart-chrome",
  "frihart-core",
+ "frihart-platform",
  "frihart-profile",
 ]
 
@@ -831,6 +832,7 @@ name = "frihart-platform"
 version = "0.1.0"
 dependencies = [
  "frihart-core",
+ "libc",
 ]
 
 [[package]]

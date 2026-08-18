@@ -10,3 +10,4 @@ publish.workspace = true
 
 [dependencies]
 frihart-core.workspace = true
+libc.workspace = true

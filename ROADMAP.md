@@ -569,5 +569,8 @@ A sustainable rhythm for a long project:
 - [x] cosmic-text wrap + display-list link hits
 - [x] Tor SOCKS5 (fail closed) + Downloads 0600 never execute
 - [ ] Chrome paints only the pipeline (fields still overlay)
-- [ ] Distro notes for Tails (amnesic) and Qubes (DisposableVM)
+- [x] Table grid (cells in columns)
+- [x] Content sandbox: no_new_privs + landlock (child only)
+- [x] Tails / Qubes-DVM default to private profile
+- [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages besides the Arch PKGBUILD
