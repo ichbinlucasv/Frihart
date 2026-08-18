@@ -742,10 +742,10 @@ fn script_page(url: &Url, prefs: &Prefs) -> Document {
                     .collect(),
             ),
             Block::Note(
-                "Flipping the pref does not start a JS engine and does not \
-                 open cookie, storage, WebRTC, or WebSocket. javascript: URLs \
-                 are refused (including javascript://). Fingerprint APIs stay \
-                 denied after a runtime exists."
+                "A JS engine can be written in Rust. We have not started one. \
+                 Campaign G, if it ever starts, is a small Frihart interpreter \
+                 — not V8, not SpiderMonkey, not a Firefox embed. Until then \
+                 flipping the pref does not execute, and javascript: is refused."
                     .into(),
             ),
         ],

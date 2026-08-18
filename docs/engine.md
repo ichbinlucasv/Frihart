@@ -25,7 +25,10 @@ not mutate it.
 - CSS: `em`/`rem`/`vw`/`vh`/`%`, `font-weight`, `border`, `height`, `:link`
 - Nested `<strong>`/`<em>`/`<code>` as their own fragments (UA bold paints)
 - Tables as a column grid, including `<caption>`
-- Links: one display-list path, clickable
+- Links: one display-list path, clickable. A heading with one
+  destination (link-only, or link plus extra title) is one hit.
+- Text is UTF-8 (not Latin-1 bytes). `&nbsp;` / U+00A0 collapse like
+  other whitespace.
 - Form fields on the display list (GET submit)
 - Identity autofill (never passwords)
 - rustls fetch, first-party cookies, HTTPS-only

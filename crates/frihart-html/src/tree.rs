@@ -27,10 +27,14 @@ impl Node {
         }
         let mut s = String::new();
         for child in &self.children {
-            if !s.is_empty() {
+            let piece = child.text_content();
+            if piece.is_empty() {
+                continue;
+            }
+            if !s.is_empty() && needs_join_space(&s, &piece) {
                 s.push(' ');
             }
-            s.push_str(&child.text_content());
+            s.push_str(&piece);
         }
         collapse_ws(&s)
     }
@@ -162,6 +166,17 @@ fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+fn needs_join_space(left: &str, right: &str) -> bool {
+    let lc = left.chars().next_back().unwrap_or(' ');
+    let rc = right.chars().next().unwrap_or(' ');
+    !lc.is_whitespace()
+        && !rc.is_whitespace()
+        && !matches!(
+            rc,
+            ',' | '.' | ':' | ';' | '!' | '?' | ')' | ']' | '}' | '\'' | '"'
+        )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -178,5 +193,11 @@ mod tests {
         let html = serialize(&n);
         assert!(html.contains("<img src=\"a\">"));
         assert!(html.contains("<p>Hi</p>"));
+    }
+
+    #[test]
+    fn joins_split_rfc_number_without_space_before_colon() {
+        let n = parse("<a><span>RFC</span>\u{00a0}<span>10030</span>:</a>");
+        assert_eq!(n.text_content(), "RFC 10030:");
     }
 }

@@ -73,8 +73,10 @@ pub fn tokenize(input: &str) -> Vec<Token> {
             });
             continue;
         }
-        raw.push(bytes[i] as char);
-        i += 1;
+        // `input` is valid UTF-8; never treat a byte as a Latin-1 char.
+        let ch = input[i..].chars().next().expect("utf-8");
+        raw.push(ch);
+        i += ch.len_utf8();
     }
     flush_text(&mut raw, &mut out);
     out
@@ -279,5 +281,13 @@ mod tests {
         assert!(matches!(&t[0], Token::Start { name, .. } if name == "style"));
         assert!(matches!(&t[1], Token::Text(s) if s.contains("color")));
         assert!(matches!(&t[2], Token::End { name } if name == "style"));
+    }
+
+    #[test]
+    fn decodes_utf8_text_not_latin1_bytes() {
+        let t = tokenize("<p>RFC\u{00a0}10030 café</p>");
+        assert!(
+            matches!(&t[1], Token::Text(s) if s.contains('\u{00a0}') && s.contains('é') && !s.contains('Â'))
+        );
     }
 }

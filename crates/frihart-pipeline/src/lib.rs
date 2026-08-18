@@ -522,4 +522,24 @@ mod tests {
         let wide = layout_html_ex(html, "", 5120.0, 1440.0);
         assert!(wide.title.contains("IETF"));
     }
+
+    #[test]
+    fn rfc_editor_org_is_readable() {
+        let html = include_str!("../testdata/rfc-editor.org.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("RFC Editor"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("official home of RFCs") || blob.contains("The official home"));
+        assert!(blob.contains("Latest RFCs") || blob.contains("What Is an RFC"));
+        assert!(blob.contains("RFC 10030") || blob.contains("RFC 10031"));
+        assert!(blob.contains("Network Time Protocol") || blob.contains("Latest RFCs"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("/info/rfc10030"))
+                && (b.text.contains("RFC 10030") || b.text.contains("Network Time Protocol"))
+        }));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("RFC Editor"));
+    }
 }

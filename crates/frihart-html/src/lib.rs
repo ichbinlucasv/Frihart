@@ -162,20 +162,25 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         return;
     }
     let name = node.name.as_str();
-    if matches!(name, "script" | "style" | "noscript" | "head") {
+    if matches!(
+        name,
+        "script" | "style" | "noscript" | "head" | "svg" | "path" | "canvas"
+    ) {
         return;
     }
     if style_hides(node) {
         return;
     }
     let qual = qual_of(node);
-    if name == "a" && qual.classes.iter().any(|c| c == "headerlink") {
+    if name == "a" && is_headerlink(node) {
         return;
     }
     if let Some(level) = heading_level(name) {
         let t = heading_text(node);
         let links = collect_links(node);
-        if links.len() == 1 && t.trim() == links[0].0.trim() {
+        // One destination (link-only, or link plus extra title as on
+        // rfc-editor.org latest-RFC cards) stays a single hit.
+        if links.len() == 1 && !t.trim().is_empty() {
             push_frag(
                 out,
                 qual_of(node.children.iter().find(|c| c.name == "a").unwrap_or(node)),
@@ -519,6 +524,9 @@ fn collect_links(node: &Node) -> Vec<(String, String)> {
 
 fn collect_links_into(node: &Node, out: &mut Vec<(String, String)>) {
     if node.name == "a" {
+        if is_headerlink(node) {
+            return;
+        }
         let t = node.text_content();
         let href = normalize_href(&node.attr("href").unwrap_or_default());
         if !t.is_empty() && !href.is_empty() {
@@ -529,6 +537,13 @@ fn collect_links_into(node: &Node, out: &mut Vec<(String, String)>) {
     for child in &node.children {
         collect_links_into(child, out);
     }
+}
+
+fn is_headerlink(node: &Node) -> bool {
+    node.attr("class")
+        .unwrap_or_default()
+        .split_whitespace()
+        .any(|c| c == "headerlink")
 }
 
 fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
@@ -607,13 +622,7 @@ fn style_hides(node: &Node) -> bool {
 fn heading_text(node: &Node) -> String {
     let mut parts = Vec::new();
     for child in &node.children {
-        if child.name == "a"
-            && child
-                .attr("class")
-                .unwrap_or_default()
-                .split_whitespace()
-                .any(|c| c == "headerlink")
-        {
+        if child.name == "a" && is_headerlink(child) {
             continue;
         }
         let t = child.text_content();
@@ -789,6 +798,21 @@ line2</pre>
     }
 
     #[test]
+    fn skips_svg() {
+        let html = r#"<p>ok</p><svg><path d="M0"></path>ignore</svg>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Inline(t) | Block::Text(t) if t == "ok"))
+        );
+        assert!(!blocks.iter().any(|b| match b {
+            Block::Text(t) | Block::Inline(t) => t.contains("ignore"),
+            _ => false,
+        }));
+    }
+
+    #[test]
     fn heading_that_is_a_link() {
         let html = r#"<h3><a href="/meeting/127/">IETF 127 San Francisco</a></h3>"#;
         let blocks = visible_blocks(&parse(html));
@@ -797,6 +821,20 @@ line2</pre>
             Block::Link { text, href }
                 if text.contains("IETF 127") && href.contains("/meeting/127")
         )));
+    }
+
+    #[test]
+    fn heading_link_plus_title() {
+        let html = "<h3><a href=\"/info/rfc10030/\"><span>RFC</span>\u{00a0}<span>10030</span>:</a><span> Network Time Protocol</span></h3>";
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Link { text, href }
+                if text.contains("RFC 10030")
+                    && text.contains("Network Time Protocol")
+                    && href.contains("/info/rfc10030")
+        )));
+        assert!(!blocks.iter().any(|b| matches!(b, Block::Heading(_, _))));
     }
 
     #[test]

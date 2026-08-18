@@ -86,8 +86,14 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.rfc-editor.org/",
             name: "rfc-editor.org",
+            status: ClaimStatus::Claimed,
+            note: "SSR index, official home, latest RFC cards as links; live HTML 2026-08-18",
+        },
+        SiteClaim {
+            url: "https://www.w3.org/",
+            name: "w3.org",
             status: ClaimStatus::Target,
-            note: "RFC index landing — not opened yet",
+            note: "W3C landing — not opened yet",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -131,7 +137,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 7);
+        assert_eq!(public_claimed(), 8);
         assert!(
             claims()
                 .iter()
@@ -172,6 +178,9 @@ mod tests {
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("www.ietf.org"))
         );
+        assert!(claims().iter().any(|s| s.status == ClaimStatus::Claimed
+            && s.url.contains("rfc-editor.org")
+            && !s.url.contains("rfc1918")));
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")
             || s.note.contains("JS")));
