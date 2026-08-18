@@ -442,6 +442,32 @@ a generic exploit runtime.
 
 ---
 
+## Phase 12 — Engine pipeline
+
+**Goal:** one function from HTML bytes to a display list.
+
+Crate: `frihart-pipeline`. Tests exist. Chrome still paints its own way until layout is trusted.
+
+---
+
+## Phase 13 — Chrome language
+
+**Goal:** every chrome string goes through `frihart-i18n`. Default English.
+
+---
+
+## Phase 14 — Print
+
+**Goal:** display list → PDF/PS. Crate: `frihart-print`. Local only.
+
+---
+
+## Phase 15 — Extension runtime
+
+**Goal:** execute sideloaded WebExtensions against the `browser.*` subset we have. Host crate already installs and audits. Runtime waits on Phase 6–7.
+
+---
+
 ## What we will not schedule
 
 - "Electron mode" or embedding Chromium to look finished
@@ -476,9 +502,13 @@ A sustainable rhythm for a long project:
 - [x] Native blocker seed + about:blocker
 - [x] Translator prefs + about:translate
 - [x] Find in page, bookmark shortcut, PKGBUILD
-- [ ] HiDPI and multi-window (Phase 1)
-- [ ] Bookmarks / history UI beyond the store (Phase 1)
+- [x] HiDPI scale (winit scale_factor → Metrics)
+- [ ] Multi-window (WindowId exists; one window still)
+- [x] Bookmarks / history as about: pages
 - [x] rustls fetch + view-source (Phase 2)
 - [x] First-party partitioned cookies, 0600 profile files
 - [x] Tor tabs refuse clearnet (no silent fallback)
-- [x] HTML subset engine + identity autofill (no password store)
+- [x] HTML subset + arena DOM + CSS/layout/gfx pipeline
+- [x] Identity autofill (no password store)
+- [ ] Live Tor SOCKS + download save (Phase 2 leftover)
+- [ ] Chrome paints only the pipeline (fields still overlay)

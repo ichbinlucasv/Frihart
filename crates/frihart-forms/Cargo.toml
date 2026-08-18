@@ -1,0 +1,12 @@
+[package]
+name = "frihart-forms"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Form submit encoding (Phase 5)"
+publish.workspace = true
+
+[dependencies]
+url.workspace = true

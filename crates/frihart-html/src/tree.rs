@@ -116,6 +116,48 @@ pub fn parse(input: &str) -> Node {
     stack.pop().unwrap_or_default()
 }
 
+/// Minimal HTML serializer for parse → serialize tests. Not a pretty printer.
+pub fn serialize(node: &Node) -> String {
+    if let Some(t) = &node.text {
+        return escape_text(t);
+    }
+    if node.name == "document" || node.name.is_empty() {
+        return node.children.iter().map(serialize).collect();
+    }
+    let mut s = String::new();
+    s.push('<');
+    s.push_str(&node.name);
+    for (k, v) in &node.attrs {
+        s.push(' ');
+        s.push_str(k);
+        s.push_str("=\"");
+        s.push_str(&escape_attr(v));
+        s.push('"');
+    }
+    if VOID.contains(&node.name.as_str()) && node.children.is_empty() {
+        s.push('>');
+        return s;
+    }
+    s.push('>');
+    for child in &node.children {
+        s.push_str(&serialize(child));
+    }
+    s.push_str("</");
+    s.push_str(&node.name);
+    s.push('>');
+    s
+}
+
+fn escape_text(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn escape_attr(s: &str) -> String {
+    escape_text(s).replace('"', "&quot;")
+}
+
 fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
@@ -133,5 +175,8 @@ mod tests {
         assert_eq!(div.children[0].name, "img");
         assert_eq!(div.children[1].name, "p");
         assert_eq!(div.children[1].text_content(), "Hi");
+        let html = serialize(&n);
+        assert!(html.contains("<img src=\"a\">"));
+        assert!(html.contains("<p>Hi</p>"));
     }
 }

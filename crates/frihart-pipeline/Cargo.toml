@@ -1,0 +1,16 @@
+[package]
+name = "frihart-pipeline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "HTML → CSS → style → layout → display list"
+publish.workspace = true
+
+[dependencies]
+frihart-css.workspace = true
+frihart-gfx.workspace = true
+frihart-html.workspace = true
+frihart-layout.workspace = true
+frihart-style.workspace = true

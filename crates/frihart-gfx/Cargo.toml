@@ -1,0 +1,15 @@
+[package]
+name = "frihart-gfx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Display list (Phase 4)"
+publish.workspace = true
+
+[dependencies]
+frihart-layout.workspace = true
+
+[dev-dependencies]
+frihart-style.workspace = true

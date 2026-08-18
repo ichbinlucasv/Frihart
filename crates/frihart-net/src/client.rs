@@ -83,10 +83,21 @@ impl HttpClient for RustlsClient {
                 ureq_req = ureq_req.set(k, v);
             }
 
-            let resp = match ureq_req.call() {
-                Ok(r) => r,
-                Err(ureq::Error::Status(_, r)) => r,
-                Err(e) => return Err(FrihartError::network(sanitize_error(&e.to_string()))),
+            let resp = match &request.body {
+                Some(body) if request.method.eq_ignore_ascii_case("post") => {
+                    match ureq_req.send_bytes(body) {
+                        Ok(r) => r,
+                        Err(ureq::Error::Status(_, r)) => r,
+                        Err(e) => {
+                            return Err(FrihartError::network(sanitize_error(&e.to_string())));
+                        }
+                    }
+                }
+                _ => match ureq_req.call() {
+                    Ok(r) => r,
+                    Err(ureq::Error::Status(_, r)) => r,
+                    Err(e) => return Err(FrihartError::network(sanitize_error(&e.to_string()))),
+                },
             };
 
             let status = resp.status();

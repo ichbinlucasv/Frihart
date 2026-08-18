@@ -6,7 +6,7 @@ mod token;
 mod tree;
 
 pub use token::{Token, tokenize};
-pub use tree::{Node, parse};
+pub use tree::{Node, parse, serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FormField {
@@ -25,6 +25,52 @@ pub fn document_title(root: &Node) -> String {
         }
     }
     String::new()
+}
+
+/// Concatenate every `<style>` element's text. Author CSS for the pipeline.
+pub fn author_css(root: &Node) -> String {
+    let mut out = String::new();
+    collect_style(root, &mut out);
+    out
+}
+
+fn collect_style(node: &Node, out: &mut String) {
+    if node.name == "style" {
+        for child in &node.children {
+            if let Some(t) = &child.text {
+                if !out.is_empty() {
+                    out.push('\n');
+                }
+                out.push_str(t);
+            }
+        }
+        return;
+    }
+    for child in &node.children {
+        collect_style(child, out);
+    }
+}
+
+pub fn first_form(root: &Node) -> (String, String) {
+    if let Some((a, m)) = find_form(root) {
+        return (a, m);
+    }
+    (String::new(), "get".into())
+}
+
+fn find_form(node: &Node) -> Option<(String, String)> {
+    if node.name == "form" {
+        return Some((
+            node.attr("action").unwrap_or_default(),
+            node.attr("method").unwrap_or_else(|| "get".into()),
+        ));
+    }
+    for child in &node.children {
+        if let Some(found) = find_form(child) {
+            return Some(found);
+        }
+    }
+    None
 }
 
 pub fn visible_blocks(root: &Node) -> Vec<Block> {
@@ -159,5 +205,11 @@ mod tests {
                 .iter()
                 .any(|b| matches!(b, Block::Field(f) if f.input_type == "password"))
         );
+    }
+
+    #[test]
+    fn extracts_author_css() {
+        let root = parse("<style>p { color: red }</style><p>x</p>");
+        assert!(author_css(&root).contains("color"));
     }
 }

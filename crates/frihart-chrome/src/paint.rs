@@ -4,6 +4,8 @@ use cosmic_text::Weight;
 
 use frihart_content::{Block, Document, PageItem};
 use frihart_core::display_url;
+use frihart_gfx::DisplayOp;
+use frihart_pipeline::layout_html;
 
 use crate::raster::{Framebuffer, Rect};
 use crate::state::{Browser, Hit};
@@ -411,7 +413,7 @@ fn paint_page(
     let fill = Rect::new(x, y, max_w, m.s(28.0));
     text.draw(
         fb,
-        "Fill identity",
+        &frihart_i18n::t("en", "fill-identity"),
         DrawText {
             x: fill.x,
             y,
@@ -430,7 +432,7 @@ fn paint_page(
     let pass = Rect::new(x + max_w / 2, y, max_w / 2, m.s(28.0));
     text.draw(
         fb,
-        "Password manager",
+        &frihart_i18n::t("en", "password-manager"),
         DrawText {
             x: pass.x,
             y,
@@ -447,9 +449,19 @@ fn paint_page(
         hit: Hit::PassLaunch,
     });
     y += m.s(36.0);
+    if !page.html.is_empty() {
+        let frame = layout_html(&page.html, "", max_w as f32);
+        y = paint_display_list(fb, text, &frame.display, x, y, viewport, m);
+    }
     for (i, item) in page.items.iter().enumerate() {
         if y > viewport.bottom() {
             break;
+        }
+        if !page.html.is_empty() {
+            match item {
+                PageItem::Heading(_, _) | PageItem::Text(_) => continue,
+                PageItem::Link { .. } | PageItem::Field { .. } => {}
+            }
         }
         match item {
             PageItem::Heading(level, t) => {
@@ -560,6 +572,60 @@ fn paint_page(
             }
         }
     }
+}
+
+fn paint_display_list(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    list: &frihart_gfx::DisplayList,
+    origin_x: i32,
+    origin_y: i32,
+    viewport: Rect,
+    m: &Metrics,
+) -> i32 {
+    let mut bottom = origin_y;
+    for op in &list.ops {
+        match op {
+            DisplayOp::Fill { x, y, w, h, color } => {
+                let rect = Rect::new(
+                    origin_x + *x as i32,
+                    origin_y + *y as i32,
+                    (*w as i32).max(1),
+                    (*h as i32).max(1),
+                );
+                if rect.bottom() >= viewport.y && rect.y <= viewport.bottom() {
+                    fb.fill_rect(rect, *color);
+                }
+                bottom = bottom.max(rect.bottom());
+            }
+            DisplayOp::Text {
+                x,
+                y,
+                color,
+                size,
+                text: body,
+            } => {
+                let px = origin_x + *x as i32;
+                let py = origin_y + *y as i32;
+                let drawn = text.draw(
+                    fb,
+                    body,
+                    DrawText {
+                        x: px,
+                        y: py,
+                        max_width: (viewport.w - (px - viewport.x)).max(8) as f32,
+                        font_size: *size,
+                        line_height: *size + 6.0,
+                        color: *color,
+                        weight: Weight::NORMAL,
+                        ellipsis: false,
+                    },
+                );
+                bottom = bottom.max(py + drawn.1);
+            }
+        }
+    }
+    bottom + m.s(8.0)
 }
 
 fn paint_internal_blocks(

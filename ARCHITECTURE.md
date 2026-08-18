@@ -94,8 +94,20 @@ Frihart/
 │   ├── frihart-search/       # Swisscows / DDG / privacy search catalog
 │   ├── frihart-extensions/   # WebExtensions host (parse now, run later)
 │   ├── frihart-html/         # HTML subset tokenizer + tree
+│   ├── frihart-dom/          # arena Document + NodeId
+│   ├── frihart-css/          # declarations + rules
+│   ├── frihart-style/        # UA + author cascade
+│   ├── frihart-layout/       # block flow
+│   ├── frihart-gfx/          # display list
+│   ├── frihart-pipeline/     # html → display list
+│   ├── frihart-forms/        # GET/POST encode
+│   ├── frihart-ipc/          # typed process messages
+│   ├── frihart-js/           # values; exec off
+│   ├── frihart-media/        # sniff only
+│   ├── frihart-i18n/         # chrome strings
+│   ├── frihart-print/        # display list → PS
 │   ├── frihart-autofill/     # identity fill, never passwords
-│   ├── frihart-net/          # HTTP(S), DNS, TLS interfaces
+│   ├── frihart-net/          # HTTP(S), DNS, TLS, downloads
 │   ├── frihart-platform/     # OS paths, windowing hooks, sandbox stubs
 │   ├── frihart-content/      # documents, about: pages, navigation
 │   └── frihart-chrome/       # Linux UI: tabs, toolbar, viewport
@@ -106,22 +118,25 @@ Frihart/
 └── Cargo.toml                # workspace
 ```
 
-### Crates that do not exist yet
+### Engine crates (spine)
 
-These are planned. Do not create empty stubs. Create the crate when the
-first real module lands.
+Each crate has types and tests. Depth is still the long job.
 
-| Crate | Phase | Responsibility |
+| Crate | Phase | Status |
 | --- | --- | --- |
-| `frihart-html` | 3 | WHATWG tokenizer + tree builder |
-| `frihart-dom` | 3 | Node tree, IDs, mutation |
-| `frihart-css` | 3–4 | Tokenizer, parser, stylesheet OM |
-| `frihart-style` | 4 | Cascade, computed style |
-| `frihart-layout` | 4 | Box tree, flow, flex (later grid) |
-| `frihart-gfx` | 4 | Paint, glyph cache, compositor |
-| `frihart-ipc` | 6 | Typed messages, framing |
-| `frihart-js` | 7 | Runtime + bindings |
-| `frihart-media` | 11 | Images beyond the first decoders, AV |
+| `frihart-html` | 3 | tokenizer + tree + serialize |
+| `frihart-dom` | 3 | arena Document + NodeId |
+| `frihart-css` | 4 | declarations, comments, comma selectors |
+| `frihart-style` | 4 | UA + author cascade, hex color |
+| `frihart-layout` | 4 | block flow + wrap estimate |
+| `frihart-gfx` | 4 | Fill + Text display list |
+| `frihart-pipeline` | 12 | html → display list (chrome paints it) |
+| `frihart-forms` | 5 | GET URL + POST body |
+| `frihart-ipc` | 6 | envelopes + in-process bus |
+| `frihart-js` | 7 | values; exec and fingerprint APIs off |
+| `frihart-media` | 11 | sniff; autoplay off |
+| `frihart-i18n` | 13 | chrome catalog, en default |
+| `frihart-print` | 14 | display list → local PostScript |
 
 ## Crate contracts
 

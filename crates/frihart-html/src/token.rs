@@ -52,7 +52,16 @@ pub fn tokenize(input: &str) -> Vec<Token> {
                     self_closing,
                 });
                 if !self_closing {
-                    i = find_end_tag(bytes, i, &name);
+                    let inner_start = i;
+                    let inner_end = find_end_tag_start(bytes, i, &name);
+                    if name == "style" {
+                        let raw =
+                            String::from_utf8_lossy(&bytes[inner_start..inner_end]).into_owned();
+                        if !raw.trim().is_empty() {
+                            out.push(Token::Text(raw));
+                        }
+                    }
+                    i = find_end_tag(bytes, inner_end, &name);
                     out.push(Token::End { name });
                 }
                 continue;
@@ -151,17 +160,21 @@ fn read_attrs(bytes: &[u8], mut i: usize) -> (Vec<(String, String)>, bool, usize
     (attrs, self_closing, i)
 }
 
-fn find_end_tag(bytes: &[u8], start: usize, name: &str) -> usize {
+fn find_end_tag_start(bytes: &[u8], start: usize, name: &str) -> usize {
     let needle = format!("</{name}");
     let n = needle.as_bytes();
     let mut i = start;
     while i + n.len() <= bytes.len() {
         if eq_ci(&bytes[i..i + n.len()], n) {
-            return skip_until(bytes, i, b">");
+            return i;
         }
         i += 1;
     }
     bytes.len()
+}
+
+fn find_end_tag(bytes: &[u8], start: usize, name: &str) -> usize {
+    skip_until(bytes, find_end_tag_start(bytes, start, name), b">")
 }
 
 fn skip_until(bytes: &[u8], mut i: usize, end: &[u8]) -> usize {
@@ -179,10 +192,7 @@ fn starts_with_ci(hay: &[u8], needle: &[u8]) -> bool {
 }
 
 fn eq_ci(a: &[u8], b: &[u8]) -> bool {
-    a.len() == b.len()
-        && a.iter()
-            .zip(b)
-            .all(|(x, y)| x.eq_ignore_ascii_case(y))
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.eq_ignore_ascii_case(y))
 }
 
 fn is_name_char(b: u8) -> bool {
@@ -243,5 +253,13 @@ mod tests {
         assert!(matches!(&t[0], Token::Start { name, .. } if name == "p"));
         assert!(matches!(&t[1], Token::Text(s) if s.contains('&')));
         assert!(matches!(&t[2], Token::End { name } if name == "p"));
+    }
+
+    #[test]
+    fn keeps_style_text() {
+        let t = tokenize("<style>p{color:red}</style>");
+        assert!(matches!(&t[0], Token::Start { name, .. } if name == "style"));
+        assert!(matches!(&t[1], Token::Text(s) if s.contains("color")));
+        assert!(matches!(&t[2], Token::End { name } if name == "style"));
     }
 }

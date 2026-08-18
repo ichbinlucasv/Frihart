@@ -142,7 +142,15 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
             }
         }
     }
-    Page { url, title, items }
+    let (form_action, form_method) = frihart_html::first_form(&root);
+    Page {
+        url,
+        title,
+        items,
+        form_action,
+        form_method,
+        html: html.to_string(),
+    }
 }
 
 pub fn about_url(name: &str) -> Url {
@@ -182,5 +190,14 @@ mod tests {
         let profile = Profile::ephemeral().unwrap();
         let doc = load(&about_url("blank"), &profile);
         assert!(matches!(doc, Document::Blank));
+    }
+
+    #[test]
+    fn engine_and_process_pages_exist() {
+        let profile = Profile::ephemeral().unwrap();
+        assert_eq!(load(&about_url("engine"), &profile).title(), "Engine");
+        assert_eq!(load(&about_url("processes"), &profile).title(), "Processes");
+        assert_eq!(load(&about_url("print"), &profile).title(), "Print");
+        assert_eq!(load(&about_url("downloads"), &profile).title(), "Downloads");
     }
 }

@@ -85,6 +85,10 @@ pub fn is_known(name: &str) -> bool {
             | "pass"
             | "passwords"
             | "autofill"
+            | "engine"
+            | "processes"
+            | "print"
+            | "downloads"
     )
 }
 
@@ -115,6 +119,10 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "profiles" => profiles(url, profile),
         "pass" | "passwords" => passwords(url, prefs),
         "autofill" => autofill_page(url, prefs, profile),
+        "engine" => engine_page(url),
+        "processes" => processes_page(url),
+        "print" => print_page(url),
+        "downloads" => downloads_page(url),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -169,6 +177,22 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Passwords".into(),
             href: "about:pass".into(),
+        },
+        Block::Link {
+            label: "Engine".into(),
+            href: "about:engine".into(),
+        },
+        Block::Link {
+            label: "Processes".into(),
+            href: "about:processes".into(),
+        },
+        Block::Link {
+            label: "Print".into(),
+            href: "about:print".into(),
+        },
+        Block::Link {
+            label: "Downloads".into(),
+            href: "about:downloads".into(),
         },
         Block::Link {
             label: "Preferences (about:config)".into(),
@@ -253,8 +277,8 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
     }
 
     blocks.push(Block::Note(
-        "Typing an https:// URL will not fetch it yet. You will get an honest \
-         page instead of a fake render."
+        "https:// URLs fetch over rustls. HTML goes through the subset pipeline. \
+         JS stays off. Tor tabs refuse clearnet."
             .into(),
     ));
 
@@ -445,6 +469,101 @@ fn profiles(url: &Url, profile: &Profile) -> Document {
         title: "Profiles".into(),
         url: url.clone(),
         blocks,
+    })
+}
+
+fn engine_page(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Engine".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Engine map".into(),
+                subtitle: "HTML → CSS → style → layout → display list.".into(),
+            },
+            Block::List(vec![
+                "1 chrome / profiles / wipe / HiDPI scale".into(),
+                "2 rustls / cookies / HTTPS-only / downloads dest".into(),
+                "3 html tokenizer + arena DOM + serialize".into(),
+                "4 css / style / block layout / gfx ops".into(),
+                "5 forms GET + POST encode (secrets skipped)".into(),
+                "6 ipc envelopes (in-process bus)".into(),
+                "7 js types; exec and fingerprint APIs off".into(),
+                "8–10 platform dirs (Win/Mac/Android roots)".into(),
+                "11 media sniff; autoplay off".into(),
+                "12 pipeline Frame from HTML bytes".into(),
+                "13 i18n chrome catalog (en default)".into(),
+                "14 print → local PostScript".into(),
+                "15 extension host; runtime dormant".into(),
+            ]),
+            Block::Link {
+                label: "Processes".into(),
+                href: "about:processes".into(),
+            },
+        ],
+    })
+}
+
+fn processes_page(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Processes".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Processes".into(),
+                subtitle: "Single process today. Crate seams match the target tree.".into(),
+            },
+            Block::List(vec![
+                "chrome — windows, tabs, profile".into(),
+                "network — rustls, cookies (same process)".into(),
+                "content — documents, engine crates (same process)".into(),
+            ]),
+            Block::Note(
+                "Phase 6 splits network and one content process per isolation key. \
+                 Killing content must not take the chrome down."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn print_page(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Print".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Print".into(),
+                subtitle: "Display list → local PostScript. No cloud print.".into(),
+            },
+            Block::Paragraph(
+                "frihart-print writes a .ps job from the pipeline display list. \
+                 PDF comes after the list is trusted."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn downloads_page(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Downloads".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Downloads".into(),
+                subtitle: "User-chosen directory. Never execute-on-download.".into(),
+            },
+            Block::KeyValue {
+                key: "directory".into(),
+                value: frihart_platform::downloads_dir().display().to_string(),
+            },
+            Block::Note(
+                "The Download type exists in frihart-net. Saving bytes is Phase 2 \
+                 leftover work; running them is refused forever."
+                    .into(),
+            ),
+        ],
     })
 }
 
@@ -1016,6 +1135,10 @@ fn keyboard(url: &Url) -> Document {
                 key: "Ctrl+K".into(),
                 value: "Search (Swisscows)".into(),
             },
+            Block::KeyValue {
+                key: "Ctrl+Shift+A".into(),
+                value: "Autofill identity (never passwords)".into(),
+            },
         ],
     })
 }
@@ -1031,16 +1154,17 @@ fn roadmap(url: &Url) -> Document {
             },
             Block::List(vec![
                 "Phase 0 — identity, crates, philosophy".into(),
-                "Phase 1 — Linux shell, containers, native blocker (you are here)".into(),
-                "Phase 2 — rustls network stack, cookies, downloads".into(),
-                "Phase 3 — HTML tokenizer, tree builder, DOM".into(),
-                "Phase 4 — CSS, layout, paint".into(),
-                "Phase 5 — simple sites as a daily driver".into(),
-                "Phase 6 — process isolation and Linux sandbox".into(),
-                "Phase 7 — scripting, carefully".into(),
-                "Phase 8 — Windows".into(),
-                "Phase 9 — macOS".into(),
-                "Phase 10 — Android".into(),
+                "Phase 1 — Linux shell, containers, native blocker".into(),
+                "Phase 2 — rustls, cookies, HTTPS-only (fetch works)".into(),
+                "Phase 3 — HTML tokenizer, tree, arena DOM".into(),
+                "Phase 4 — CSS, style, block layout, display list".into(),
+                "Phase 5 — forms GET/POST encode".into(),
+                "Phase 6 — IPC types (in-process bus)".into(),
+                "Phase 7 — JS types; execution off".into(),
+                "Phase 8–10 — platform profile roots".into(),
+                "Phase 11 — media sniff".into(),
+                "Phase 12 — pipeline Frame".into(),
+                "Phase 13–15 — i18n, print PS, dormant extensions".into(),
             ]),
             Block::Paragraph(
                 "The full plan, success criteria, and time ranges live in ROADMAP.md \
@@ -1268,8 +1392,7 @@ fn search(url: &Url, prefs: &Prefs) -> Document {
         },
         Block::Paragraph(
             "Typing words in the URL bar that are not a destination becomes a \
-             search. Phase 2 fetches the engine URL. Until then you get an \
-             honest placeholder with the real destination."
+             search against the primary engine (Swisscows)."
                 .into(),
         ),
         Block::KeyValue {
@@ -1345,11 +1468,7 @@ fn tor(url: &Url, prefs: &Prefs) -> Document {
                     "off".into()
                 },
             },
-            Block::Note(
-                "Phase 2 will actually dial this SOCKS port. Until then the tab \
-                 is marked Tor so cookies, history, and later sockets stay isolated."
-                    .into(),
-            ),
+            Block::Note("Tor tabs refuse clearnet. Live SOCKS is the next Phase 2 slice.".into()),
         ],
     })
 }

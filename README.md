@@ -47,10 +47,12 @@ The full constitution is [PHILOSOPHY.md](PHILOSOPHY.md).
 - Firefox add-on sideload (`--install-addon`, `about:addons`) — dormant until JS
 - Find in page (Ctrl+F), bookmark (Ctrl+D), cycle container (Ctrl+Shift+C)
 - Privacy-first prefs persisted in an XDG profile
-- No network on startup, and no web rendering yet
+- rustls fetch, first-party cookies, HTTPS-only
+- HTML subset pipeline: tokenize → CSS → block layout → display list
+- Identity autofill; no password store
+- No network on startup
 
-Typing an `https://` URL shows an honest "not yet" page. Phase 2 is the
-network stack. Phases 3–5 are the document engine.
+`https://` fetches and paints the subset. JS is off. Tor tabs fail closed.
 
 ## Build
 
@@ -104,7 +106,9 @@ Private windows use memory only.
 | --- | --- |
 | [PHILOSOPHY.md](PHILOSOPHY.md) | Why the product exists, and what it will refuse |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Modular design and crate contracts |
-| [ROADMAP.md](ROADMAP.md) | Phases 0–11, milestones, time ranges |
+| [ROADMAP.md](ROADMAP.md) | Phases 0–15, milestones, time ranges |
+| [docs/engine.md](docs/engine.md) | HTML → display list spine |
+| [docs/css-subset.md](docs/css-subset.md) | CSS we implement vs ignore |
 | [docs/defaults.md](docs/defaults.md) | Every shipped default and why |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to work on the tree |
 | [SECURITY.md](SECURITY.md) | Threat model and reporting |

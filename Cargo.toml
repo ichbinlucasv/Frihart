@@ -15,6 +15,18 @@ members = [
     "crates/frihart-extensions",
     "crates/frihart-html",
     "crates/frihart-autofill",
+    "crates/frihart-dom",
+    "crates/frihart-css",
+    "crates/frihart-style",
+    "crates/frihart-layout",
+    "crates/frihart-gfx",
+    "crates/frihart-pipeline",
+    "crates/frihart-forms",
+    "crates/frihart-ipc",
+    "crates/frihart-js",
+    "crates/frihart-media",
+    "crates/frihart-i18n",
+    "crates/frihart-print",
 ]
 
 [workspace.package]
@@ -40,6 +52,18 @@ frihart-search = { path = "crates/frihart-search" }
 frihart-extensions = { path = "crates/frihart-extensions" }
 frihart-html = { path = "crates/frihart-html" }
 frihart-autofill = { path = "crates/frihart-autofill" }
+frihart-dom = { path = "crates/frihart-dom" }
+frihart-css = { path = "crates/frihart-css" }
+frihart-style = { path = "crates/frihart-style" }
+frihart-layout = { path = "crates/frihart-layout" }
+frihart-gfx = { path = "crates/frihart-gfx" }
+frihart-pipeline = { path = "crates/frihart-pipeline" }
+frihart-forms = { path = "crates/frihart-forms" }
+frihart-ipc = { path = "crates/frihart-ipc" }
+frihart-js = { path = "crates/frihart-js" }
+frihart-media = { path = "crates/frihart-media" }
+frihart-i18n = { path = "crates/frihart-i18n" }
+frihart-print = { path = "crates/frihart-print" }
 
 clap = { version = "4.5", features = ["derive"] }
 cosmic-text = "0.14"

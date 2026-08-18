@@ -1,0 +1,14 @@
+[package]
+name = "frihart-ipc"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Typed process messages (Phase 6)"
+publish.workspace = true
+
+[dependencies]
+frihart-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true

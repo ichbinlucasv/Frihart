@@ -3,7 +3,9 @@
 use frihart_autofill::Identity;
 use frihart_blocker::FilterEngine;
 use frihart_content::{Document, FetchRequest, PageItem, PrefToggle, SessionHistory, fetch, load};
-use frihart_core::{ContainerId, TabId, display_url, looks_like_destination, parse_user_input};
+use frihart_core::{
+    ContainerId, TabId, WindowId, display_url, looks_like_destination, parse_user_input,
+};
 use frihart_net::{CookieJar, FetchMode, RustlsClient};
 use frihart_profile::Profile;
 use frihart_search::{by_id, primary, resolve};
@@ -77,6 +79,9 @@ impl Tab {
 }
 
 pub struct Browser {
+    /// Stable id for the future multi-window chrome.
+    #[allow(dead_code)]
+    pub window_id: WindowId,
     pub profile: Profile,
     pub tabs: Vec<Tab>,
     pub active: usize,
@@ -121,6 +126,7 @@ impl Browser {
             CookieJar::load(&profile.root().join("cookies.json")).unwrap_or_default()
         };
         Self {
+            window_id: WindowId::new(),
             profile,
             tabs: vec![tab],
             active: 0,
@@ -621,6 +627,37 @@ impl Browser {
             }
             value.pop();
         }
+    }
+
+    pub fn submit_form(&mut self) {
+        let Document::Page(page) = &self.active_tab().document else {
+            return;
+        };
+        let mut fields = Vec::new();
+        for item in &page.items {
+            if let PageItem::Field {
+                label,
+                value,
+                secret,
+                ..
+            } = item
+            {
+                fields.push(frihart_forms::Field {
+                    name: label.clone(),
+                    value: value.clone(),
+                    secret: *secret,
+                });
+            }
+        }
+        let submit = frihart_forms::Submit {
+            action: page.form_action.clone(),
+            method: page.form_method.clone(),
+            fields,
+        };
+        let Some(next) = submit.get_url(&page.url) else {
+            return;
+        };
+        self.navigate(next);
     }
 
     pub fn autofill(&mut self) {

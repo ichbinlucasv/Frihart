@@ -661,7 +661,11 @@ dependencies = [
  "frihart-config",
  "frihart-content",
  "frihart-core",
+ "frihart-forms",
+ "frihart-gfx",
+ "frihart-i18n",
  "frihart-net",
+ "frihart-pipeline",
  "frihart-platform",
  "frihart-privacy",
  "frihart-profile",
@@ -707,6 +711,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "frihart-css"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+]
+
+[[package]]
+name = "frihart-dom"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+ "frihart-html",
+]
+
+[[package]]
 name = "frihart-extensions"
 version = "0.1.0"
 dependencies = [
@@ -718,7 +737,56 @@ dependencies = [
 ]
 
 [[package]]
+name = "frihart-forms"
+version = "0.1.0"
+dependencies = [
+ "url",
+]
+
+[[package]]
+name = "frihart-gfx"
+version = "0.1.0"
+dependencies = [
+ "frihart-layout",
+ "frihart-style",
+]
+
+[[package]]
 name = "frihart-html"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+]
+
+[[package]]
+name = "frihart-i18n"
+version = "0.1.0"
+
+[[package]]
+name = "frihart-ipc"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "frihart-js"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+]
+
+[[package]]
+name = "frihart-layout"
+version = "0.1.0"
+dependencies = [
+ "frihart-style",
+]
+
+[[package]]
+name = "frihart-media"
 version = "0.1.0"
 dependencies = [
  "frihart-core",
@@ -739,10 +807,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "frihart-pipeline"
+version = "0.1.0"
+dependencies = [
+ "frihart-css",
+ "frihart-gfx",
+ "frihart-html",
+ "frihart-layout",
+ "frihart-style",
+]
+
+[[package]]
 name = "frihart-platform"
 version = "0.1.0"
 dependencies = [
  "frihart-core",
+]
+
+[[package]]
+name = "frihart-print"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+ "frihart-gfx",
 ]
 
 [[package]]
@@ -772,6 +859,13 @@ version = "0.1.0"
 dependencies = [
  "frihart-core",
  "url",
+]
+
+[[package]]
+name = "frihart-style"
+version = "0.1.0"
+dependencies = [
+ "frihart-css",
 ]
 
 [[package]]

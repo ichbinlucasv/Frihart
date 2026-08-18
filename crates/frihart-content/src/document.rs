@@ -75,6 +75,10 @@ pub struct Page {
     pub url: Url,
     pub title: String,
     pub items: Vec<PageItem>,
+    pub form_action: String,
+    pub form_method: String,
+    /// Original bytes the pipeline can lay out.
+    pub html: String,
 }
 
 impl Page {

@@ -1,0 +1,12 @@
+[package]
+name = "frihart-layout"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Block flow box tree (Phase 4)"
+publish.workspace = true
+
+[dependencies]
+frihart-style.workspace = true

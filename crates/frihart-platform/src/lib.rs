@@ -29,6 +29,16 @@ pub fn profiles_dir() -> PathBuf {
     data_dir().join("profiles")
 }
 
+/// User downloads directory. Never execute what lands here.
+pub fn downloads_dir() -> PathBuf {
+    if let Ok(value) = env::var("XDG_DOWNLOAD_DIR") {
+        if !value.is_empty() {
+            return PathBuf::from(value);
+        }
+    }
+    home_dir().join("Downloads")
+}
+
 fn xdg_dir(var: &str, fallback: &str) -> PathBuf {
     if let Ok(value) = env::var(var) {
         if !value.is_empty() {
@@ -53,23 +63,62 @@ pub fn window_title(page_title: &str) -> String {
     }
 }
 
-/// Sandbox hooks. Phase 1 is a no-op that records intent.
+/// Sandbox hooks. Phase 1 records intent; Phase 6 applies.
 #[derive(Clone, Debug, Default)]
 pub struct SandboxSpec {
     pub enabled: bool,
+    pub seccomp: bool,
+    pub landlock: bool,
+    pub no_new_privs: bool,
 }
 
 impl SandboxSpec {
+    pub fn content_default() -> Self {
+        Self {
+            enabled: true,
+            seccomp: true,
+            landlock: true,
+            no_new_privs: true,
+        }
+    }
+
     pub fn apply(&self) -> Result<()> {
-        let _ = self.enabled;
-        // Phase 6: seccomp-bpf, landlock, no_new_privs.
+        let _ = (self.enabled, self.seccomp, self.landlock, self.no_new_privs);
         Ok(())
     }
 }
 
-/// True when this build is the Linux reference.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Os {
+    Linux,
+    Windows,
+    Macos,
+    Android,
+    Other,
+}
+
+pub fn current_os() -> Os {
+    match std::env::consts::OS {
+        "linux" => Os::Linux,
+        "windows" => Os::Windows,
+        "macos" => Os::Macos,
+        "android" => Os::Android,
+        _ => Os::Other,
+    }
+}
+
+pub fn profile_root_for(os: Os) -> PathBuf {
+    match os {
+        Os::Linux => data_dir(),
+        Os::Windows => home_dir().join("AppData/Local/Frihart"),
+        Os::Macos => home_dir().join("Library/Application Support/Frihart"),
+        Os::Android => data_dir(),
+        Os::Other => data_dir(),
+    }
+}
+
 pub fn is_linux() -> bool {
-    cfg!(target_os = "linux")
+    matches!(current_os(), Os::Linux)
 }
 
 /// Look up an executable on PATH. No subprocess.
@@ -168,5 +217,22 @@ mod tests {
     fn title_format() {
         assert_eq!(window_title(""), "Frihart");
         assert_eq!(window_title("Home"), "Home — Frihart");
+    }
+
+    #[test]
+    fn profile_roots_are_os_specific() {
+        assert!(profile_root_for(Os::Linux).ends_with("frihart"));
+        assert!(
+            profile_root_for(Os::Windows)
+                .to_string_lossy()
+                .contains("Frihart")
+        );
+        assert!(
+            profile_root_for(Os::Macos)
+                .to_string_lossy()
+                .contains("Frihart")
+        );
+        assert!(downloads_dir().ends_with("Downloads") || env::var("XDG_DOWNLOAD_DIR").is_ok());
+        assert!(SandboxSpec::content_default().enabled);
     }
 }

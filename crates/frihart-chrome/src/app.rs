@@ -299,6 +299,11 @@ impl Handler {
                 self.request_redraw();
                 return;
             }
+            Key::Named(NamedKey::Enter) if self.browser.field_focus.is_some() => {
+                self.browser.submit_form();
+                self.request_redraw();
+                return;
+            }
             Key::Named(NamedKey::Enter) if self.browser.url_focused => {
                 self.browser.commit_url();
                 self.request_redraw();
