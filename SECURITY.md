@@ -18,16 +18,19 @@ Please include:
 
 We will not ask you to use a third-party bounty platform.
 
-## Threat model (current, Phase 0/1)
+## Threat model (current)
 
-Today Frihart does not fetch the live web. The relevant threats are:
+Frihart fetches HTTPS and paints a subset. JS is off. The relevant
+threats are:
 
 | Threat | Mitigation |
 | --- | --- |
-| Malicious profile files | Strict parsers, no `unwrap` on disk data, lockfile |
-| User-assisted code exec | No download execution; no extension runtime |
+| Malicious profile files | Strict parsers, no `unwrap` on disk data, lockfile, 0600 |
+| Hostile HTML | Rust parser, no panic on junk, subset only |
+| User-assisted code exec | Downloads `0600`, never executed; no extension runtime |
+| Tor leak | SOCKS only. Empty/dead SOCKS refuses. No clearnet fallback |
 | Supply-chain crates | Minimal deps, no upload/telemetry SDKs |
-| Local shoulder-surfing of history | Private windows; history can be disabled or wiped |
+| Local shoulder-surfing | Private windows; wipe / shred this profile |
 
 ## Threat model (target)
 

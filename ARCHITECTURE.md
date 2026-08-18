@@ -7,8 +7,10 @@ document introduces.
 
 Companion documents:
 
-- [PHILOSOPHY.md](PHILOSOPHY.md) — why the product exists
-- [ROADMAP.md](ROADMAP.md) — when each layer is built
+- [PHILOSOPHY.md](PHILOSOPHY.md) — why the product exists (libertarian, LibreWolf stance)
+- [ROADMAP.md](ROADMAP.md) — campaigns A–I and crate phases 0–15
+- [docs/opsec.md](docs/opsec.md) — fail closed, disk, Tor, process
+- [docs/distros.md](docs/distros.md) — Arch, Cachy, Fedora, Mint, Tails, Qubes
 - [docs/defaults.md](docs/defaults.md) — every shipped default and why
 
 ## Design thesis
@@ -41,8 +43,8 @@ script all receive a `Policy` and must be able to explain a denial.
 3. **Policy before I/O.** A network request, storage write, permission
    grant, or fingerprintable API call is illegal unless `frihart-privacy`
    allowed it.
-4. **Linux is the reference.** Platform traits are defined early.
-   Implementations other than Linux wait their turn.
+4. **Linux is the reference.** Arch/CachyOS first, then Fedora, Mint,
+   Tails, Qubes. Other OS wait their turn.
 5. **Capability ladder.** We do not stub a full HTML5 engine. Each crate
    grows behind tests and a documented subset.
 6. **Small, named crates.** A crate that needs to know both pixel layout

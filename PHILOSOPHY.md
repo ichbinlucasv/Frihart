@@ -1,10 +1,13 @@
 # Frihart philosophy
 
-Frihart is a web browser built for people who consider their computer
-their own. The project is original software. It is not a fork of Firefox,
-LibreWolf, Chromium, or any other browser. **LibreWolf is the
-inspiration** — its stance, not its code. It will grow slowly, in public,
-with boring engineering discipline.
+Frihart is a **libertarian** web browser: your machine is yours. The
+project is original software. It is not a fork of Firefox, LibreWolf,
+Chromium, or any other browser. **LibreWolf is the inspiration** — its
+stance, not its code. Black chrome, yellow accents. Rust, so memory
+unsafety is not the default disaster.
+
+This file is the constitution. Feature work that contradicts it is out of
+scope, even if it would make the browser more popular.
 
 ## Inspiration
 
@@ -35,22 +38,53 @@ further, as native features rather than add-ons:
 If LibreWolf is "Firefox with the bad parts cut out," Frihart is a
 browser that never had those parts.
 
-This file is the constitution. Feature work that contradicts it is out of
-scope, even if it would make the browser more popular.
+## Why not a Firefox or Chrome branch
 
-## Sovereignty
+Forking Gecko or Blink inherits their problems: a C/C++ memory-unsafe
+core, a decade of RCEs, an IPC and GPU surface the size of an operating
+system, telemetry DNA, and a release train you do not control. "We
+patched this week's use-after-free" is not OPSEC. It is someone else's
+incident response.
+
+Frihart's bet is smaller and slower:
+
+- **Rust** for the product. Memory corruption is not an acceptable
+  weekly event. Rust does not make logic bugs vanish. It removes a class
+  of remote code execution that Firefox and Chrome still ship.
+- **A smaller surface.** We refuse APIs, JS, WebRTC, and GPU toys until
+  they can be isolated. A missing feature is better than a leak.
+- **No upstream gravity.** Mozilla and Google can change defaults,
+  contracts, and "safety" features overnight. A fork spends its life
+  rebasing. We own the tree.
+- **Fail closed.** Tor never falls back to clearnet. Downloads never
+  execute. Passwords are never stored. A content crash must not own the
+  profile (Phase 6).
+
+We will not be "better than Firefox" on day one. We will be **harder to
+own** than a mega-browser, on purpose, for people who treat a leak as a
+failure.
+
+## Libertarian contract
 
 The user is the principal. Frihart is an agent. The browser does not have
 interests of its own: no growth target, no paid search contract, no
-"anonymous product insights," no account, no store. Swisscows and
-DuckDuckGo are privacy defaults, not a revenue deal.
+"anonymous product insights," no account, no store.
 
-- The profile lives on disk the user controls.
-- Defaults protect the user. Power remains available.
-- Nothing leaves the machine unless the user initiated it.
+- You own the binary (`MIT OR Apache-2.0`).
+- The profile lives on disk you control, mode `0600` / `0700`.
+- Defaults protect you. Power remains available.
+- Nothing leaves the machine unless you initiated it.
 - There is no Frihart account and there never will be.
 - Logins and passwords are never stored. `store_logins` cannot be turned on.
-- Cloud sync, if it ever exists, will be something the user hosts.
+- Cloud sync, if it ever exists, will be something you host.
+- Distros update the package. We do not phone home to "check."
+
+User sovereignty includes the freedom to weaken protection locally.
+What you cannot do is weaken *someone else's* defaults by lobbying for a
+shipped-on tracker, a sponsored tile, or a silent partner exception.
+
+The browser takes sides against surveillance. It does not take sides
+against your own judgment.
 
 ## Privacy is the default, not a product tier
 
@@ -103,18 +137,17 @@ changes. The goal is:
 We will document every surface we expose. If we cannot explain a surface,
 it does not ship.
 
-## Libertarian, not nihilist
+## OPSEC is standing work
 
-User sovereignty includes the freedom to weaken protection. A power user
-who wants third-party cookies on one site, or JavaScript on one origin,
-must be able to do that locally, permanently, without an account.
+See [docs/opsec.md](docs/opsec.md). Short version:
 
-What they cannot do is weaken *someone else's* defaults by lobbying for a
-shipped-on tracker, a sponsored new-tab tile, or a silent exception for a
-partner.
-
-The browser takes sides against surveillance. It does not take sides
-against the user's own judgment.
+- Policy before I/O.
+- No login vault. External managers only (Proton Pass, KeePassXC, …).
+- Wipe / reset / shred are first-class and this-profile-only.
+- Tor tabs fail closed.
+- Downloads are `0600` and never execute.
+- Isolation keys (scheme + host + container) from day one.
+- Process split and Linux sandbox before we grow JS.
 
 ## Original code, borrowed primitives
 
@@ -130,18 +163,22 @@ the product is not.
 Every third-party crate must be justified. A crate that phones home, pulls
 in a telemetry SDK, or makes the supply chain absurd is rejected.
 
-## Linux first
+## Linux first — the homes we love
 
-The primary platform is Linux, especially Arch and CachyOS. That is not a
-slogan. It means:
+The primary platform is Linux. That is not a slogan. The same binary
+should be excellent on the systems this project is built for:
 
-- The first usable browser is a native Linux application.
-- Packaging for Arch (`PKGBUILD`, later an AUR package) is a first-class
-  deliverable.
-- Wayland is the primary windowing target; X11 is supported while it
-  remains relevant.
-- Platform abstractions exist from day one so Windows, then macOS, then
-  Android can be added *later* without rewriting the product.
+| Home | Why it matters |
+| --- | --- |
+| **Arch** / **CachyOS** | Reference. Rolling, user-controlled, PKGBUILD first. |
+| **Fedora** | RPM family. Qubes templates often start here. |
+| **Linux Mint** | Debian/Ubuntu family. The machine people actually give relatives. |
+| **Tails** | Amnesic. Tor is the network. Persistence is opt-in. |
+| **Qubes OS** | Compartments. Disposable VMs. Network is never "the NIC." |
+| **Every other Linux** | Same binary. Wayland first, X11 while it lasts. |
+
+Windows, then macOS, then Android come **after** Linux is a daily driver
+on the homes above — including Tails and Qubes — not before.
 
 We do not delay Linux quality to keep hypothetical Windows code paths
 warm.
@@ -159,7 +196,8 @@ The path is a **capability ladder**:
 4. Incremental CSS, layout, and paint.
 5. A useful reader for simple sites.
 6. Isolation and sandboxing.
-7. Scripting, last, because it is the largest attack surface.
+7. Linux packaging for the homes we love.
+8. Scripting, last, because it is the largest attack surface.
 
 Until a rung works, we do not advertise the next one. A page that cannot
 be rendered correctly should fail clearly, not half-work in a way that
@@ -170,6 +208,8 @@ trains users to distrust the engine.
 Frihart should feel finished when it is empty: no onboarding tour, no
 import-your-soul wizard, no "choose your search empire" interstitial.
 Open the window. Type a URL. Change a pref if you want. Close it.
+
+The look is **black and yellow**. That is the product, not a theme store.
 
 Logs go to stderr or a local file the user chose. They never go to us.
 

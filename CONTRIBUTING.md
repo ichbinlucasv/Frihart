@@ -1,8 +1,9 @@
 # Contributing to Frihart
 
 This tree is meant to last. Small, reviewable changes beat heroic
-branches. Read [PHILOSOPHY.md](PHILOSOPHY.md) and
-[ARCHITECTURE.md](ARCHITECTURE.md) before writing code.
+branches. Read [PHILOSOPHY.md](PHILOSOPHY.md),
+[ARCHITECTURE.md](ARCHITECTURE.md), and [docs/opsec.md](docs/opsec.md)
+before writing code. Linux homes are listed in [docs/distros.md](docs/distros.md).
 
 ## Ground rules
 

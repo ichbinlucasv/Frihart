@@ -1,70 +1,88 @@
 # Frihart
 
-Frihart is an original, privacy-first web browser written in Rust.
-It is not a fork of Firefox, LibreWolf, Chromium, or anything else.
+A **libertarian**, privacy-first web browser written in **Rust**.
+Original code. Not a fork of Firefox, LibreWolf, Chromium, or anything
+else.
+
 **LibreWolf is the inspiration** — telemetry gone, fingerprinting
-resisted, the user is sovereign — implemented as original code.
+resisted, you are sovereign — implemented as native features, not
+add-ons. The look is **black chrome, yellow accents**.
 
-The primary platform is Linux (Arch and CachyOS first). Windows, then
-macOS, then Android come later — in that order, and not before Linux is
-actually useful.
+Linux is the product. Arch and CachyOS are the reference. Fedora, Mint,
+Tails, and Qubes are first-class homes. Other Linux uses the same
+binary. Windows, then macOS, then Android wait until Linux is actually
+useful.
 
-This repository is at the beginning of a long project. The chrome runs.
-The web engine does not, yet. That is intentional. Read
-[ROADMAP.md](ROADMAP.md).
+This is a long project. The chrome runs. The engine paints a growing
+HTML subset. JavaScript is off. That is intentional. Read
+[PHILOSOPHY.md](PHILOSOPHY.md) and [ROADMAP.md](ROADMAP.md).
+
+## Why this exists
+
+Firefox and Chrome are attack surfaces the size of an OS: C/C++ memory
+corruption, huge IPC, GPU, and JS, plus telemetry and account gravity.
+A LibreWolf-style *fork* still rebases that tree.
+
+Frihart starts smaller:
+
+- Rust, so use-after-free is not the weekly news
+- Policy before any network or disk write
+- Tor tabs that **fail closed** (no clearnet fallback)
+- No login vault, no Frihart account, no phone-home
+- A documented subset, not a fake "we render the whole web"
+
+We are not "better than Firefox" today. We are building a browser that
+is **harder to own**, for people who treat a leak as a failure.
 
 ## Repositories
 
 - **Primary:** [codeberg.org/ichbinlucasv/Frihart](https://codeberg.org/ichbinlucasv/Frihart)
 - **Mirror:** [github.com/ichbinlucasv/Frihart](https://github.com/ichbinlucasv/Frihart)
-- **Profile (pin it):** [github.com/ichbinlucasv?tab=repositories](https://github.com/ichbinlucasv?tab=repositories)
 
-## Phase 1 product
+## Product (Linux)
 
-- Identity **containers** built into the tab strip (`about:containers`)
+- Black / yellow chrome (LibreWolf stance, our pixels)
+- Identity **containers** in the tab strip (`about:containers`)
 - Native **uBlock-class blocker**, on at install (`about:blocker`)
-- Built-in **translator** chrome, no Google (`about:translate`)
-- **Dark mode** as the product look: black chrome, yellow accents
+- Built-in **translator**, DeepL default, no Google (`about:translate`)
+- Swisscows search, DuckDuckGo second (`about:search`)
+- Tor tabs (`--tor`, Ctrl+Shift+O) via your system daemon
+- ProtonVPN / Mullvad CLI hooks (`about:vpn`)
+- Wipe / reset / shred this profile only (`about:shred`)
+- Identity autofill; **never** a password store (`about:pass`)
+- rustls fetch, first-party partitioned cookies, HTTPS-only
+- HTML → CSS → layout → display list (`about:engine`)
 
-## Principles
+Linux is free. Other OS: €100 lifetime, local key, no license server.
+See [docs/pricing.md](docs/pricing.md).
 
-- No telemetry. Not now, not hidden, not "anonymous."
-- Anti-tracking and fingerprinting resistance are defaults, not add-ons.
-- The user is sovereign. Power is available. Defaults still protect.
-- Original architecture. Shared primitives (TLS, fonts, Unicode) are
-  allowed. Shipping someone else's browser is not.
+## Linux homes
 
-The full constitution is [PHILOSOPHY.md](PHILOSOPHY.md).
+| Distro | Status |
+| --- | --- |
+| Arch, CachyOS | Reference. `packaging/arch/PKGBUILD` |
+| Fedora | `packaging/fedora/frihart.spec` |
+| Mint (Debian/Ubuntu) | `packaging/debian/` |
+| Tails | Planned: amnesic default, use Tails Tor, `.deb` |
+| Qubes OS | Planned: AppVM / DisposableVM, Fedora & Debian templates |
+| Other Linux | Same binary. Wayland first, X11 while it lasts |
+
+Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.md).
 
 ## Current status
 
-**Phase 1.** On Linux, `cargo run` opens a real window:
-
-- Black chrome, yellow accents, dark pages
-- Tab strip with container stripes, URL bar, navigation keys
-- Native blocker, containers, DeepL translator, Swisscows search
-- Tor tabs (`--tor`, Ctrl+Shift+O) and Proton/Mullvad VPN detection
-- Firefox add-on sideload (`--install-addon`, `about:addons`) — dormant until JS
-- Find in page (Ctrl+F), bookmark (Ctrl+D), cycle container (Ctrl+Shift+C)
-- Privacy-first prefs persisted in an XDG profile
-- rustls fetch, first-party cookies, HTTPS-only
-- HTML subset pipeline: tokenize → CSS → block layout → display list
-- Identity autofill; no password store
-- No network on startup
-
-`https://` fetches and paints the subset. JS is off. Tor tabs fail closed.
+On Linux, `cargo run` opens a real window. `https://` fetches over rustls
+and paints the subset. JS is off. Tor tabs dial SOCKS only.
 
 ## Build
 
-Requires a recent stable Rust (see `rust-toolchain.toml`) and a Linux
-desktop with Wayland or X11.
+Recent stable Rust (`rust-toolchain.toml`) and a Linux desktop (Wayland
+or X11).
 
 ```bash
 cargo build --release
 cargo run
 ```
-
-Useful invocations:
 
 ```bash
 cargo run -- about:settings
@@ -75,10 +93,8 @@ cargo run -- --profile ./profile-dev
 ```
 
 ```
-frihart [URL] [--profile PATH] [--private] [--version]
+frihart [URL] [--profile PATH] [--private] [--tor] [--version]
 ```
-
-Tests (no display required):
 
 ```bash
 cargo test --workspace
@@ -88,28 +104,31 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Profile
 
-Default location on Linux:
-
 ```
 $XDG_DATA_HOME/frihart/profiles/default/
     prefs.toml
     bookmarks.toml
     history.jsonl
+    user.css          # optional; you create it
+    downloads.json
     lock
 ```
 
-Private windows use memory only.
+Private windows use memory only. Files are `0600` / dirs `0700`.
 
 ## Documentation
 
 | File | What it is |
 | --- | --- |
-| [PHILOSOPHY.md](PHILOSOPHY.md) | Why the product exists, and what it will refuse |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Modular design and crate contracts |
-| [ROADMAP.md](ROADMAP.md) | Phases 0–15, milestones, time ranges |
-| [docs/engine.md](docs/engine.md) | HTML → display list spine |
+| [PHILOSOPHY.md](PHILOSOPHY.md) | Constitution. Libertarian, LibreWolf stance |
+| [ROADMAP.md](ROADMAP.md) | Campaigns A–I and crate phases 0–15 |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Crate map |
+| [docs/opsec.md](docs/opsec.md) | Standing OPSEC rules |
+| [docs/distros.md](docs/distros.md) | Arch, Cachy, Fedora, Mint, Tails, Qubes |
+| [docs/engine.md](docs/engine.md) | HTML → display list |
 | [docs/css-subset.md](docs/css-subset.md) | CSS we implement vs ignore |
 | [docs/defaults.md](docs/defaults.md) | Every shipped default and why |
+| [docs/packaging.md](docs/packaging.md) | How to package |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to work on the tree |
 | [SECURITY.md](SECURITY.md) | Threat model and reporting |
 
@@ -119,5 +138,5 @@ MIT OR Apache-2.0. You own what you run.
 
 ## Name
 
-Frihart is the name of the browser. It is not a reskin of another
-product and it does not stand for an acronym.
+Frihart is the name of the browser. It is not a reskin and it does not
+stand for an acronym.

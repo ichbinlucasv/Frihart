@@ -144,13 +144,11 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
     let mut blocks = vec![
         Block::Hero {
             title: APP_NAME.into(),
-            subtitle:
-                "A sovereign, privacy-first web browser. Inspired by LibreWolf. Original code."
-                    .into(),
+            subtitle: "Libertarian. Inspired by LibreWolf. Original Rust. Black and yellow.".into(),
         },
         Block::Paragraph(format!(
-            "Phase 1. Containers, a native blocker, and a translator live in the \
-             chrome. The web engine is not here yet. Version {VERSION}. Profile “{}”.",
+            "Linux first — Arch, CachyOS, Fedora, Mint, then Tails and Qubes. \
+             Campaign B/C/D. Version {VERSION}. Profile “{}”.",
             profile.name()
         )),
         Block::Heading("Pages".into()),
@@ -1062,8 +1060,8 @@ fn credits(url: &Url) -> Document {
                 "LibreWolf is the inspiration for Frihart's stance: telemetry \
                  stripped, fingerprinting resisted, no sponsored defaults, the \
                  user is sovereign. LibreWolf is a Firefox fork. Frihart is not. \
-                 We take the ethic and implement it as original code — containers \
-                 and a uBlock-class blocker are native, not add-ons."
+                 We take the ethic as original Rust — containers and a \
+                 uBlock-class blocker are native, not add-ons. Look: black and yellow."
                     .into(),
             ),
             Block::Heading("Primitives we did not reimplement".into()),
@@ -1176,18 +1174,15 @@ fn roadmap(url: &Url) -> Document {
                 subtitle: "A capability ladder, not a fake launch date.".into(),
             },
             Block::List(vec![
-                "Phase 0 — identity, crates, philosophy".into(),
-                "Phase 1 — Linux shell, containers, native blocker".into(),
-                "Phase 2 — rustls, cookies, HTTPS-only (fetch works)".into(),
-                "Phase 3 — HTML tokenizer, tree, arena DOM".into(),
-                "Phase 4 — CSS, style, block layout, display list".into(),
-                "Phase 5 — forms GET/POST encode".into(),
-                "Phase 6 — IPC types (in-process bus)".into(),
-                "Phase 7 — JS types; execution off".into(),
-                "Phase 8–10 — platform profile roots".into(),
-                "Phase 11 — media sniff".into(),
-                "Phase 12 — pipeline Frame".into(),
-                "Phase 13–15 — i18n, print PS, dormant extensions".into(),
+                "A Foundation — identity, crates, constitution".into(),
+                "B Chrome — black/yellow, containers, blocker, wipe".into(),
+                "C Network OPSEC — rustls, Tor fail-closed, safe downloads".into(),
+                "D Engine — HTML/CSS/layout (in progress)".into(),
+                "E Isolation — process split, Linux sandbox".into(),
+                "F Linux homes — Arch, Cachy, Fedora, Mint, Tails, Qubes".into(),
+                "G Script — last; fingerprint APIs stay denied".into(),
+                "H Other OS — Windows, macOS, Android after Linux is real".into(),
+                "I Depth — media, i18n, print, extension runtime".into(),
             ]),
             Block::Paragraph(
                 "The full plan, success criteria, and time ranges live in ROADMAP.md \
@@ -1205,12 +1200,12 @@ fn about(url: &Url) -> Document {
         blocks: vec![
             Block::Hero {
                 title: format!("{APP_NAME} {VERSION}"),
-                subtitle: "Original. Private by default. Linux first.".into(),
+                subtitle: "Libertarian. Private by default. Linux first.".into(),
             },
             Block::Paragraph(
                 "Frihart is not Firefox, not LibreWolf, and not Chromium. LibreWolf \
-                 inspired the defaults and the refusal of telemetry. The code is \
-                 original. It is a long project with honest scope."
+                 inspired the stance. The code is original Rust so we do not inherit \
+                 Gecko's memory-unsafe weekly RCEs. Long project. Honest scope."
                     .into(),
             ),
             Block::KeyValue {

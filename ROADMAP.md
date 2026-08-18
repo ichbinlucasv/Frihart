@@ -1,43 +1,72 @@
 # Frihart roadmap
 
-This is the long-term plan: Day 1 through a mature, usable multi-platform
-browser. It is written for a committed solo developer or a very small
-team over **one to two years of foundation**, then more years of engine
-depth. Times assume serious, regular work — not a weekend prototype.
+This is the long-term plan for a **libertarian** Linux browser with a
+LibreWolf stance and original Rust code. One to two years of foundation,
+then years of engine depth. Dates move. The philosophy does not.
 
-Read this with [PHILOSOPHY.md](PHILOSOPHY.md) and
-[ARCHITECTURE.md](ARCHITECTURE.md). The philosophy does not move. Dates
-do.
+Read with [PHILOSOPHY.md](PHILOSOPHY.md), [ARCHITECTURE.md](ARCHITECTURE.md),
+[docs/opsec.md](docs/opsec.md), and [docs/distros.md](docs/distros.md).
+
+Crate numbers (0–15) stay. Humans use **campaigns A–I**.
+
+## Why we do not fork Firefox
+
+A Gecko or Blink fork inherits memory-unsafe RCEs, a release train we
+do not control, and telemetry DNA. Frihart's bet is a smaller Rust
+surface that fails closed. We will not match Chrome's site list. We
+will be harder to own.
 
 ## Honest scale
 
 A general-purpose engine that competes with Blink or Gecko is a
 **decade-scale** project. Frihart does not hide that.
 
-What *is* realistic:
-
 | Horizon | What "done" means |
 | --- | --- |
-| 3 months | A Linux browser you can open every day for `about:` pages, prefs, tabs, bookmarks |
-| 6–9 months | It can fetch real sites, isolate cookies, and show HTML source or a first layout |
-| 12–18 months | Simple documents (blogs, docs, homepages) render usefully without JS |
-| 18–24 months | Process isolation, sandbox on Linux, a short list of daily-driver sites |
-| Year 2–3 | Constrained scripting, Windows port after Linux is actually useful |
-| Year 3–4 | macOS, then Android; more CSS; media |
-| Year 5+ | The long grind of compatibility, performance, and engine completeness |
+| 3 months | Linux chrome you live in: prefs, tabs, bookmarks, wipe |
+| 6–9 months | Fetch, isolate cookies, first real layout |
+| 12–18 months | Simple documents (blogs, docs, homepages) without JS |
+| 18–24 months | Process isolation, Linux sandbox, named daily-driver sites |
+| Year 2 | Packages for Arch, CachyOS, Fedora, Mint; Tails + Qubes notes that are honest |
+| Year 2–3 | Constrained scripting. Windows only after Linux is actually useful |
+| Year 3–4 | macOS, then Android |
+| Year 5+ | Compatibility, performance, engine completeness |
 
 If a phase slips, we slip the date. We do not skip isolation to paint
 more CSS, and we do not skip policy to fetch more pages.
 
 ## Platform order (fixed)
 
-1. Linux (Arch / CachyOS first; other distros follow the same binary)
+1. **Linux** — same binary everywhere
+   1. Arch / CachyOS (reference)
+   2. Fedora
+   3. Linux Mint (Debian/Ubuntu family)
+   4. Tails (amnesic, system Tor)
+   5. Qubes OS (AppVM / DisposableVM)
+   6. Every other Linux
 2. Windows
 3. macOS
 4. Android
 
-A port starts only when the previous platform is a daily driver for the
-sites Frihart claims to support at that time.
+A port starts only when the previous rung is a daily driver for the
+sites Frihart claims at that time.
+
+## Campaigns (the new plan)
+
+| Campaign | Crate phases | Goal |
+| --- | --- | --- |
+| **A Foundation** | 0 | Identity, license, crates, constitution |
+| **B Chrome** | 1 | Black/yellow shell. Containers, blocker, wipe. LibreWolf stance |
+| **C Network OPSEC** | 2 | rustls, partitioned cookies, Tor fail-closed, safe downloads |
+| **D Engine** | 3–5, 12 | HTML/CSS/layout/forms. Documents, not webapps |
+| **E Isolation** | 6 | Process split, seccomp, landlock. A tab cannot own the profile |
+| **F Linux homes** | packaging | Arch, Cachy, Fedora, Mint, then Tails and Qubes |
+| **G Script** | 7 | Last. Default conservative. Fingerprint APIs stay denied |
+| **H Other OS** | 8–10 | Windows, macOS, Android — after Linux is real |
+| **I Depth** | 11, 13–15 | Media sniff, i18n, print, extension runtime |
+
+Standing work in every campaign: [docs/opsec.md](docs/opsec.md).
+No telemetry. No password vault. Policy before I/O.
 
 ---
 
@@ -351,9 +380,35 @@ a generic exploit runtime.
 
 ---
 
+## Campaign F — Linux homes (before any other OS)
+
+**When:** overlaps late Phase 5–6. **Before Phase 8.**
+**Goal:** the binary is excellent on the machines we actually love.
+
+### Technical tasks
+
+- Arch / CachyOS: AUR package, reproducible `PKGBUILD`
+- Fedora: COPR or a clean `.spec` people can rebuild
+- Linux Mint / Debian: `.deb` that installs `/usr/bin/frihart` only
+- Tails: ephemeral default; use Tails Tor at `127.0.0.1:9050`; write
+  only to Persistent if the user said so; honest "not Tor Browser"
+- Qubes: Fedora + Debian template packages; DisposableVM = private
+  profile; Whonix SOCKS fail-closed; no qrexec holes
+- Desktop file, man page, no extra network on first launch
+- Document each home in [docs/distros.md](docs/distros.md)
+
+### Success criteria
+
+- `makepkg` / `rpmbuild` / `dpkg-buildpackage` produce a silent binary
+- Tails notes are testable on a stick, not theoretical
+- A Qubes DisposableVM leaves nothing on the template
+- Mint and Fedora users get the same chrome as Arch
+
+---
+
 ## Phase 8 — Windows
 
-**When:** after Linux Phase 5–6 quality
+**When:** after Linux (including Tails and Qubes notes) is a daily driver
 **Estimate:** 2–4 months for chrome + platform, longer for sandbox parity
 
 ### Technical tasks
@@ -515,3 +570,5 @@ A sustainable rhythm for a long project:
 - [x] cosmic-text wrap + display-list link hits
 - [x] Tor SOCKS5 (fail closed) + Downloads 0600 never execute
 - [ ] Chrome paints only the pipeline (fields still overlay)
+- [ ] Distro notes for Tails (amnesic) and Qubes (DisposableVM)
+- [ ] Fedora + Mint packages besides the Arch PKGBUILD

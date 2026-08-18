@@ -2,7 +2,7 @@
 Type=Application
 Name=Frihart
 GenericName=Web Browser
-Comment=Sovereign privacy-first web browser
+Comment=Libertarian privacy browser. LibreWolf stance. Black and yellow.
 Exec=frihart %u
 Terminal=false
 Categories=Network;WebBrowser;
