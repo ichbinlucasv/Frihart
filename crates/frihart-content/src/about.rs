@@ -22,6 +22,7 @@ pub enum PrefToggle {
     Containers,
     DarkMode,
     Translate,
+    DismissWelcome,
 }
 
 impl PrefToggle {
@@ -44,6 +45,7 @@ impl PrefToggle {
             Self::Containers => prefs.privacy.containers = !prefs.privacy.containers,
             Self::DarkMode => prefs.content.dark_mode = !prefs.content.dark_mode,
             Self::Translate => prefs.translate.enabled = !prefs.translate.enabled,
+            Self::DismissWelcome => prefs.general.welcome_seen = true,
         }
     }
 }
@@ -73,6 +75,10 @@ pub fn is_known(name: &str) -> bool {
             | "vpn"
             | "extensions"
             | "addons"
+            | "welcome"
+            | "support"
+            | "pay"
+            | "shred"
     )
 }
 
@@ -97,6 +103,9 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "tor" => tor(url, prefs),
         "vpn" => vpn(url, prefs),
         "extensions" | "addons" => extensions(url, profile),
+        "welcome" => welcome(url, prefs),
+        "support" | "pay" => support(url, prefs),
+        "shred" => shred_page(url),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -135,6 +144,14 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Privacy".into(),
             href: "about:privacy".into(),
+        },
+        Block::Link {
+            label: "Support".into(),
+            href: "about:support".into(),
+        },
+        Block::Link {
+            label: "Wipe / shred".into(),
+            href: "about:shred".into(),
         },
         Block::Link {
             label: "Preferences (about:config)".into(),
@@ -228,6 +245,141 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         title: "Home".into(),
         url: url.clone(),
         blocks,
+    })
+}
+
+fn welcome(url: &Url, prefs: &Prefs) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Frihart".into(),
+            subtitle: "Linux is free. No accounts. No login store.".into(),
+        },
+        Block::Paragraph(frihart_core::price_label().into()),
+        Block::Paragraph(
+            "Android €80 lifetime. Windows and macOS €100 lifetime. Paid builds \
+             check a local key only. Nothing phones home."
+                .into(),
+        ),
+        Block::Heading("Support".into()),
+        Block::Paragraph(
+            "Monero, Bitcoin, or fiat if you set an address in prefs. This page \
+             is local."
+                .into(),
+        ),
+    ];
+    blocks.extend(support_blocks(prefs));
+    blocks.extend([
+        Block::Heading("Data".into()),
+        Block::Link {
+            label: "Wipe session".into(),
+            href: "frihart:wipe".into(),
+        },
+        Block::Link {
+            label: "Shred profile".into(),
+            href: "frihart:shred".into(),
+        },
+        toggle(
+            PrefToggle::DismissWelcome,
+            "Don't show this again",
+            "Stored only in your profile.",
+            prefs.general.welcome_seen,
+        ),
+        Block::Link {
+            label: "Continue".into(),
+            href: "about:home".into(),
+        },
+    ]);
+    Document::internal(InternalPage {
+        title: "Welcome".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn support(url: &Url, prefs: &Prefs) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Support".into(),
+            subtitle: frihart_core::price_label().into(),
+        },
+        Block::List(vec![
+            "Linux: free".into(),
+            "Android: €80 lifetime".into(),
+            "Windows / macOS: €100 lifetime".into(),
+        ]),
+        Block::Note(
+            "No Frihart account. No license server. Paid ports will use a key \
+             you keep on disk."
+                .into(),
+        ),
+        Block::Heading("Donate".into()),
+    ];
+    blocks.extend(support_blocks(prefs));
+    blocks.push(Block::Link {
+        label: "Home".into(),
+        href: "about:home".into(),
+    });
+    Document::internal(InternalPage {
+        title: "Support".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn support_blocks(prefs: &Prefs) -> Vec<Block> {
+    let mut blocks = Vec::new();
+    if prefs.support.xmr.is_empty()
+        && prefs.support.btc.is_empty()
+        && prefs.support.fiat_url.is_empty()
+    {
+        blocks.push(Block::Note(
+            "Set support.xmr, support.btc, and optional support.fiat_url in prefs.toml.".into(),
+        ));
+    }
+    if !prefs.support.xmr.is_empty() {
+        blocks.push(Block::KeyValue {
+            key: "XMR".into(),
+            value: prefs.support.xmr.clone(),
+        });
+    }
+    if !prefs.support.btc.is_empty() {
+        blocks.push(Block::KeyValue {
+            key: "BTC".into(),
+            value: prefs.support.btc.clone(),
+        });
+    }
+    if !prefs.support.fiat_url.is_empty() {
+        blocks.push(Block::Link {
+            label: "Fiat".into(),
+            href: prefs.support.fiat_url.clone(),
+        });
+    }
+    blocks
+}
+
+fn shred_page(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Shred".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Wipe / shred".into(),
+                subtitle: "Local only. No cloud copy exists.".into(),
+            },
+            Block::Paragraph(
+                "Wipe clears history, cookies, and open pages. Shred overwrites \
+                 the profile on disk, then rebuilds an empty one."
+                    .into(),
+            ),
+            Block::Link {
+                label: "Wipe session".into(),
+                href: "frihart:wipe".into(),
+            },
+            Block::Link {
+                label: "Shred profile".into(),
+                href: "frihart:shred".into(),
+            },
+        ],
     })
 }
 
@@ -343,10 +495,18 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
             subtitle: "The constitution, as currently configured.".into(),
         },
         Block::Paragraph(
-            "No telemetry. No crash uploader. No anonymous usage ping. Startup \
-             makes zero network connections. This page is built from local prefs."
+            "No telemetry. No accounts. No password or login store. Startup \
+             makes zero network connections."
                 .into(),
         ),
+        Block::KeyValue {
+            key: "store_logins".into(),
+            value: "false".into(),
+        },
+        Block::Link {
+            label: "Wipe / shred".into(),
+            href: "about:shred".into(),
+        },
         Block::Heading("Active policy".into()),
     ];
     for (key, value, _good) in policy.summary_lines() {
@@ -419,6 +579,7 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         ),
         kv("restore_session", bool_str(prefs.general.restore_session)),
         kv("show_status_bar", bool_str(prefs.general.show_status_bar)),
+        kv("welcome_seen", bool_str(prefs.general.welcome_seen)),
         Block::Heading("privacy".into()),
         kv("https_only", bool_str(prefs.privacy.https_only)),
         kv(
@@ -447,6 +608,7 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("language", &prefs.privacy.language),
         kv("containers", bool_str(prefs.privacy.containers)),
         kv("blocker", bool_str(prefs.privacy.blocker)),
+        kv("store_logins", bool_str(prefs.privacy.store_logins)),
         Block::Heading("network".into()),
         kv("user_agent", &prefs.network.user_agent),
         kv("client_hints", bool_str(prefs.network.client_hints)),
@@ -492,6 +654,31 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("provider", &prefs.vpn.provider),
         Block::Heading("extensions".into()),
         kv("enabled", bool_str(prefs.extensions.enabled)),
+        Block::Heading("support".into()),
+        kv(
+            "xmr",
+            if prefs.support.xmr.is_empty() {
+                "(empty)"
+            } else {
+                "(set)"
+            },
+        ),
+        kv(
+            "btc",
+            if prefs.support.btc.is_empty() {
+                "(empty)"
+            } else {
+                "(set)"
+            },
+        ),
+        kv(
+            "fiat_url",
+            if prefs.support.fiat_url.is_empty() {
+                "(empty)"
+            } else {
+                "(set)"
+            },
+        ),
     ];
     let _ = FROZEN_USER_AGENT;
     blocks.push(Block::Link {

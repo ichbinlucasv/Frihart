@@ -14,6 +14,7 @@ The implementing type is `frihart_config::Prefs`.
 | `general.new_tab_url` | `about:newtab` | Same reason as homepage. |
 | `general.search_url` | empty | Optional override. Empty means use `search.primary`. |
 | `general.show_status_bar` | `true` | Destinations should be visible before click. |
+| `general.welcome_seen` | `false` | First run opens about:welcome once. |
 
 ## Privacy
 
@@ -34,6 +35,7 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.language` | `en` | A single language; not the full system list. |
 | `privacy.containers` | `true` | Identity isolation is a default, not an add-on. |
 | `privacy.blocker` | `true` | uBlock-class host blocking is on at install. |
+| `privacy.store_logins` | `false` | Forced. Frihart does not collect passwords or logins. |
 
 ## Translate
 

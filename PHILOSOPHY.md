@@ -49,6 +49,7 @@ DuckDuckGo are privacy defaults, not a revenue deal.
 - Defaults protect the user. Power remains available.
 - Nothing leaves the machine unless the user initiated it.
 - There is no Frihart account and there never will be.
+- Logins and passwords are never stored. `store_logins` cannot be turned on.
 - Cloud sync, if it ever exists, will be something the user hosts.
 
 ## Privacy is the default, not a product tier

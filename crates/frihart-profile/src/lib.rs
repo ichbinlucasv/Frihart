@@ -10,7 +10,10 @@ mod lock;
 use std::path::{Path, PathBuf};
 
 use frihart_config::Prefs;
-use frihart_core::{ContainerId, DEFAULT_PROFILE_NAME, Result};
+use frihart_core::{
+    ContainerId, DEFAULT_PROFILE_NAME, Result, ensure_private_dir, shred_file, shred_tree,
+    write_private_str,
+};
 use frihart_platform::profiles_dir;
 
 pub use bookmarks::{Bookmark, BookmarkStore};
@@ -204,6 +207,54 @@ impl Profile {
             return Ok(());
         }
         self.history.save(&self.root.join("history.jsonl"))
+    }
+
+    pub fn wipe_session(&mut self) -> Result<()> {
+        self.history.clear();
+        if self.ephemeral {
+            return Ok(());
+        }
+        self.history.save(&self.root.join("history.jsonl"))?;
+        let cookies = self.root.join("cookies.json");
+        if cookies.exists() {
+            write_private_str(&cookies, "[]")?;
+        }
+        Ok(())
+    }
+
+    pub fn shred(&mut self) -> Result<()> {
+        if self.ephemeral {
+            self.history.clear();
+            return Ok(());
+        }
+        let root = self.root.clone();
+        drop(self._lock.take());
+        let names = [
+            "prefs.toml",
+            "bookmarks.toml",
+            "history.jsonl",
+            "containers.toml",
+            "addons.toml",
+            "cookies.json",
+            "lock",
+        ];
+        for name in names {
+            let _ = shred_file(&root.join(name));
+        }
+        let _ = shred_tree(&root.join("extensions"));
+        for name in ["prefs.toml.tmp", "bookmarks.toml.tmp"] {
+            let _ = shred_file(&root.join(name));
+        }
+        ensure_private_dir(&root)?;
+        self.prefs = Prefs::default();
+        self.bookmarks = BookmarkStore::defaults();
+        self.history = HistoryStore::default();
+        self.containers = ContainerStore::defaults();
+        self.addons = AddonStore::default();
+        self._lock = Some(ProfileLock::acquire(root.join("lock"))?);
+        self.save_prefs()?;
+        self.save_bookmarks()?;
+        Ok(())
     }
 }
 

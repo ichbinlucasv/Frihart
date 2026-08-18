@@ -1,7 +1,7 @@
 //! Local file permissions. No world-readable profile data.
 
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use crate::Result;
@@ -56,6 +56,64 @@ fn lockdown(path: &Path, mode: u32) -> Result<()> {
 /// Host only. Never userinfo, path, or query.
 pub fn safe_host(url: &url::Url) -> String {
     url.host_str().unwrap_or("-").to_string()
+}
+
+pub fn shred_file(path: &Path) -> Result<()> {
+    if !path.is_file() {
+        return Ok(());
+    }
+    let len = fs::metadata(path)?.len();
+    let mut file = OpenOptions::new().write(true).open(path)?;
+    let mut chunk = vec![0u8; 65_536];
+    for _ in 0..3 {
+        fill_random(&mut chunk)?;
+        file.seek(SeekFrom::Start(0))?;
+        let mut left = len;
+        while left > 0 {
+            let n = chunk.len().min(left as usize);
+            file.write_all(&chunk[..n])?;
+            left -= n as u64;
+        }
+        file.sync_all()?;
+    }
+    chunk.fill(0);
+    file.seek(SeekFrom::Start(0))?;
+    let mut left = len;
+    while left > 0 {
+        let n = chunk.len().min(left as usize);
+        file.write_all(&chunk[..n])?;
+        left -= n as u64;
+    }
+    file.sync_all()?;
+    drop(file);
+    fs::remove_file(path)?;
+    Ok(())
+}
+
+pub fn shred_tree(path: &Path) -> Result<()> {
+    if path.is_file() {
+        return shred_file(path);
+    }
+    if !path.is_dir() {
+        return Ok(());
+    }
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let p = entry.path();
+        if p.is_dir() {
+            shred_tree(&p)?;
+        } else {
+            shred_file(&p)?;
+        }
+    }
+    let _ = fs::remove_dir(path);
+    Ok(())
+}
+
+fn fill_random(buf: &mut [u8]) -> Result<()> {
+    let mut src = File::open("/dev/urandom")?;
+    src.read_exact(buf)?;
+    Ok(())
 }
 
 pub fn sanitize_error(msg: &str) -> String {

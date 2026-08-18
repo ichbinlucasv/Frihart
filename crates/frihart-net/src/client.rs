@@ -167,9 +167,9 @@ pub fn content_type(resp: &Response) -> String {
 mod tests {
     use super::*;
     use frihart_blocker::FilterEngine;
-    use url::Url;
     use frihart_config::Prefs;
     use frihart_privacy::Policy;
+    use url::Url;
 
     #[test]
     fn https_only_blocks_cleartext() {

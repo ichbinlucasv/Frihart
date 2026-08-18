@@ -46,6 +46,10 @@ impl CookieJar {
         self.cookies.is_empty()
     }
 
+    pub fn clear(&mut self) {
+        self.cookies.clear();
+    }
+
     pub fn store(
         &mut self,
         set_cookie: &str,

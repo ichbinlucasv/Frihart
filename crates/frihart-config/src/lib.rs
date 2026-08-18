@@ -46,6 +46,7 @@ pub struct Prefs {
     pub tor: TorPrefs,
     pub vpn: VpnPrefs,
     pub extensions: ExtensionPrefs,
+    pub support: SupportPrefs,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -57,6 +58,7 @@ pub struct GeneralPrefs {
     pub search_url: String,
     pub restore_session: bool,
     pub show_status_bar: bool,
+    pub welcome_seen: bool,
 }
 
 impl Default for GeneralPrefs {
@@ -67,6 +69,7 @@ impl Default for GeneralPrefs {
             search_url: String::new(),
             restore_session: false,
             show_status_bar: true,
+            welcome_seen: false,
         }
     }
 }
@@ -91,6 +94,8 @@ pub struct PrivacyPrefs {
     pub containers: bool,
     /// Native uBlock-inspired blocker. On by default. Not an add-on.
     pub blocker: bool,
+    /// Always false. Frihart does not collect or store logins.
+    pub store_logins: bool,
 }
 
 impl Default for PrivacyPrefs {
@@ -111,6 +116,7 @@ impl Default for PrivacyPrefs {
             language: "en".into(),
             containers: true,
             blocker: true,
+            store_logins: false,
         }
     }
 }
@@ -256,6 +262,16 @@ impl Default for ExtensionPrefs {
     }
 }
 
+/// Local-only funding. Addresses are never fetched. Fill them yourself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct SupportPrefs {
+    pub xmr: String,
+    pub btc: String,
+    /// Optional HTTPS page you host for card/SEPA. Empty = none.
+    pub fiat_url: String,
+}
+
 impl Prefs {
     /// Load from TOML. Missing fields take defaults. A missing file is
     /// not an error — the caller gets `Prefs::default()`.
@@ -268,7 +284,10 @@ impl Prefs {
     }
 
     pub fn from_toml(text: &str) -> Result<Self> {
-        toml::from_str(text).map_err(|e| FrihartError::config(e.to_string()))
+        let mut prefs: Self =
+            toml::from_str(text).map_err(|e| FrihartError::config(e.to_string()))?;
+        prefs.privacy.store_logins = false;
+        Ok(prefs)
     }
 
     pub fn to_toml(&self) -> Result<String> {
@@ -320,6 +339,8 @@ mod tests {
         assert_eq!(p.tor.socks_port, 9050);
         assert_eq!(p.vpn.provider, "none");
         assert!(p.extensions.enabled);
+        assert!(!p.privacy.store_logins);
+        assert!(!p.general.welcome_seen);
     }
 
     #[test]

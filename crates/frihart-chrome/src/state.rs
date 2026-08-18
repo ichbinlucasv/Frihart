@@ -93,7 +93,13 @@ pub struct Browser {
 
 impl Browser {
     pub fn new(mut profile: Profile, initial: Option<String>, tor: bool) -> Self {
-        let start = initial.unwrap_or_else(|| profile.prefs().general.homepage.clone());
+        let start = initial.unwrap_or_else(|| {
+            if profile.prefs().general.welcome_seen {
+                profile.prefs().general.homepage.clone()
+            } else {
+                "about:welcome".into()
+            }
+        });
         let mut tab = open_tab(&mut profile, &start);
         if tor {
             tab.circuit = Circuit::Tor;
@@ -396,9 +402,12 @@ impl Browser {
                 self.assign_container(slug);
                 return;
             }
-            if spec == "wipe-history" {
-                let _ = self.profile.clear_history();
-                self.status.clear();
+            if spec == "wipe-history" || spec == "wipe" {
+                self.wipe();
+                return;
+            }
+            if spec == "shred" {
+                self.shred();
                 return;
             }
         }
@@ -451,6 +460,33 @@ impl Browser {
             container,
             mode,
         })
+    }
+
+    pub fn wipe(&mut self) {
+        self.jar.clear();
+        let _ = self.profile.wipe_session();
+        self.persist_jar();
+        let home = parse_user_input("about:home")
+            .unwrap_or_else(|_| Url::parse("about:home").expect("about:home"));
+        let doc = load(&home, &self.profile);
+        let title = doc.title().to_string();
+        self.tabs.truncate(1);
+        self.active = 0;
+        {
+            let tab = self.active_tab_mut();
+            tab.session = SessionHistory::new(home, title);
+            tab.document = doc;
+            tab.scroll_y = 0.0;
+        }
+        self.sync_url_bar();
+        self.status = "wiped".into();
+    }
+
+    pub fn shred(&mut self) {
+        self.jar.clear();
+        let _ = self.profile.shred();
+        self.wipe();
+        self.status = "shredded".into();
     }
 
     fn persist_jar(&self) {
