@@ -1,8 +1,8 @@
-//! UA + author cascade for the first CSS subset.
+//! UA + user + author cascade for the first CSS subset.
 
 #![forbid(unsafe_code)]
 
-use frihart_css::{Declaration, Stylesheet};
+use frihart_css::{Combinator, Compound, Declaration, Selector, Simple, Stylesheet};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Computed {
@@ -13,7 +13,20 @@ pub struct Computed {
     pub margin: f32,
     pub padding: f32,
     pub width: Option<f32>,
+    pub max_width: Option<f32>,
     pub text_align: Align,
+    pub line_height_mult: Option<f32>,
+    pub line_height_px: Option<f32>,
+}
+
+impl Computed {
+    pub fn line_height(&self) -> f32 {
+        if let Some(px) = self.line_height_px {
+            px
+        } else {
+            self.font_size * self.line_height_mult.unwrap_or(1.4)
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -40,7 +53,29 @@ impl Default for Computed {
             margin: 0.0,
             padding: 0.0,
             width: None,
+            max_width: None,
             text_align: Align::Start,
+            line_height_mult: None,
+            line_height_px: None,
+        }
+    }
+}
+
+/// Element identity used for selector matching.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Element {
+    pub tag: String,
+    pub id: String,
+    pub classes: Vec<String>,
+    /// Root → parent.
+    pub ancestors: Vec<Element>,
+}
+
+impl Element {
+    pub fn tag(tag: &str) -> Self {
+        Self {
+            tag: tag.to_ascii_lowercase(),
+            ..Self::default()
         }
     }
 }
@@ -59,6 +94,24 @@ pub fn ua_style(tag: &str) -> Computed {
         "h3" => {
             c.font_size = 20.0;
             c.margin = 4.0;
+        }
+        "blockquote" => {
+            c.margin = 12.0;
+            c.padding = 8.0;
+            c.color = 0x00C8C8C8;
+        }
+        "pre" | "code" => {
+            c.font_size = 14.0;
+            c.padding = 8.0;
+            c.background = 0x00181818;
+        }
+        "li" => {
+            c.margin = 2.0;
+            c.padding = 4.0;
+        }
+        "img" => {
+            c.margin = 8.0;
+            c.background = 0x00202020;
         }
         "a" => {
             c.display = Display::Inline;
@@ -103,6 +156,8 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
                 }
             }
             "width" => computed.width = parse_px(&d.value),
+            "max-width" => computed.max_width = parse_px(&d.value),
+            "line-height" => apply_line_height(computed, &d.value),
             "text-align" => {
                 computed.text_align = match d.value.as_str() {
                     "center" => Align::Center,
@@ -115,19 +170,102 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
     }
 }
 
-pub fn style_tag(tag: &str, author: &Stylesheet) -> Computed {
-    let mut c = ua_style(tag);
-    for rule in &author.rules {
-        if selector_matches(&rule.selector, tag) {
-            apply(&mut c, &rule.declarations);
+fn apply_line_height(computed: &mut Computed, value: &str) {
+    let v = value.trim();
+    if v.eq_ignore_ascii_case("normal") {
+        computed.line_height_mult = None;
+        computed.line_height_px = None;
+        return;
+    }
+    if let Some(px) = parse_px(v) {
+        computed.line_height_px = Some(px);
+        computed.line_height_mult = None;
+        return;
+    }
+    if let Ok(n) = v.parse::<f32>() {
+        if n > 0.0 {
+            computed.line_height_mult = Some(n);
+            computed.line_height_px = None;
         }
     }
+}
+
+pub fn style_tag(tag: &str, author: &Stylesheet) -> Computed {
+    style_element(&Element::tag(tag), &Stylesheet::default(), author)
+}
+
+pub fn style_element(el: &Element, user: &Stylesheet, author: &Stylesheet) -> Computed {
+    let mut c = ua_style(&el.tag);
+    apply_matching(&mut c, user, el);
+    apply_matching(&mut c, author, el);
     c
 }
 
-fn selector_matches(selector: &str, tag: &str) -> bool {
-    let sel = selector.trim();
-    sel == "*" || sel == tag
+fn apply_matching(computed: &mut Computed, sheet: &Stylesheet, el: &Element) {
+    for rule in &sheet.rules {
+        if rule_matches(rule, el) {
+            apply(computed, &rule.declarations);
+        }
+    }
+}
+
+fn rule_matches(rule: &frihart_css::Rule, el: &Element) -> bool {
+    if let Some(sel) = &rule.parsed {
+        return selector_matches(sel, el);
+    }
+    let s = rule.selector.trim();
+    s == "*" || s.eq_ignore_ascii_case(&el.tag)
+}
+
+pub fn selector_matches(sel: &Selector, el: &Element) -> bool {
+    if sel.parts.is_empty() {
+        return false;
+    }
+    let last = sel.parts.last().expect("parts");
+    if !compound_matches(&last.1, el) {
+        return false;
+    }
+    let mut current_parent = el.ancestors.as_slice();
+    for (comb, compound) in sel.parts[..sel.parts.len() - 1].iter().rev() {
+        match comb.unwrap_or(Combinator::Descendant) {
+            Combinator::Child => {
+                let Some((parent, rest)) = current_parent.split_last() else {
+                    return false;
+                };
+                if !compound_matches(compound, parent) {
+                    return false;
+                }
+                current_parent = rest;
+            }
+            Combinator::Descendant => {
+                let mut found = None;
+                for (i, anc) in current_parent.iter().enumerate().rev() {
+                    if compound_matches(compound, anc) {
+                        found = Some(i);
+                        break;
+                    }
+                }
+                let Some(i) = found else {
+                    return false;
+                };
+                current_parent = &current_parent[..i];
+            }
+        }
+    }
+    true
+}
+
+fn compound_matches(compound: &Compound, el: &Element) -> bool {
+    compound.simples.iter().all(|s| simple_matches(s, el))
+}
+
+fn simple_matches(simple: &Simple, el: &Element) -> bool {
+    match simple {
+        Simple::Universal => true,
+        Simple::Type(t) => el.tag.eq_ignore_ascii_case(t),
+        Simple::Class(c) => el.classes.iter().any(|have| have.eq_ignore_ascii_case(c)),
+        Simple::Id(id) => el.id.eq_ignore_ascii_case(id),
+    }
 }
 
 pub fn parse_color(value: &str) -> Option<u32> {
@@ -185,5 +323,33 @@ mod tests {
         let sheet = parse_stylesheet("* { padding: 4px }");
         let c = style_tag("div", &sheet);
         assert_eq!(c.padding, 4.0);
+    }
+
+    #[test]
+    fn class_id_descendant_and_user_origin() {
+        let user = parse_stylesheet("p { font-size: 10px }");
+        let author = parse_stylesheet(
+            "article #x p.lead { font-size: 22px; max-width: 400px; line-height: 1.5 }",
+        );
+        let el = Element {
+            tag: "p".into(),
+            id: String::new(),
+            classes: vec!["lead".into()],
+            ancestors: vec![
+                Element {
+                    tag: "article".into(),
+                    ..Element::default()
+                },
+                Element {
+                    tag: "div".into(),
+                    id: "x".into(),
+                    ..Element::default()
+                },
+            ],
+        };
+        let c = style_element(&el, &user, &author);
+        assert_eq!(c.font_size, 22.0);
+        assert_eq!(c.max_width, Some(400.0));
+        assert!((c.line_height() - 33.0).abs() < 0.01);
     }
 }

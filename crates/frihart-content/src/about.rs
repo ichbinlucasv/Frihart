@@ -122,7 +122,7 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "engine" => engine_page(url),
         "processes" => processes_page(url),
         "print" => print_page(url),
-        "downloads" => downloads_page(url),
+        "downloads" => downloads_page(url, profile),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -496,6 +496,11 @@ fn engine_page(url: &Url) -> Document {
                 "14 print → local PostScript".into(),
                 "15 extension host; runtime dormant".into(),
             ]),
+            Block::Note(
+                "Put extra CSS in this profile's user.css. Origin: UA, then user, \
+                 then author <style>."
+                    .into(),
+            ),
             Block::Link {
                 label: "Processes".into(),
                 href: "about:processes".into(),
@@ -545,25 +550,43 @@ fn print_page(url: &Url) -> Document {
     })
 }
 
-fn downloads_page(url: &Url) -> Document {
+fn downloads_page(url: &Url, profile: &Profile) -> Document {
+    let dir = frihart_platform::downloads_dir();
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Downloads".into(),
+            subtitle: "Written to your Downloads folder. Never executed.".into(),
+        },
+        Block::KeyValue {
+            key: "directory".into(),
+            value: dir.display().to_string(),
+        },
+    ];
+    let log = if profile.is_ephemeral() {
+        frihart_net::DownloadLog::default()
+    } else {
+        frihart_net::DownloadLog::load(&profile.root().join("downloads.json")).unwrap_or_default()
+    };
+    if log.items.is_empty() {
+        blocks.push(Block::Paragraph("No downloads in this profile yet.".into()));
+    } else {
+        blocks.push(Block::Heading("This profile".into()));
+        for rec in log.items.iter().take(32) {
+            blocks.push(Block::KeyValue {
+                key: rec.dest.clone(),
+                value: format!("{} · {} bytes", rec.url, rec.bytes),
+            });
+        }
+    }
+    blocks.push(Block::Note(
+        "Non-HTML responses (PDF, zip, images) are saved as 0600 files. Frihart \
+         will not run them."
+            .into(),
+    ));
     Document::internal(InternalPage {
         title: "Downloads".into(),
         url: url.clone(),
-        blocks: vec![
-            Block::Hero {
-                title: "Downloads".into(),
-                subtitle: "User-chosen directory. Never execute-on-download.".into(),
-            },
-            Block::KeyValue {
-                key: "directory".into(),
-                value: frihart_platform::downloads_dir().display().to_string(),
-            },
-            Block::Note(
-                "The Download type exists in frihart-net. Saving bytes is Phase 2 \
-                 leftover work; running them is refused forever."
-                    .into(),
-            ),
-        ],
+        blocks,
     })
 }
 
@@ -1468,7 +1491,11 @@ fn tor(url: &Url, prefs: &Prefs) -> Document {
                     "off".into()
                 },
             },
-            Block::Note("Tor tabs refuse clearnet. Live SOCKS is the next Phase 2 slice.".into()),
+            Block::Note(
+                "Tor tabs dial only this SOCKS port. If the daemon is down, the \
+                 tab fails. There is no clearnet fallback."
+                    .into(),
+            ),
         ],
     })
 }

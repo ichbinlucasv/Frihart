@@ -11,7 +11,8 @@ use frihart_blocker::FilterEngine;
 use frihart_core::{ContainerId, UrlKind, about_page, classify_url, safe_host};
 use frihart_html::{document_title, parse, visible_blocks};
 use frihart_net::{
-    CookieJar, FetchMode, HttpClient, Request, RustlsClient, content_type, decode_body,
+    CookieJar, DownloadLog, DownloadRecord, FetchMode, HttpClient, Request, RustlsClient,
+    content_type, decode_body, save_download, should_save,
 };
 use frihart_privacy::Policy;
 use frihart_profile::Profile;
@@ -81,13 +82,16 @@ pub fn fetch(req: FetchRequest<'_>) -> Document {
         &policy,
         req.jar,
         req.blocker,
-        req.mode,
+        req.mode.clone(),
         req.container,
     ) {
         Ok(resp) => {
             let text = decode_body(&resp);
             let host = safe_host(&resp.final_url);
             let ct = content_type(&resp);
+            if should_save(&ct, &resp.headers) && !is_html(&ct, &text) {
+                return saved_download(req, &resp);
+            }
             if is_html(&ct, &text) {
                 Document::Page(page_from_html(resp.final_url, host, &text))
             } else {
@@ -119,7 +123,13 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
     for block in visible_blocks(&root) {
         match block {
             frihart_html::Block::Heading(l, t) => items.push(PageItem::Heading(l, t)),
-            frihart_html::Block::Text(t) => items.push(PageItem::Text(t)),
+            frihart_html::Block::Text(t)
+            | frihart_html::Block::Pre(t)
+            | frihart_html::Block::Quote(t) => items.push(PageItem::Text(t)),
+            frihart_html::Block::ListItem { text, .. } => items.push(PageItem::Text(text)),
+            frihart_html::Block::Image { alt, src } => {
+                items.push(PageItem::Text(if alt.is_empty() { src } else { alt }));
+            }
             frihart_html::Block::Link { text, href } => items.push(PageItem::Link { text, href }),
             frihart_html::Block::Field(f) => {
                 let kind = classify(&f);
@@ -150,6 +160,43 @@ fn page_from_html(url: url::Url, host: String, html: &str) -> Page {
         form_action,
         form_method,
         html: html.to_string(),
+    }
+}
+
+fn saved_download(req: FetchRequest<'_>, resp: &frihart_net::Response) -> Document {
+    let dir = frihart_platform::downloads_dir();
+    match save_download(&dir, &resp.final_url, &resp.headers, &resp.body) {
+        Ok(saved) => {
+            if !req.profile.is_ephemeral() {
+                let log_path = req.profile.root().join("downloads.json");
+                let mut log = DownloadLog::load(&log_path).unwrap_or_default();
+                log.push(DownloadRecord {
+                    url: resp.final_url.as_str().into(),
+                    dest: saved.dest.display().to_string(),
+                    bytes: saved.bytes,
+                });
+                let _ = log.save(&log_path);
+            }
+            Document::internal(crate::document::InternalPage {
+                title: "Saved".into(),
+                url: resp.final_url.clone(),
+                blocks: vec![
+                    crate::document::Block::Hero {
+                        title: "Saved".into(),
+                        subtitle: saved.dest.display().to_string(),
+                    },
+                    crate::document::Block::Paragraph(format!(
+                        "{} bytes. Not executed.",
+                        saved.bytes
+                    )),
+                    crate::document::Block::Link {
+                        label: "Downloads".into(),
+                        href: "about:downloads".into(),
+                    },
+                ],
+            })
+        }
+        Err(err) => Document::unavailable(req.url.clone(), err.to_string()),
     }
 }
 

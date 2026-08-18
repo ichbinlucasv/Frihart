@@ -6,33 +6,38 @@ ignored. They are never guessed into a broken layout.
 ## Selectors (now)
 
 - type (`p`, `h1`)
+- class (`.lead`, `p.lead`)
+- id (`#main`)
+- descendant (`article p`)
+- child (`nav > a`)
 - universal (`*`)
 - comma lists (`h1, h2`)
 
-## Selectors (next)
+## Selectors (later)
 
-- class, id, descendant, child
 - `:root`, `:link`, `:visited` (partitioned)
+- attribute selectors
 
 ## Properties (now)
 
 - `display` (`block`, `inline`, `none`)
 - `color`, `background-color` (named + `#rgb` / `#rrggbb`)
 - `font-size` (`px`)
-- `margin`, `padding`, `width` (`px`)
+- `margin`, `padding`, `width`, `max-width` (`px`)
+- `line-height` (unitless or `px`)
 - `text-align` (`left`/`start`, `center`, `right`/`end`)
 
 ## Properties (next)
 
-- `border`, `height`, `max-width`
+- `border`, `height`
 - `font-weight`, `font-family` (engine fonts only)
-- `line-height`, `list-style`, `white-space`
+- `list-style`, `white-space`
 - `em`, `rem`, `%`
 
 ## Origins
 
-User-agent styles live in `frihart-style::ua_style`. Author CSS comes
-from `<style>` tags and the extra sheet passed into the pipeline.
-A profile `user.css` is not read yet.
+1. User-agent (`frihart-style::ua_style`)
+2. User (`user.css` in the profile)
+3. Author (`<style>` in the document)
 
 See [engine.md](engine.md).

@@ -23,6 +23,7 @@ pub struct DrawText {
     pub color: Rgb,
     pub weight: Weight,
     pub ellipsis: bool,
+    pub wrap: bool,
 }
 
 impl TextEngine {
@@ -47,6 +48,7 @@ impl TextEngine {
             color,
             weight,
             ellipsis,
+            wrap,
         } = spec;
         if text.is_empty() || max_width <= 1.0 {
             return (0, line_height.round() as i32);
@@ -54,7 +56,14 @@ impl TextEngine {
 
         let metrics = CosmicMetrics::new(font_size, line_height);
         let mut buffer = Buffer::new(&mut self.font_system, metrics);
-        buffer.set_wrap(&mut self.font_system, Wrap::None);
+        buffer.set_wrap(
+            &mut self.font_system,
+            if wrap && !ellipsis {
+                Wrap::Word
+            } else {
+                Wrap::None
+            },
+        );
         let height = if ellipsis { Some(line_height) } else { None };
         buffer.set_size(&mut self.font_system, Some(max_width), height);
 

@@ -75,7 +75,7 @@ toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.5"
-ureq = { version = "2.12", default-features = false, features = ["tls"] }
+ureq = { version = "2.12", default-features = false, features = ["tls", "socks-proxy"] }
 winit = "0.30"
 zip = { version = "2", default-features = false, features = ["deflate"] }
 

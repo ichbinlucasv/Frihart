@@ -1,4 +1,4 @@
-//! CSS subset: declarations and rules. Unknown properties stay in the OM.
+//! CSS subset: declarations, rules, and a small selector grammar.
 
 #![forbid(unsafe_code)]
 
@@ -16,7 +16,32 @@ pub struct Stylesheet {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Rule {
     pub selector: String,
+    pub parsed: Option<Selector>,
     pub declarations: Vec<Declaration>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Simple {
+    Universal,
+    Type(String),
+    Class(String),
+    Id(String),
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Compound {
+    pub simples: Vec<Simple>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Combinator {
+    Descendant,
+    Child,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Selector {
+    pub parts: Vec<(Option<Combinator>, Compound)>,
 }
 
 impl Stylesheet {
@@ -61,6 +86,7 @@ pub fn parse_stylesheet(input: &str) -> Stylesheet {
         if selector.is_empty() {
             continue;
         }
+        let decls = parse_declarations(body);
         for sel in selector.split(',') {
             let sel = sel.trim();
             if sel.is_empty() {
@@ -68,11 +94,112 @@ pub fn parse_stylesheet(input: &str) -> Stylesheet {
             }
             sheet.rules.push(Rule {
                 selector: sel.to_string(),
-                declarations: parse_declarations(body),
+                parsed: parse_selector(sel),
+                declarations: decls.clone(),
             });
         }
     }
     sheet
+}
+
+pub fn parse_selector(input: &str) -> Option<Selector> {
+    let s = input.trim();
+    if s.is_empty() {
+        return None;
+    }
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    let mut parts = Vec::new();
+    let mut pending = None;
+    while i < bytes.len() {
+        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+            i += 1;
+            if pending.is_none() && !parts.is_empty() {
+                pending = Some(Combinator::Descendant);
+            }
+        }
+        if i >= bytes.len() {
+            break;
+        }
+        if bytes[i] == b'>' {
+            pending = Some(Combinator::Child);
+            i += 1;
+            continue;
+        }
+        if bytes[i] == b'+' || bytes[i] == b'~' {
+            return None;
+        }
+        let (compound, next) = parse_compound(s, i)?;
+        parts.push((pending, compound));
+        pending = None;
+        i = next;
+    }
+    if parts.is_empty() {
+        return None;
+    }
+    Some(Selector { parts })
+}
+
+fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
+    let bytes = s.as_bytes();
+    let mut i = start;
+    let mut simples = Vec::new();
+    if i < bytes.len() && bytes[i] == b'*' {
+        simples.push(Simple::Universal);
+        i += 1;
+    } else if i < bytes.len() && is_ident_start(bytes[i]) {
+        let (name, n) = read_ident(s, i);
+        simples.push(Simple::Type(name));
+        i = n;
+    }
+    loop {
+        if i >= bytes.len() {
+            break;
+        }
+        match bytes[i] {
+            b'.' => {
+                i += 1;
+                let (name, n) = read_ident(s, i);
+                if name.is_empty() {
+                    return None;
+                }
+                simples.push(Simple::Class(name));
+                i = n;
+            }
+            b'#' => {
+                i += 1;
+                let (name, n) = read_ident(s, i);
+                if name.is_empty() {
+                    return None;
+                }
+                simples.push(Simple::Id(name));
+                i = n;
+            }
+            b':' | b'[' => return None,
+            _ => break,
+        }
+    }
+    if simples.is_empty() {
+        return None;
+    }
+    Some((Compound { simples }, i))
+}
+
+fn is_ident_start(b: u8) -> bool {
+    b.is_ascii_alphabetic() || b == b'_' || b == b'-'
+}
+
+fn is_ident(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || b == b'_' || b == b'-'
+}
+
+fn read_ident(s: &str, start: usize) -> (String, usize) {
+    let bytes = s.as_bytes();
+    let mut i = start;
+    while i < bytes.len() && is_ident(bytes[i]) {
+        i += 1;
+    }
+    (s[start..i].to_ascii_lowercase(), i)
 }
 
 fn strip_comments(input: &str) -> String {
@@ -113,5 +240,20 @@ mod tests {
         assert_eq!(s.rules.len(), 2);
         assert_eq!(s.rules[0].selector, "h1");
         assert_eq!(s.rules[1].selector, "h2");
+    }
+
+    #[test]
+    fn parses_class_id_descendant() {
+        let s = parse_selector("article.post #x p.lead").unwrap();
+        assert_eq!(s.parts.len(), 3);
+        assert!(matches!(s.parts[1].0, Some(Combinator::Descendant)));
+        assert!(
+            s.parts[2]
+                .1
+                .simples
+                .iter()
+                .any(|p| matches!(p, Simple::Class(c) if c == "lead"))
+        );
+        assert!(parse_selector(".nav > a").is_some());
     }
 }

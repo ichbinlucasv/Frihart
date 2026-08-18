@@ -510,5 +510,8 @@ A sustainable rhythm for a long project:
 - [x] Tor tabs refuse clearnet (no silent fallback)
 - [x] HTML subset + arena DOM + CSS/layout/gfx pipeline
 - [x] Identity autofill (no password store)
-- [ ] Live Tor SOCKS + download save (Phase 2 leftover)
+- [x] Lists, pre/code, quote, br, img boxes
+- [x] class/id/descendant CSS, max-width, line-height, user.css
+- [x] cosmic-text wrap + display-list link hits
+- [x] Tor SOCKS5 (fail closed) + Downloads 0600 never execute
 - [ ] Chrome paints only the pipeline (fields still overlay)

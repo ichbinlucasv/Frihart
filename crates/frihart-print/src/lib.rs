@@ -64,6 +64,9 @@ mod tests {
                     color: 0,
                     size: 16.0,
                     text: "Hello".into(),
+                    href: None,
+                    max_width: 200.0,
+                    wrap: true,
                 }],
             },
         };

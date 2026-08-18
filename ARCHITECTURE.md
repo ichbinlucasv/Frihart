@@ -124,12 +124,12 @@ Each crate has types and tests. Depth is still the long job.
 
 | Crate | Phase | Status |
 | --- | --- | --- |
-| `frihart-html` | 3 | tokenizer + tree + serialize |
+| `frihart-html` | 3 | tokenizer, fragments (lists/pre/img) |
 | `frihart-dom` | 3 | arena Document + NodeId |
-| `frihart-css` | 4 | declarations, comments, comma selectors |
-| `frihart-style` | 4 | UA + author cascade, hex color |
-| `frihart-layout` | 4 | block flow + wrap estimate |
-| `frihart-gfx` | 4 | Fill + Text display list |
+| `frihart-css` | 4 | class/id/descendant selectors |
+| `frihart-style` | 4 | UA + user + author, max-width, line-height |
+| `frihart-layout` | 4 | block flow + cosmic-text wrap |
+| `frihart-gfx` | 4 | Fill + Text + link hit-test |
 | `frihart-pipeline` | 12 | html → display list (chrome paints it) |
 | `frihart-forms` | 5 | GET URL + POST body |
 | `frihart-ipc` | 6 | envelopes + in-process bus |

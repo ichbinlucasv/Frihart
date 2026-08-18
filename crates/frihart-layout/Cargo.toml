@@ -9,4 +9,5 @@ description = "Block flow box tree (Phase 4)"
 publish.workspace = true
 
 [dependencies]
+cosmic-text.workspace = true
 frihart-style.workspace = true

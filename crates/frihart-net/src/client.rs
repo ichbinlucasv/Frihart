@@ -13,10 +13,13 @@ const MAX_REDIRECTS: usize = 5;
 const MAX_BODY: usize = 8 * 1024 * 1024;
 const TIMEOUT_SECS: u64 = 20;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FetchMode {
     Direct,
-    Tor,
+    /// SOCKS5 only. Empty socks is a hard refuse — never clearnet.
+    Tor {
+        socks: String,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -51,9 +54,28 @@ impl HttpClient for RustlsClient {
         mode: FetchMode,
         container: ContainerId,
     ) -> Result<Response> {
-        if mode == FetchMode::Tor {
-            return Err(FrihartError::network("tor refused clearnet"));
-        }
+        let agent;
+        let agent_ref: &ureq::Agent = match &mode {
+            FetchMode::Direct => &self.agent,
+            FetchMode::Tor { socks } => {
+                let socks = socks.trim();
+                if socks.is_empty() {
+                    return Err(FrihartError::network("tor refused: no socks"));
+                }
+                if !socks.contains(':') {
+                    return Err(FrihartError::network("tor refused: socks host:port"));
+                }
+                let proxy = ureq::Proxy::new(format!("socks5://{socks}"))
+                    .map_err(|_| FrihartError::network("tor refused: socks invalid"))?;
+                agent = ureq::AgentBuilder::new()
+                    .timeout(Duration::from_secs(TIMEOUT_SECS))
+                    .redirects(0)
+                    .user_agent("Frihart")
+                    .proxy(proxy)
+                    .build();
+                &agent
+            }
+        };
 
         let mut current = request.url.clone();
         let first_party = current.host_str().unwrap_or("").to_ascii_lowercase();
@@ -76,9 +98,7 @@ impl HttpClient for RustlsClient {
                 request.headers.push(("Cookie".into(), cookie));
             }
 
-            let mut ureq_req = self
-                .agent
-                .request(request.method.as_str(), current.as_str());
+            let mut ureq_req = agent_ref.request(request.method.as_str(), current.as_str());
             for (k, v) in &request.headers {
                 ureq_req = ureq_req.set(k, v);
             }
@@ -209,17 +229,32 @@ mod tests {
         let mut jar = CookieJar::default();
         let blocker = FilterEngine::new(true);
         let req = Request::get(Url::parse("https://example.com").unwrap());
-        let err = client
+        let empty = client
+            .send(
+                req.clone(),
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::Tor {
+                    socks: String::new(),
+                },
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        assert!(empty.to_string().contains("tor"));
+        let bad = client
             .send(
                 req,
                 &policy,
                 &mut jar,
                 &blocker,
-                FetchMode::Tor,
+                FetchMode::Tor {
+                    socks: "noport".into(),
+                },
                 ContainerId::PERSONAL,
             )
             .unwrap_err();
-        assert!(err.to_string().contains("tor"));
+        assert!(bad.to_string().contains("tor"));
     }
 
     #[test]

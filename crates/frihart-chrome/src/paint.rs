@@ -147,6 +147,7 @@ fn paint_tabs(
                     Weight::NORMAL
                 },
                 ellipsis: true,
+                wrap: false,
             },
         );
 
@@ -171,6 +172,7 @@ fn paint_tabs(
                 color: TEXT_CHROME,
                 weight: Weight::NORMAL,
                 ellipsis: false,
+                wrap: false,
             },
         );
         hits.push(HitRegion {
@@ -208,6 +210,7 @@ fn paint_tabs(
             color: TEXT_CHROME,
             weight: Weight::MEDIUM,
             ellipsis: false,
+            wrap: false,
         },
     );
     hits.push(HitRegion {
@@ -266,6 +269,7 @@ fn paint_toolbar(
                 color: if enabled { TEXT_CHROME } else { TEXT_MUTED },
                 weight: Weight::NORMAL,
                 ellipsis: false,
+                wrap: false,
             },
         );
         if enabled {
@@ -306,6 +310,7 @@ fn paint_toolbar(
             color: TEXT_CHROME,
             weight: Weight::NORMAL,
             ellipsis: true,
+            wrap: false,
         },
     );
     if focused {
@@ -354,6 +359,7 @@ fn paint_content(
                     color: TEXT_CONTENT_MUTED,
                     weight: Weight::NORMAL,
                     ellipsis: false,
+                    wrap: false,
                 },
             );
         }
@@ -423,6 +429,7 @@ fn paint_page(
             color: TEXT_LINK,
             weight: Weight::MEDIUM,
             ellipsis: true,
+            wrap: false,
         },
     );
     hits.push(HitRegion {
@@ -442,6 +449,7 @@ fn paint_page(
             color: TEXT_LINK,
             weight: Weight::MEDIUM,
             ellipsis: true,
+            wrap: false,
         },
     );
     hits.push(HitRegion {
@@ -450,8 +458,9 @@ fn paint_page(
     });
     y += m.s(36.0);
     if !page.html.is_empty() {
-        let frame = layout_html(&page.html, "", max_w as f32);
-        y = paint_display_list(fb, text, &frame.display, x, y, viewport, m);
+        let extra = browser.profile.user_css();
+        let frame = layout_html(&page.html, &extra, max_w as f32);
+        y = paint_display_list(fb, text, &frame.display, x, y, viewport, m, hits);
     }
     for (i, item) in page.items.iter().enumerate() {
         if y > viewport.bottom() {
@@ -459,8 +468,8 @@ fn paint_page(
         }
         if !page.html.is_empty() {
             match item {
-                PageItem::Heading(_, _) | PageItem::Text(_) => continue,
-                PageItem::Link { .. } | PageItem::Field { .. } => {}
+                PageItem::Heading(_, _) | PageItem::Text(_) | PageItem::Link { .. } => continue,
+                PageItem::Field { .. } => {}
             }
         }
         match item {
@@ -482,6 +491,7 @@ fn paint_page(
                         color: TEXT_CONTENT,
                         weight: Weight::SEMIBOLD,
                         ellipsis: false,
+                        wrap: false,
                     },
                 );
                 y += h.1 + m.s(10.0);
@@ -503,6 +513,7 @@ fn paint_page(
                         color: TEXT_LINK,
                         weight: Weight::MEDIUM,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 hits.push(HitRegion {
@@ -529,6 +540,7 @@ fn paint_page(
                         color: TEXT_CONTENT_MUTED,
                         weight: Weight::NORMAL,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 y += m.s(18.0);
@@ -558,6 +570,7 @@ fn paint_page(
                         color: TEXT_CONTENT,
                         weight: Weight::NORMAL,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 hits.push(HitRegion {
@@ -574,6 +587,7 @@ fn paint_page(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn paint_display_list(
     fb: &mut Framebuffer,
     text: &mut TextEngine,
@@ -582,6 +596,7 @@ fn paint_display_list(
     origin_y: i32,
     viewport: Rect,
     m: &Metrics,
+    hits: &mut Vec<HitRegion>,
 ) -> i32 {
     let mut bottom = origin_y;
     for op in &list.ops {
@@ -604,6 +619,9 @@ fn paint_display_list(
                 color,
                 size,
                 text: body,
+                href,
+                max_width,
+                wrap,
             } => {
                 let px = origin_x + *x as i32;
                 let py = origin_y + *y as i32;
@@ -613,14 +631,25 @@ fn paint_display_list(
                     DrawText {
                         x: px,
                         y: py,
-                        max_width: (viewport.w - (px - viewport.x)).max(8) as f32,
+                        max_width: *max_width,
                         font_size: *size,
-                        line_height: *size + 6.0,
+                        line_height: *size * 1.4,
                         color: *color,
-                        weight: Weight::NORMAL,
+                        weight: if href.is_some() {
+                            Weight::MEDIUM
+                        } else {
+                            Weight::NORMAL
+                        },
                         ellipsis: false,
+                        wrap: *wrap,
                     },
                 );
+                if let Some(href) = href {
+                    hits.push(HitRegion {
+                        rect: Rect::new(px, py, drawn.0.max(*max_width as i32), drawn.1.max(8)),
+                        hit: Hit::ContentLink(href.clone()),
+                    });
+                }
                 bottom = bottom.max(py + drawn.1);
             }
         }
@@ -660,6 +689,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT,
                         weight: Weight::SEMIBOLD,
                         ellipsis: false,
+                        wrap: false,
                     },
                 );
                 y += h.1 + m.s(8.0);
@@ -675,6 +705,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT_MUTED,
                         weight: Weight::NORMAL,
                         ellipsis: false,
+                        wrap: false,
                     },
                 );
                 y += h.1 + m.s(20.0);
@@ -693,6 +724,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT,
                         weight: Weight::SEMIBOLD,
                         ellipsis: false,
+                        wrap: false,
                     },
                 );
                 y += h.1 + m.s(10.0);
@@ -733,6 +765,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT_MUTED,
                         weight: Weight::MEDIUM,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 let h = text.draw(
@@ -747,6 +780,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT,
                         weight: Weight::NORMAL,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 y += h.1.max(m.line_content() as i32) + m.s(6.0);
@@ -772,6 +806,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT,
                         weight: Weight::MEDIUM,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 text.draw(
@@ -786,6 +821,7 @@ fn paint_internal_blocks(
                         color: TEXT_CONTENT_MUTED,
                         weight: Weight::NORMAL,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 let sw = Rect::new(x + max_w - m.s(52.0), y + m.s(18.0), m.s(44.0), m.s(24.0));
@@ -818,6 +854,7 @@ fn paint_internal_blocks(
                         color: TEXT_LINK,
                         weight: Weight::MEDIUM,
                         ellipsis: true,
+                        wrap: false,
                     },
                 );
                 fb.fill_rect(Rect::new(x, y + h.1 - 2, h.0.min(max_w), 1), ACCENT_DIM);
@@ -866,6 +903,7 @@ fn draw_wrapped(
                 color,
                 weight: Weight::NORMAL,
                 ellipsis: false,
+                wrap: false,
             },
         );
         yy += h.1.max(m.line_content() as i32);
@@ -942,6 +980,7 @@ fn paint_status(
             color: TEXT_MUTED,
             weight: Weight::NORMAL,
             ellipsis: true,
+            wrap: false,
         },
     );
     let url = browser.active_tab().url_display();
@@ -957,6 +996,7 @@ fn paint_status(
             color: TEXT_MUTED,
             weight: Weight::NORMAL,
             ellipsis: true,
+            wrap: false,
         },
     );
 }
@@ -993,6 +1033,7 @@ fn paint_find(
             color: TEXT_CHROME,
             weight: Weight::MEDIUM,
             ellipsis: false,
+            wrap: false,
         },
     );
     let field = Rect::new(
@@ -1031,6 +1072,7 @@ fn paint_find(
             },
             weight: Weight::NORMAL,
             ellipsis: true,
+            wrap: false,
         },
     );
     text.draw(
@@ -1045,6 +1087,7 @@ fn paint_find(
             color: TEXT_MUTED,
             weight: Weight::NORMAL,
             ellipsis: true,
+            wrap: false,
         },
     );
     hits.push(HitRegion {

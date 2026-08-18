@@ -127,6 +127,14 @@ impl Profile {
         &self.root
     }
 
+    /// Profile `user.css`. Missing file is empty. Never created for you.
+    pub fn user_css(&self) -> String {
+        if self.ephemeral {
+            return String::new();
+        }
+        std::fs::read_to_string(self.root.join("user.css")).unwrap_or_default()
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -257,6 +265,8 @@ impl Profile {
             "containers.toml",
             "addons.toml",
             "cookies.json",
+            "downloads.json",
+            "user.css",
             "lock",
         ];
         for name in names {

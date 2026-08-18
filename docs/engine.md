@@ -4,11 +4,11 @@ One function turns HTML into something chrome can paint:
 
 ```
 html bytes
-  → frihart-html (tokenize + tree)
-  → frihart-css  (author <style> + extra sheet)
-  → frihart-style (UA + author cascade)
-  → frihart-layout (block flow)
-  → frihart-gfx (display list)
+  → frihart-html (tokenize + tree + fragments)
+  → frihart-css  (author <style> + profile user.css)
+  → frihart-style (UA, then user, then author)
+  → frihart-layout (block flow, cosmic-text wrap)
+  → frihart-gfx (display list, including link hits)
   → frihart-chrome (software paint)
 ```
 
@@ -19,17 +19,20 @@ not mutate it.
 
 ## What is on
 
-- Headings, paragraphs, links, form fields (GET submit)
+- Headings, paragraphs, lists, pre/code, blockquote, br, img boxes (alt only)
+- Links: one display-list path, clickable
+- Form fields (GET submit)
 - Identity autofill (never passwords)
 - rustls fetch, first-party cookies, HTTPS-only
+- Tor tabs via SOCKS5 only (fail closed)
+- Non-HTML responses saved to `~/Downloads` at 0600, never executed
 - View-source as `Document::Source`
 
 ## What is off
 
 - JavaScript (`frihart-js` refuses)
-- Image decode (`frihart-media` sniffs only)
+- Image decode (`frihart-media` sniffs only; img is a box)
 - Flex/grid, tables, SVG
-- Live Tor SOCKS (Tor tabs fail closed)
 - WebExtensions execution (install/audit only)
 
 ## Isolation

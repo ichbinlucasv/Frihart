@@ -4,9 +4,9 @@
 
 use frihart_css::parse_stylesheet;
 use frihart_gfx::{DisplayList, from_boxes};
-use frihart_html::{author_css, document_title, parse, visible_blocks};
-use frihart_layout::{LayoutBox, block_flow};
-use frihart_style::{Computed, style_tag};
+use frihart_html::{Block, author_css, document_title, parse, visible_fragments};
+use frihart_layout::{FlowItem, LayoutBox, block_flow};
+use frihart_style::{Element, style_element};
 
 pub struct Frame {
     pub title: String,
@@ -17,24 +17,49 @@ pub struct Frame {
 
 pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
     let tree = parse(html);
-    let mut css = author_css(&tree);
-    if !extra_css.is_empty() {
-        if !css.is_empty() {
-            css.push('\n');
-        }
-        css.push_str(extra_css);
-    }
-    let sheet = parse_stylesheet(&css);
-    let mut items: Vec<(String, Computed)> = Vec::new();
-    for block in visible_blocks(&tree) {
-        let (tag, text) = match block {
-            frihart_html::Block::Heading(1, t) => ("h1", t),
-            frihart_html::Block::Heading(2, t) => ("h2", t),
-            frihart_html::Block::Heading(_, t) => ("h3", t),
-            frihart_html::Block::Text(t) | frihart_html::Block::Link { text: t, .. } => ("p", t),
-            frihart_html::Block::Field(f) => ("p", f.name),
+    let author = author_css(&tree);
+    let user = parse_stylesheet(extra_css);
+    let author_sheet = parse_stylesheet(&author);
+    let mut items: Vec<FlowItem> = Vec::new();
+    for frag in visible_fragments(&tree) {
+        let el = element_from(&frag);
+        let style = style_element(&el, &user, &author_sheet);
+        let (text, href, preserve, image) = match frag.kind {
+            Block::Heading(_, t) | Block::Text(t) | Block::Quote(t) => (t, None, false, false),
+            Block::Pre(t) => (t, None, true, false),
+            Block::Link { text, href } => (text, Some(href), false, false),
+            Block::ListItem {
+                ordered,
+                index,
+                text,
+            } => {
+                let prefix = if ordered {
+                    format!("{index}. ")
+                } else {
+                    "• ".into()
+                };
+                (format!("{prefix}{text}"), None, false, false)
+            }
+            Block::Image { alt, src } => {
+                let label = if alt.is_empty() {
+                    format!("[img {src}]")
+                } else {
+                    format!("[img] {alt}")
+                };
+                (label, None, false, true)
+            }
+            Block::Field(f) => {
+                let name = if f.label.is_empty() { f.name } else { f.label };
+                (name, None, false, false)
+            }
         };
-        items.push((text, style_tag(tag, &sheet)));
+        items.push(FlowItem {
+            text,
+            style,
+            href,
+            preserve,
+            image,
+        });
     }
     let boxes = block_flow(&items, viewport_w, 0.0);
     let display = from_boxes(&boxes);
@@ -42,7 +67,25 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
         title: document_title(&tree),
         boxes,
         display,
-        author_css: css,
+        author_css: author,
+    }
+}
+
+fn element_from(frag: &frihart_html::Fragment) -> Element {
+    Element {
+        tag: frag.qual.tag.clone(),
+        id: frag.qual.id.clone(),
+        classes: frag.qual.classes.clone(),
+        ancestors: frag
+            .ancestors
+            .iter()
+            .map(|q| Element {
+                tag: q.tag.clone(),
+                id: q.id.clone(),
+                classes: q.classes.clone(),
+                ancestors: Vec::new(),
+            })
+            .collect(),
     }
 }
 
@@ -67,5 +110,37 @@ mod tests {
         );
         assert!(f.author_css.contains("font-size"));
         assert_eq!(f.boxes[0].style.font_size, 10.0);
+    }
+
+    #[test]
+    fn user_css_then_author() {
+        let html = r#"<article id="main"><p class="lead">Hello there this is a paragraph.</p>
+            <a href="https://ex.test/x">link</a>
+            <ul><li>item</li></ul>
+            <style>.lead { font-size: 18px }</style></article>"#;
+        let f = layout_html(html, "p { max-width: 320px; line-height: 1.6 }", 640.0);
+        let p = f
+            .boxes
+            .iter()
+            .find(|b| b.text.contains("Hello"))
+            .expect("p");
+        assert_eq!(p.style.font_size, 18.0);
+        assert_eq!(p.style.max_width, Some(320.0));
+        assert!(
+            f.display
+                .hit_test(
+                    4.0,
+                    f.boxes
+                        .iter()
+                        .find(|b| b.href.is_some())
+                        .map(|b| b.y + 2.0)
+                        .unwrap_or(0.0)
+                )
+                .is_some()
+                || f.boxes
+                    .iter()
+                    .any(|b| b.href.as_deref() == Some("https://ex.test/x"))
+        );
+        assert!(f.boxes.iter().any(|b| b.text.starts_with('•')));
     }
 }

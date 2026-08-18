@@ -480,7 +480,12 @@ impl Browser {
             return load(&target, &self.profile);
         }
         let mode = match self.active_tab().circuit {
-            Circuit::Tor => FetchMode::Tor,
+            Circuit::Tor => {
+                let tor = &self.profile.prefs().tor;
+                FetchMode::Tor {
+                    socks: format!("{}:{}", tor.socks_host, tor.socks_port),
+                }
+            }
             _ => FetchMode::Direct,
         };
         let container = self.active_tab().container;
