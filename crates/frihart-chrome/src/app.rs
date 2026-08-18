@@ -32,8 +32,8 @@ struct Handler {
 }
 
 /// Open the Linux chrome and run until the user quits.
-pub fn run(profile: Profile, initial_url: Option<String>) -> Result<()> {
-    let browser = Browser::new(profile, initial_url);
+pub fn run(profile: Profile, initial_url: Option<String>, tor: bool) -> Result<()> {
+    let browser = Browser::new(profile, initial_url, tor);
     let event_loop = EventLoop::new()
         .map_err(|e| FrihartError::Message(format!("could not create event loop: {e}")))?;
     event_loop.set_control_flow(ControlFlow::Wait);
@@ -214,6 +214,19 @@ impl Handler {
                     }
                     "c" if shift => {
                         self.browser.cycle_container();
+                        self.request_redraw();
+                        return;
+                    }
+                    "o" if shift => {
+                        self.browser.new_tor_tab();
+                        self.request_redraw();
+                        return;
+                    }
+                    "k" => {
+                        self.browser.focus_url();
+                        self.browser.url_text.clear();
+                        self.browser.url_cursor = 0;
+                        self.browser.status = "Search.".into();
                         self.request_redraw();
                         return;
                     }

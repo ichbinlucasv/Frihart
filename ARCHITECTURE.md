@@ -91,6 +91,7 @@ Frihart/
 │   ├── frihart-profile/      # on-disk profile, lock, bookmarks, history
 │   ├── frihart-privacy/      # policy engine (the constitution, as code)
 │   ├── frihart-blocker/      # native uBlock-class host blocker
+│   ├── frihart-search/       # Swisscows / DDG / privacy search catalog
 │   ├── frihart-net/          # HTTP(S), DNS, TLS interfaces
 │   ├── frihart-platform/     # OS paths, windowing hooks, sandbox stubs
 │   ├── frihart-content/      # documents, about: pages, navigation

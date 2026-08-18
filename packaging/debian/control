@@ -1,0 +1,16 @@
+Source: frihart
+Section: web
+Priority: optional
+Maintainer: Lucas <codeberg.ecx3s@passmail.com>
+Build-Depends: debhelper-compat (= 13), cargo, rustc, pkg-config, libfontconfig1-dev, libfreetype-dev
+Standards-Version: 4.7.0
+Homepage: https://codeberg.org/ichbinlucasv/Frihart
+Rules-Requires-Root: no
+
+Package: frihart
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, fontconfig, libfreetype6
+Description: Sovereign privacy-first web browser
+ Frihart is an original privacy-first web browser written in Rust.
+ LibreWolf-inspired, not a fork. Arch / CachyOS is the reference;
+ this package targets Debian and derivatives.

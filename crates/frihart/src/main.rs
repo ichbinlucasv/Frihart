@@ -27,6 +27,10 @@ struct Args {
     /// Private window: memory only, no history, no cookie writes.
     #[arg(long)]
     private: bool,
+
+    /// Open the first tab as a Tor tab (system Tor SOCKS, default 127.0.0.1:9050).
+    #[arg(long)]
+    tor: bool,
 }
 
 fn main() -> ExitCode {
@@ -65,5 +69,5 @@ fn try_main() -> frihart_core::Result<()> {
         "starting Frihart"
     );
 
-    frihart_chrome::run(profile, args.url)
+    frihart_chrome::run(profile, args.url, args.tor)
 }

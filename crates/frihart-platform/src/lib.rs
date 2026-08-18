@@ -72,6 +72,48 @@ pub fn is_linux() -> bool {
     cfg!(target_os = "linux")
 }
 
+/// Look up an executable on PATH. No subprocess.
+pub fn find_in_path(name: &str) -> Option<PathBuf> {
+    let path = env::var_os("PATH")?;
+    for dir in env::split_paths(&path) {
+        let candidate = dir.join(name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+/// How we expect to talk to a local Tor daemon.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TorPresence {
+    pub binary: Option<PathBuf>,
+    pub socks_hint: String,
+}
+
+pub fn detect_tor() -> TorPresence {
+    TorPresence {
+        binary: find_in_path("tor"),
+        socks_hint: "127.0.0.1:9050".into(),
+    }
+}
+
+/// Official VPN CLIs we are willing to hook, never to reimplement.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VpnPresence {
+    pub proton: Option<PathBuf>,
+    pub mullvad: Option<PathBuf>,
+}
+
+pub fn detect_vpn() -> VpnPresence {
+    VpnPresence {
+        proton: find_in_path("protonvpn-cli")
+            .or_else(|| find_in_path("protonvpn"))
+            .or_else(|| find_in_path("proton-vpn")),
+        mullvad: find_in_path("mullvad"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

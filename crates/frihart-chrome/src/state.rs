@@ -1,9 +1,28 @@
 //! Browser session state: tabs, URL bar, navigation.
 
 use frihart_content::{Document, PrefToggle, SessionHistory, load};
-use frihart_core::{ContainerId, TabId, display_url, parse_user_input};
+use frihart_core::{ContainerId, TabId, display_url, looks_like_destination, parse_user_input};
 use frihart_profile::Profile;
+use frihart_search::{by_id, primary, resolve};
 use url::Url;
+
+/// How this tab talks to the network.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Circuit {
+    Direct,
+    Private,
+    Tor,
+}
+
+impl Circuit {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Direct => "direct",
+            Self::Private => "private",
+            Self::Tor => "tor",
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub enum Hit {
@@ -29,6 +48,7 @@ pub struct Tab {
     pub document: Document,
     pub scroll_y: f32,
     pub container: ContainerId,
+    pub circuit: Circuit,
 }
 
 impl Tab {
@@ -67,9 +87,14 @@ pub struct Browser {
 }
 
 impl Browser {
-    pub fn new(mut profile: Profile, initial: Option<String>) -> Self {
+    pub fn new(mut profile: Profile, initial: Option<String>, tor: bool) -> Self {
         let start = initial.unwrap_or_else(|| profile.prefs().general.homepage.clone());
-        let tab = open_tab(&mut profile, &start);
+        let mut tab = open_tab(&mut profile, &start);
+        if tor || profile.is_ephemeral() && tor {
+            tab.circuit = Circuit::Tor;
+        } else if profile.is_ephemeral() {
+            tab.circuit = Circuit::Private;
+        }
         let url_text = tab.url_display();
         Self {
             profile,
@@ -103,8 +128,14 @@ impl Browser {
     pub fn new_tab(&mut self) {
         let url = self.profile.prefs().general.new_tab_url.clone();
         let container = self.active_tab().container;
+        let circuit = self.active_tab().circuit;
         let mut tab = open_tab(&mut self.profile, &url);
         tab.container = container;
+        tab.circuit = match circuit {
+            Circuit::Tor => Circuit::Tor,
+            Circuit::Private => Circuit::Private,
+            Circuit::Direct => Circuit::Direct,
+        };
         self.tabs.push(tab);
         self.active = self.tabs.len() - 1;
         self.sync_url_bar();
@@ -219,11 +250,57 @@ impl Browser {
 
     pub fn commit_url(&mut self) {
         let raw = self.url_text.clone();
+        if !looks_like_destination(&raw) {
+            self.search(&raw);
+            self.url_focused = false;
+            return;
+        }
         match parse_user_input(&raw) {
             Ok(url) => self.navigate(url),
             Err(_) => self.status = format!("Could not parse “{raw}”."),
         }
         self.url_focused = false;
+    }
+
+    pub fn search(&mut self, query: &str) {
+        let id = if !self.profile.prefs().general.search_url.is_empty() {
+            None
+        } else {
+            Some(self.profile.prefs().search.primary.clone())
+        };
+        let url = if let Some(ref override_url) = {
+            let custom = self.profile.prefs().general.search_url.clone();
+            if custom.is_empty() {
+                None
+            } else {
+                Some(custom.replace("{q}", query).replace("%s", query))
+            }
+        } {
+            parse_user_input(override_url).ok()
+        } else {
+            let engine = id.as_deref().and_then(by_id).unwrap_or_else(primary);
+            resolve(engine, query)
+        };
+        match url {
+            Some(url) => {
+                self.status = format!("Search · {}", self.profile.prefs().search.primary);
+                self.navigate(url);
+            }
+            None => self.status = "No search engine configured.".into(),
+        }
+    }
+
+    pub fn new_tor_tab(&mut self) {
+        let url = self.profile.prefs().general.new_tab_url.clone();
+        let container = self.active_tab().container;
+        let mut tab = open_tab(&mut self.profile, &url);
+        tab.container = container;
+        tab.circuit = Circuit::Tor;
+        self.tabs.push(tab);
+        self.active = self.tabs.len() - 1;
+        self.sync_url_bar();
+        self.url_focused = false;
+        self.status = "Tor tab. Traffic will use the system Tor SOCKS port.".into();
     }
 
     pub fn cycle_container(&mut self) {
@@ -308,7 +385,9 @@ impl Browser {
         }
         let doc = load(&url, &self.profile);
         let title = doc.title().to_string();
-        let _ = self.profile.record_visit(url.as_str(), &title);
+        if self.active_tab().circuit == Circuit::Direct {
+            let _ = self.profile.record_visit(url.as_str(), &title);
+        }
         {
             let tab = self.active_tab_mut();
             tab.session.push(url, title);
@@ -400,5 +479,6 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
         document,
         scroll_y: 0.0,
         container: ContainerId::PERSONAL,
+        circuit: Circuit::Direct,
     }
 }

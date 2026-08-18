@@ -17,6 +17,7 @@ The web engine does not, yet. That is intentional. Read
 
 - **Primary:** [codeberg.org/ichbinlucasv/Frihart](https://codeberg.org/ichbinlucasv/Frihart)
 - **Mirror:** [github.com/ichbinlucasv/Frihart](https://github.com/ichbinlucasv/Frihart)
+- **Profile (pin it):** [github.com/ichbinlucasv?tab=repositories](https://github.com/ichbinlucasv?tab=repositories)
 
 ## Phase 1 product
 
@@ -41,8 +42,8 @@ The full constitution is [PHILOSOPHY.md](PHILOSOPHY.md).
 
 - Black chrome, yellow accents, dark pages
 - Tab strip with container stripes, URL bar, navigation keys
-- Native blocker, containers, translator (`about:blocker`,
-  `about:containers`, `about:translate`)
+- Native blocker, containers, DeepL translator, Swisscows search
+- Tor tabs (`--tor`, Ctrl+Shift+O) and Proton/Mullvad VPN detection
 - Find in page (Ctrl+F), bookmark (Ctrl+D), cycle container (Ctrl+Shift+C)
 - Privacy-first prefs persisted in an XDG profile
 - No network on startup, and no web rendering yet
@@ -65,6 +66,7 @@ Useful invocations:
 ```bash
 cargo run -- about:settings
 cargo run -- --private
+cargo run -- --tor
 cargo run -- --profile ./profile-dev
 ```
 

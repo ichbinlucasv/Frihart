@@ -1,0 +1,20 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Frihart
+Upstream-Contact: Lucas <codeberg.ecx3s@passmail.com>
+Source: https://codeberg.org/ichbinlucasv/Frihart
+
+Files: *
+Copyright: 2026 Frihart contributors
+License: MIT or Apache-2.0
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction.
+ .
+ On Debian systems, the complete text lives in LICENSE-MIT in the source.
+
+License: Apache-2.0
+ Licensed under the Apache License, Version 2.0.
+ .
+ On Debian systems, the complete text lives in LICENSE-APACHE in the source.

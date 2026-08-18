@@ -677,6 +677,9 @@ fn paint_status(
     if let Some(c) = browser.profile.container(browser.active_tab().container) {
         label = format!("{}  ·  {label}", c.name);
     }
+    if browser.active_tab().circuit != crate::state::Circuit::Direct {
+        label = format!("{}  ·  {label}", browser.active_tab().circuit.label());
+    }
     text.draw(
         fb,
         &label,

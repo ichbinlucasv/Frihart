@@ -64,6 +64,16 @@ Linux is the reference. Windows, macOS, and Android patches land in
 `frihart-platform` (and later, a mobile chrome crate). Do not sprinkle
 `#[cfg(windows)]` through the engine to "get ahead."
 
+## Community
+
+Codeberg is the primary forge. Issues and pull requests are welcome
+there. Extensions are not ready; see `docs/extensions.md`. Until then,
+the useful work is the engine, the blocker, Linux packages, and the
+chrome.
+
+Linux packaging lives in `packaging/` (Arch first, then Fedora, then
+Debian). Distro patches that keep those three in sync are high value.
+
 ## What we are not looking for
 
 - "Just embed WebView"

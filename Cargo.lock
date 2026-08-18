@@ -613,6 +613,7 @@ dependencies = [
  "frihart-platform",
  "frihart-privacy",
  "frihart-profile",
+ "frihart-search",
  "softbuffer",
  "tracing",
  "url",
@@ -635,8 +636,10 @@ dependencies = [
  "frihart-blocker",
  "frihart-config",
  "frihart-core",
+ "frihart-platform",
  "frihart-privacy",
  "frihart-profile",
+ "frihart-search",
  "url",
 ]
 
@@ -683,6 +686,14 @@ dependencies = [
  "serde",
  "serde_json",
  "toml",
+]
+
+[[package]]
+name = "frihart-search"
+version = "0.1.0"
+dependencies = [
+ "frihart-core",
+ "url",
 ]
 
 [[package]]

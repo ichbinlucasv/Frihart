@@ -26,6 +26,37 @@ pub fn parse_user_input(input: &str) -> Result<Url> {
     try_parse_user_input(input).ok_or_else(|| FrihartError::InvalidUrl(input.to_string()))
 }
 
+/// True when the input should be opened as a location, not searched.
+pub fn looks_like_destination(input: &str) -> bool {
+    let trimmed = input.trim();
+    if trimmed.is_empty() {
+        return true;
+    }
+    if trimmed.contains(' ') {
+        return false;
+    }
+    if trimmed.contains("://") {
+        return true;
+    }
+    if trimmed.starts_with("about:") || trimmed.starts_with("file:") {
+        return true;
+    }
+    if let Ok(url) = Url::parse(trimmed) {
+        if is_known_scheme(url.scheme()) {
+            return true;
+        }
+    }
+    if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
+        if url
+            .host_str()
+            .is_some_and(|h| h.contains('.') || h == "localhost")
+        {
+            return true;
+        }
+    }
+    false
+}
+
 /// Fallible parse that returns `None` instead of an error.
 pub fn try_parse_user_input(input: &str) -> Option<Url> {
     let trimmed = input.trim();
@@ -145,5 +176,13 @@ mod tests {
         let url = parse_user_input("localhost:8000").unwrap();
         assert_eq!(url.host_str(), Some("localhost"));
         assert_eq!(url.port(), Some(8000));
+    }
+
+    #[test]
+    fn words_are_search_not_hosts() {
+        assert!(!looks_like_destination("cachyos privacy"));
+        assert!(!looks_like_destination("librewolf"));
+        assert!(looks_like_destination("example.com"));
+        assert!(looks_like_destination("about:home"));
     }
 }

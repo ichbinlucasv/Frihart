@@ -42,6 +42,9 @@ pub struct Prefs {
     pub network: NetworkPrefs,
     pub content: ContentPrefs,
     pub translate: TranslatePrefs,
+    pub search: SearchPrefs,
+    pub tor: TorPrefs,
+    pub vpn: VpnPrefs,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -49,7 +52,7 @@ pub struct Prefs {
 pub struct GeneralPrefs {
     pub homepage: String,
     pub new_tab_url: String,
-    /// Empty means "no search engine." Frihart will not invent one.
+    /// Legacy override. Empty means "use `search.primary`."
     pub search_url: String,
     pub restore_session: bool,
     pub show_status_bar: bool,
@@ -159,14 +162,17 @@ impl Default for ContentPrefs {
     }
 }
 
-/// Built-in translator. No Google. No DeepL unless the user types that URL.
+/// Built-in translator. DeepL is the product default. No Google.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TranslatePrefs {
     pub enabled: bool,
-    /// Empty: translator UI is local-only and does not call a network.
-    /// Set to a LibreTranslate-compatible endpoint the user hosts.
+    /// `deepl` or `libretranslate`.
+    pub provider: String,
+    /// DeepL API root. Free-tier default. A key is still required.
     pub endpoint: String,
+    /// DeepL auth key, stored only in the local profile. Never uploaded.
+    pub api_key: String,
     pub source: String,
     pub target: String,
 }
@@ -175,9 +181,63 @@ impl Default for TranslatePrefs {
     fn default() -> Self {
         Self {
             enabled: true,
-            endpoint: String::new(),
+            provider: "deepl".into(),
+            endpoint: "https://api-free.deepl.com/v2/translate".into(),
+            api_key: String::new(),
             source: "auto".into(),
             target: "en".into(),
+        }
+    }
+}
+
+/// Search engines. Swisscows first, DuckDuckGo second.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SearchPrefs {
+    pub primary: String,
+    pub secondary: String,
+}
+
+impl Default for SearchPrefs {
+    fn default() -> Self {
+        Self {
+            primary: "swisscows".into(),
+            secondary: "duckduckgo".into(),
+        }
+    }
+}
+
+/// System Tor daemon. Frihart does not bundle the Tor network.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TorPrefs {
+    pub enabled: bool,
+    pub socks_host: String,
+    pub socks_port: u16,
+}
+
+impl Default for TorPrefs {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            socks_host: "127.0.0.1".into(),
+            socks_port: 9050,
+        }
+    }
+}
+
+/// Official-client hooks. Frihart is not a VPN vendor.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct VpnPrefs {
+    /// `none`, `proton`, or `mullvad`.
+    pub provider: String,
+}
+
+impl Default for VpnPrefs {
+    fn default() -> Self {
+        Self {
+            provider: "none".into(),
         }
     }
 }
@@ -234,6 +294,8 @@ mod tests {
         assert_eq!(p.network.doh_mode, "off");
         assert!(p.network.doh_url.is_empty());
         assert!(p.general.search_url.is_empty());
+        assert_eq!(p.search.primary, "swisscows");
+        assert_eq!(p.search.secondary, "duckduckgo");
         assert!(!p.general.restore_session);
         assert!(!p.content.webgl);
         assert!(!p.content.canvas);
@@ -241,7 +303,11 @@ mod tests {
         assert!(p.privacy.blocker);
         assert!(p.privacy.containers);
         assert!(p.translate.enabled);
-        assert!(p.translate.endpoint.is_empty());
+        assert_eq!(p.translate.provider, "deepl");
+        assert!(p.translate.api_key.is_empty());
+        assert!(p.tor.enabled);
+        assert_eq!(p.tor.socks_port, 9050);
+        assert_eq!(p.vpn.provider, "none");
     }
 
     #[test]

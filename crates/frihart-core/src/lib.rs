@@ -12,7 +12,8 @@ mod urls;
 pub use error::{FrihartError, Result};
 pub use ids::{ContainerId, DocumentId, IsolationKey, TabId, WindowId};
 pub use urls::{
-    UrlKind, about_page, classify_url, display_url, parse_user_input, try_parse_user_input,
+    UrlKind, about_page, classify_url, display_url, looks_like_destination, parse_user_input,
+    try_parse_user_input,
 };
 
 /// Product name shown in chrome and logs.

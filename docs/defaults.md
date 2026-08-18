@@ -12,7 +12,7 @@ The implementing type is `frihart_config::Prefs`.
 | `general.homepage` | `about:home` | No third-party start page. No sponsored tiles. |
 | `general.restore_session` | `false` | The user opens what they open. Session restore is opt-in. |
 | `general.new_tab_url` | `about:newtab` | Same reason as homepage. |
-| `general.search_url` | empty | No default-search deal. Search is a user-supplied URL template or nothing. |
+| `general.search_url` | empty | Optional override. Empty means use `search.primary`. |
 | `general.show_status_bar` | `true` | Destinations should be visible before click. |
 
 ## Privacy
@@ -39,10 +39,35 @@ The implementing type is `frihart_config::Prefs`.
 
 | Pref | Default | Why |
 | --- | --- | --- |
-| `translate.enabled` | `true` | The UI exists. It does not call a network until `endpoint` is set. |
-| `translate.endpoint` | empty | No default cloud translator. LibreTranslate you host, or nothing. |
+| `translate.enabled` | `true` | The UI exists. Network calls wait for a key and a user action. |
+| `translate.provider` | `deepl` | Product default. LibreTranslate remains an option. |
+| `translate.endpoint` | DeepL free API | Official DeepL. No Google. |
+| `translate.api_key` | empty | You paste your key. It never leaves the profile except to DeepL. |
 | `translate.source` | `auto` | Detect when a backend exists. |
 | `translate.target` | `en` | User-changeable. |
+
+## Search
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `search.primary` | `swisscows` | Swiss, no-tracking search. Chosen as the product default. |
+| `search.secondary` | `duckduckgo` | Fallback. Also privacy-focused. |
+
+Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
+
+## Tor
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `tor.enabled` | `true` | Tor tabs are available. They need a system `tor` daemon. |
+| `tor.socks_host` | `127.0.0.1` | Local daemon only. |
+| `tor.socks_port` | `9050` | Standard Tor SOCKS. |
+
+## VPN
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `vpn.provider` | `none` | We do not connect a VPN until you pick Proton or Mullvad. |
 
 ## Network
 

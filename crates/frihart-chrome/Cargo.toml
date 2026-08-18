@@ -17,6 +17,7 @@ frihart-core.workspace = true
 frihart-platform.workspace = true
 frihart-privacy.workspace = true
 frihart-profile.workspace = true
+frihart-search.workspace = true
 softbuffer.workspace = true
 tracing.workspace = true
 url.workspace = true

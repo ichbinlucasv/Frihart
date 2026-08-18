@@ -20,9 +20,14 @@ further, as native features rather than add-ons:
 - A **uBlock-class blocker** is built into the browser. We do not ship
   the uBlock Origin WebExtension, because we are not Firefox. We ship
   the same job: on by default, lists the user can replace, no store.
-- A **translator** lives in chrome. It does not call Google. A network
-  backend is a URL the user typed.
+- A **translator** lives in chrome. DeepL is the product default.
+  Google is not offered. The API key stays in the profile.
+- **Search** is Swisscows first, DuckDuckGo second, then other
+  privacy-focused engines. No Google. No Bing. No search-deal money.
 - **Dark mode** is the product look: black chrome, yellow accents.
+- **Tor tabs** use the system Tor daemon. We do not bundle the network.
+- **VPN** hooks official ProtonVPN and Mullvad CLIs. We do not ship a
+  VPN protocol.
 
 If LibreWolf is "Firefox with the bad parts cut out," Frihart is a
 browser that never had those parts.
@@ -33,8 +38,9 @@ scope, even if it would make the browser more popular.
 ## Sovereignty
 
 The user is the principal. Frihart is an agent. The browser does not have
-interests of its own: no growth target, no default-search contract, no
-"anonymous product insights," no account, no store.
+interests of its own: no growth target, no paid search contract, no
+"anonymous product insights," no account, no store. Swisscows and
+DuckDuckGo are privacy defaults, not a revenue deal.
 
 - The profile lives on disk the user controls.
 - Defaults protect the user. Power remains available.

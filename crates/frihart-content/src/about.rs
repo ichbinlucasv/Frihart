@@ -68,6 +68,10 @@ pub fn is_known(name: &str) -> bool {
             | "containers"
             | "blocker"
             | "translate"
+            | "search"
+            | "tor"
+            | "vpn"
+            | "extensions"
     )
 }
 
@@ -88,6 +92,10 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "containers" => containers(url, profile),
         "blocker" => blocker(url, prefs),
         "translate" => translate(url, prefs),
+        "search" => search(url, prefs),
+        "tor" => tor(url, prefs),
+        "vpn" => vpn(url, prefs),
+        "extensions" => extensions(url),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -150,6 +158,22 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "Translator".into(),
             href: "about:translate".into(),
+        },
+        Block::Link {
+            label: "Search".into(),
+            href: "about:search".into(),
+        },
+        Block::Link {
+            label: "Tor".into(),
+            href: "about:tor".into(),
+        },
+        Block::Link {
+            label: "VPN".into(),
+            href: "about:vpn".into(),
+        },
+        Block::Link {
+            label: "Extensions (community)".into(),
+            href: "about:extensions".into(),
         },
         Block::Link {
             label: "Bookmarks".into(),
@@ -238,7 +262,7 @@ fn settings(url: &Url, prefs: &Prefs) -> Document {
             toggle(
                 PrefToggle::Translate,
                 "Built-in translator",
-                "UI is local. Network translation only hits an endpoint you configure.",
+                "DeepL by default. Add your API key in prefs.toml. No Google.",
                 prefs.translate.enabled,
             ),
             toggle(
@@ -370,6 +394,7 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
 }
 
 fn config(url: &Url, prefs: &Prefs) -> Document {
+    let socks_port = prefs.tor.socks_port.to_string();
     let mut blocks = vec![
         Block::Hero {
             title: "about:config".into(),
@@ -386,7 +411,7 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv(
             "search_url",
             if prefs.general.search_url.is_empty() {
-                "(empty — no default search)"
+                "(empty — use search.primary)"
             } else {
                 &prefs.general.search_url
             },
@@ -443,16 +468,27 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("dark_mode", bool_str(prefs.content.dark_mode)),
         Block::Heading("translate".into()),
         kv("enabled", bool_str(prefs.translate.enabled)),
+        kv("provider", &prefs.translate.provider),
+        kv("endpoint", &prefs.translate.endpoint),
         kv(
-            "endpoint",
-            if prefs.translate.endpoint.is_empty() {
-                "(empty — no third-party translator)"
+            "api_key",
+            if prefs.translate.api_key.is_empty() {
+                "(empty — paste your DeepL key in prefs.toml)"
             } else {
-                &prefs.translate.endpoint
+                "(set, not shown)"
             },
         ),
         kv("source", &prefs.translate.source),
         kv("target", &prefs.translate.target),
+        Block::Heading("search".into()),
+        kv("primary", &prefs.search.primary),
+        kv("secondary", &prefs.search.secondary),
+        Block::Heading("tor".into()),
+        kv("enabled", bool_str(prefs.tor.enabled)),
+        kv("socks_host", &prefs.tor.socks_host),
+        kv("socks_port", &socks_port),
+        Block::Heading("vpn".into()),
+        kv("provider", &prefs.vpn.provider),
     ];
     let _ = FROZEN_USER_AGENT;
     blocks.push(Block::Link {
@@ -600,6 +636,14 @@ fn keyboard(url: &Url) -> Document {
             Block::KeyValue {
                 key: "Ctrl+Shift+P".into(),
                 value: "Hint: start with --private".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+Shift+O".into(),
+                value: "New Tor tab".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+K".into(),
+                value: "Search (Swisscows)".into(),
             },
         ],
     })
@@ -796,10 +840,10 @@ fn blocker(url: &Url, prefs: &Prefs) -> Document {
 }
 
 fn translate(url: &Url, prefs: &Prefs) -> Document {
-    let endpoint = if prefs.translate.endpoint.is_empty() {
-        "(none — translator will not call a network)".to_string()
+    let key_state = if prefs.translate.api_key.is_empty() {
+        "missing — add translate.api_key in prefs.toml"
     } else {
-        prefs.translate.endpoint.clone()
+        "present (not displayed)"
     };
     Document::internal(InternalPage {
         title: "Translator".into(),
@@ -807,43 +851,216 @@ fn translate(url: &Url, prefs: &Prefs) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Translator".into(),
-                subtitle: "Built in. Local first. No Google.".into(),
+                subtitle: "DeepL is the product default. No Google.".into(),
             },
             Block::Paragraph(
-                "Page translation needs the document engine (Phase 4+). The chrome \
-                 and this page exist now so the feature is first-class, not a \
-                 bolted-on extension later."
+                "Page translation needs the document engine (Phase 4+). Phase 2 \
+                 will POST to DeepL when you ask, and only then. The key stays \
+                 in your profile."
                     .into(),
             ),
             Block::KeyValue {
-                key: "Enabled".into(),
-                value: if prefs.translate.enabled {
-                    "on".into()
-                } else {
-                    "off".into()
-                },
-            },
-            Block::KeyValue {
-                key: "Source".into(),
-                value: prefs.translate.source.clone(),
-            },
-            Block::KeyValue {
-                key: "Target".into(),
-                value: prefs.translate.target.clone(),
+                key: "Provider".into(),
+                value: prefs.translate.provider.clone(),
             },
             Block::KeyValue {
                 key: "Endpoint".into(),
-                value: endpoint,
+                value: prefs.translate.endpoint.clone(),
+            },
+            Block::KeyValue {
+                key: "API key".into(),
+                value: key_state.into(),
+            },
+            Block::KeyValue {
+                key: "Source / target".into(),
+                value: format!("{} → {}", prefs.translate.source, prefs.translate.target),
             },
             Block::Note(
-                "Set translate.endpoint in prefs.toml to a LibreTranslate-compatible \
-                 URL you host. Frihart will not ship a default cloud translator \
-                 and will not call Google or DeepL unless you type that URL."
+                "LibreTranslate remains available: set translate.provider = \
+                 \"libretranslate\" and point endpoint at an instance you host. \
+                 Google is not offered."
                     .into(),
             ),
             Block::Link {
                 label: "about:config".into(),
                 href: "about:config".into(),
+            },
+        ],
+    })
+}
+
+fn search(url: &Url, prefs: &Prefs) -> Document {
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Search".into(),
+            subtitle: "Swisscows first. DuckDuckGo second. No Google. No Bing.".into(),
+        },
+        Block::Paragraph(
+            "Typing words in the URL bar that are not a destination becomes a \
+             search. Phase 2 fetches the engine URL. Until then you get an \
+             honest placeholder with the real destination."
+                .into(),
+        ),
+        Block::KeyValue {
+            key: "Primary".into(),
+            value: prefs.search.primary.clone(),
+        },
+        Block::KeyValue {
+            key: "Secondary".into(),
+            value: prefs.search.secondary.clone(),
+        },
+        Block::Heading("Engines we ship".into()),
+    ];
+    for engine in frihart_search::catalog() {
+        let role = if engine.id == prefs.search.primary {
+            "primary"
+        } else if engine.id == prefs.search.secondary {
+            "secondary"
+        } else {
+            "available"
+        };
+        blocks.push(Block::KeyValue {
+            key: format!("{} ({role})", engine.name),
+            value: engine.region.into(),
+        });
+    }
+    blocks.push(Block::Note(
+        "Change search.primary / search.secondary in prefs.toml. SearXNG is \
+         welcome later as a user-supplied template. We do not take search money."
+            .into(),
+    ));
+    Document::internal(InternalPage {
+        title: "Search".into(),
+        url: url.clone(),
+        blocks,
+    })
+}
+
+fn tor(url: &Url, prefs: &Prefs) -> Document {
+    let presence = frihart_platform::detect_tor();
+    let binary = presence
+        .binary
+        .as_ref()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| "not found on PATH (install the system tor package)".into());
+    Document::internal(InternalPage {
+        title: "Tor".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Tor tab".into(),
+                subtitle: "Anonymous circuit. Uses your system Tor. We do not ship the network."
+                    .into(),
+            },
+            Block::Paragraph(
+                "A Tor tab is stronger than a private tab. Private is local amnesia. \
+                 Tor is amnesia plus a SOCKS circuit through the Tor daemon you \
+                 installed (Arch: tor, Debian/Fedora: tor). Ctrl+Shift+O or --tor."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "SOCKS".into(),
+                value: format!("{}:{}", prefs.tor.socks_host, prefs.tor.socks_port),
+            },
+            Block::KeyValue {
+                key: "tor binary".into(),
+                value: binary,
+            },
+            Block::KeyValue {
+                key: "Enabled".into(),
+                value: if prefs.tor.enabled {
+                    "on".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::Note(
+                "Phase 2 will actually dial this SOCKS port. Until then the tab \
+                 is marked Tor so cookies, history, and later sockets stay isolated."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn vpn(url: &Url, prefs: &Prefs) -> Document {
+    let presence = frihart_platform::detect_vpn();
+    let proton = presence
+        .proton
+        .as_ref()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| "ProtonVPN CLI not installed".into());
+    let mullvad = presence
+        .mullvad
+        .as_ref()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| "Mullvad CLI not installed".into());
+    Document::internal(InternalPage {
+        title: "VPN".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "VPN".into(),
+                subtitle: "ProtonVPN and Mullvad first. Official clients, not a reimplementation."
+                    .into(),
+            },
+            Block::Paragraph(
+                "Frihart will not ship a VPN protocol. That is how you get leaks. \
+                 We detect the official CLI, show status, and (Phase 2+) can \
+                 connect/disconnect through it. Other providers can be added later \
+                 the same way."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "Preferred".into(),
+                value: prefs.vpn.provider.clone(),
+            },
+            Block::KeyValue {
+                key: "ProtonVPN".into(),
+                value: proton,
+            },
+            Block::KeyValue {
+                key: "Mullvad".into(),
+                value: mullvad,
+            },
+            Block::Note(
+                "Install `mullvad` or `protonvpn-cli` from your distro. Set \
+                 vpn.provider to proton or mullvad in prefs.toml."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn extensions(url: &Url) -> Document {
+    Document::internal(InternalPage {
+        title: "Extensions".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Extensions".into(),
+                subtitle: "Community later. No remote store. No Chrome Web Store clone.".into(),
+            },
+            Block::Paragraph(
+                "The engine is not ready for WebExtensions. When it is, Frihart \
+                 will take a small, documented, local-first API. The community \
+                 can write add-ons in the open. There will be no recommended \
+                 remote gallery that phones home."
+                    .into(),
+            ),
+            Block::List(vec![
+                "Phase 1 — this page, and CONTRIBUTING.md".into(),
+                "Phase 6+ — process isolation so an add-on cannot own the profile".into(),
+                "Phase 7+ — a reviewed extension API, signed locally".into(),
+            ]),
+            Block::Note(
+                "Until then, containers, the blocker, search, Tor, and VPN live \
+                 in the browser. That is the point of not being a Firefox fork."
+                    .into(),
+            ),
+            Block::Link {
+                label: "How to contribute".into(),
+                href: "about:credits".into(),
             },
         ],
     })
