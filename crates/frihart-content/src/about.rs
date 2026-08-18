@@ -509,7 +509,7 @@ fn engine_page(url: &Url) -> Document {
                 "1 chrome / profiles / wipe / HiDPI scale".into(),
                 "2 rustls / cookies / HTTPS-only / downloads dest".into(),
                 "3 html tokenizer + arena DOM + tables + hr/caption".into(),
-                "4 css / style / block layout / gfx ops".into(),
+                "4 css / style / block layout / gfx ops (em, weight, border)".into(),
                 "5 forms GET + POST encode (secrets skipped)".into(),
                 "6 ipc envelopes (in-process bus)".into(),
                 "7 js types; exec and fingerprint APIs off".into(),
@@ -561,10 +561,14 @@ fn processes_page(url: &Url) -> Document {
                 key: "seccomp deny".into(),
                 value: frihart_platform::seccomp_denies().join(", "),
             },
+            Block::KeyValue {
+                key: "rlimits".into(),
+                value: frihart_platform::rlimit_names().join(", "),
+            },
             Block::Note(
                 "One long-lived `frihart --content-worker` per isolation key. \
-                 no_new_privs + landlock + seccomp-bpf (EPERM on socket/connect/\
-                 clone/exec/ptrace/mount). Chrome never applies the sandbox. \
+                 no_new_privs + landlock + seccomp-bpf + rlimits (256M as, \
+                 128 fds, no fork, no core). Chrome never applies the sandbox. \
                  Crash falls back in-process. Fields live on the display list."
                     .into(),
             ),
@@ -585,8 +589,8 @@ fn campaigns_page(url: &Url) -> Document {
                 "A Foundation — closed".into(),
                 "B Chrome — closed".into(),
                 "C Network OPSEC — closed".into(),
-                "D Engine — open (hr, caption, tables, about:sites)".into(),
-                "E Isolation — open (nnp + landlock + seccomp in child)".into(),
+                "D Engine — open (em/rem, weight, border, sites list)".into(),
+                "E Isolation — open (nnp + landlock + seccomp + rlimits)".into(),
                 "F Linux homes — open (detect + Tails/Qubes private default)".into(),
                 "G Script — refuse-only (pref flip is not a grant)".into(),
             ]),

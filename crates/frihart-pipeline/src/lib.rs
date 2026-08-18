@@ -247,6 +247,25 @@ mod tests {
     }
 
     #[test]
+    fn em_weight_and_border() {
+        let f = layout_html(
+            "<style>p{font-size:2em;font-weight:700;border:2px solid #445566}</style><p>Hi</p>",
+            "",
+            400.0,
+        );
+        let p = f.boxes.iter().find(|b| b.text == "Hi").expect("p");
+        assert_eq!(p.style.font_size, 32.0);
+        assert_eq!(p.style.font_weight, 700);
+        assert_eq!(p.style.border_width, 2.0);
+        assert!(
+            f.display
+                .ops
+                .iter()
+                .any(|op| matches!(op, frihart_gfx::DisplayOp::Text { weight: 700, .. }))
+        );
+    }
+
+    #[test]
     fn job_roundtrip_json() {
         let job = LayoutJob {
             html: "<h1>Hi</h1>".into(),

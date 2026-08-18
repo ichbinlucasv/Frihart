@@ -20,6 +20,7 @@ pub enum DisplayOp {
         y: f32,
         color: u32,
         size: f32,
+        weight: u16,
         text: String,
         href: Option<String>,
         max_width: f32,
@@ -129,31 +130,7 @@ pub fn from_boxes(boxes: &[LayoutBox]) -> DisplayList {
             });
             continue;
         }
-        if b.cell {
-            list.ops.push(DisplayOp::Fill {
-                x: b.x,
-                y: b.y,
-                w: b.w,
-                h: b.h,
-                color: if b.style.background != 0 {
-                    b.style.background
-                } else {
-                    0x00181818
-                },
-            });
-        } else if b.image || b.style.background != 0 {
-            list.ops.push(DisplayOp::Fill {
-                x: b.x,
-                y: b.y,
-                w: b.w,
-                h: b.h,
-                color: if b.style.background != 0 {
-                    b.style.background
-                } else {
-                    0x00202020
-                },
-            });
-        }
+        push_box_chrome(&mut list, b);
         if let Some(field) = &b.field {
             list.ops.push(DisplayOp::Field {
                 x: b.x,
@@ -165,19 +142,85 @@ pub fn from_boxes(boxes: &[LayoutBox]) -> DisplayList {
                 label: b.text.clone(),
             });
         } else {
+            let inset = b.style.padding + b.style.border_width;
             list.ops.push(DisplayOp::Text {
-                x: b.x + b.style.padding,
-                y: b.y + b.style.padding,
+                x: b.x + inset,
+                y: b.y + inset,
                 color: b.style.color,
                 size: b.style.font_size,
+                weight: b.style.font_weight,
                 text: b.text.clone(),
                 href: b.href.clone(),
-                max_width: (b.w - b.style.padding * 2.0).max(1.0),
+                max_width: (b.w - inset * 2.0).max(1.0),
                 wrap: !b.preserve,
             });
         }
     }
     list
+}
+
+fn push_box_chrome(list: &mut DisplayList, b: &LayoutBox) {
+    let bw = b.style.border_width;
+    if bw > 0.0 {
+        let c = if b.style.border_color != 0 {
+            b.style.border_color
+        } else {
+            0x00333333
+        };
+        list.ops.push(DisplayOp::Fill {
+            x: b.x,
+            y: b.y,
+            w: b.w,
+            h: bw.max(1.0),
+            color: c,
+        });
+        list.ops.push(DisplayOp::Fill {
+            x: b.x,
+            y: b.y + b.h - bw,
+            w: b.w,
+            h: bw.max(1.0),
+            color: c,
+        });
+        list.ops.push(DisplayOp::Fill {
+            x: b.x,
+            y: b.y,
+            w: bw.max(1.0),
+            h: b.h,
+            color: c,
+        });
+        list.ops.push(DisplayOp::Fill {
+            x: b.x + b.w - bw,
+            y: b.y,
+            w: bw.max(1.0),
+            h: b.h,
+            color: c,
+        });
+    }
+    if b.cell {
+        list.ops.push(DisplayOp::Fill {
+            x: b.x + bw,
+            y: b.y + bw,
+            w: (b.w - bw * 2.0).max(1.0),
+            h: (b.h - bw * 2.0).max(1.0),
+            color: if b.style.background != 0 {
+                b.style.background
+            } else {
+                0x00181818
+            },
+        });
+    } else if b.image || b.style.background != 0 {
+        list.ops.push(DisplayOp::Fill {
+            x: b.x + bw,
+            y: b.y + bw,
+            w: (b.w - bw * 2.0).max(1.0),
+            h: (b.h - bw * 2.0).max(1.0),
+            color: if b.style.background != 0 {
+                b.style.background
+            } else {
+                0x00202020
+            },
+        });
+    }
 }
 
 #[cfg(test)]

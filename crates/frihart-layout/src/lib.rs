@@ -4,7 +4,9 @@
 
 use std::cell::RefCell;
 
-use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics as CosmicMetrics, Shaping, Wrap};
+use cosmic_text::{
+    Attrs, Buffer, Family, FontSystem, Metrics as CosmicMetrics, Shaping, Weight, Wrap,
+};
 
 use frihart_style::{Align, Computed, Display};
 
@@ -68,6 +70,7 @@ pub fn measure_wrapped(
     line_height: f32,
     max_width: f32,
     wrap: bool,
+    weight: u16,
 ) -> f32 {
     if text.is_empty() {
         return line_height.max(1.0);
@@ -78,7 +81,9 @@ pub fn measure_wrapped(
         let mut buffer = Buffer::new(&mut fs, metrics);
         buffer.set_wrap(&mut fs, if wrap { Wrap::Word } else { Wrap::None });
         buffer.set_size(&mut fs, Some(max_width.max(1.0)), None);
-        let attrs = Attrs::new().family(Family::SansSerif);
+        let attrs = Attrs::new()
+            .family(Family::SansSerif)
+            .weight(Weight(weight.max(1)));
         buffer.set_text(&mut fs, text, &attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut fs, false);
         let mut h = line_height;
@@ -130,7 +135,8 @@ fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
         Align::Center => ((vw - width) / 2.0).max(0.0),
         Align::End => (vw - width).max(0.0),
     };
-    let inner_w = (width - item.style.padding * 2.0).max(1.0);
+    let inset = item.style.padding * 2.0 + item.style.border_width * 2.0;
+    let inner_w = (width - inset).max(1.0);
     let lh = item.style.line_height();
     let text_h = if item.rule {
         2.0
@@ -143,11 +149,15 @@ fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
             lh,
             inner_w,
             !item.preserve,
+            item.style.font_weight,
         )
     };
-    let mut h = text_h + item.style.padding * 2.0;
+    let mut h = text_h + inset;
     if item.field.is_some() {
         h += lh + 20.0;
+    }
+    if let Some(fixed) = item.style.height {
+        h = h.max(fixed);
     }
     LayoutBox {
         x,
@@ -177,7 +187,14 @@ fn layout_table(rows: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f32)
         let mut row_h = lh + pad * 2.0;
         for cell in 0..cols {
             let text = row.cells.get(cell).cloned().unwrap_or_default();
-            let h = measure_wrapped(&text, row.style.font_size, lh, inner, true) + pad * 2.0;
+            let h = measure_wrapped(
+                &text,
+                row.style.font_size,
+                lh,
+                inner,
+                true,
+                row.style.font_weight,
+            ) + pad * 2.0;
             row_h = row_h.max(h);
         }
         for cell in 0..cols {
@@ -235,8 +252,15 @@ mod tests {
     fn wrap_is_taller_than_one_line() {
         let style = ua_style("p");
         let long = "word ".repeat(80);
-        let wide = measure_wrapped(&long, style.font_size, style.line_height(), 800.0, true);
-        let narrow = measure_wrapped(&long, style.font_size, style.line_height(), 80.0, true);
+        let wide = measure_wrapped(
+            &long,
+            style.font_size,
+            style.line_height(),
+            800.0,
+            true,
+            400,
+        );
+        let narrow = measure_wrapped(&long, style.font_size, style.line_height(), 80.0, true, 400);
         assert!(narrow > wide + style.line_height() * 0.5);
     }
 

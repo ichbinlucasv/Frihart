@@ -22,17 +22,18 @@ ignored. They are never guessed into a broken layout.
 
 - `display` (`block`, `inline`, `none`)
 - `color`, `background-color` (named + `#rgb` / `#rrggbb`)
-- `font-size` (`px`)
-- `margin`, `padding`, `width`, `max-width` (`px`)
-- `line-height` (unitless or `px`)
+- `font-size` (`px`, `em`, `rem`, `%` of current size)
+- `font-weight` (`normal`/`bold`/`100`–`900`)
+- `margin`, `padding`, `width`, `max-width`, `height` (`px`, `em`, `rem`)
+- `border`, `border-width`, `border-color` (1px solid #333)
+- `line-height` (unitless, `px`, `em`)
 - `text-align` (`left`/`start`, `center`, `right`/`end`)
 
 ## Properties (next)
 
-- `border`, `height`
-- `font-weight`, `font-family` (engine fonts only)
+- `font-family` (engine fonts only)
 - `list-style`, `white-space`
-- `em`, `rem`, `%`
+- `%` width (needs a containing-block size)
 
 UA extras: `hr` is a 2px rule fill; `caption` is centered 14px.
 

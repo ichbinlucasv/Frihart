@@ -21,6 +21,16 @@ pub struct HitRegion {
     pub hit: Hit,
 }
 
+fn css_weight(weight: u16, link: bool) -> Weight {
+    if weight >= 600 {
+        Weight(weight)
+    } else if link {
+        Weight::MEDIUM
+    } else {
+        Weight(weight.max(1))
+    }
+}
+
 pub fn paint(
     fb: &mut Framebuffer,
     text: &mut TextEngine,
@@ -630,6 +640,7 @@ fn paint_display_list(
                 y,
                 color,
                 size,
+                weight,
                 text: body,
                 href,
                 max_width,
@@ -647,11 +658,7 @@ fn paint_display_list(
                         font_size: *size,
                         line_height: *size * 1.4,
                         color: *color,
-                        weight: if href.is_some() {
-                            Weight::MEDIUM
-                        } else {
-                            Weight::NORMAL
-                        },
+                        weight: css_weight(*weight, href.is_some()),
                         ellipsis: false,
                         wrap: *wrap,
                     },

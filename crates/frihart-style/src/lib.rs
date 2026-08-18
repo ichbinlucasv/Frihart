@@ -4,16 +4,23 @@
 
 use frihart_css::{Combinator, Compound, Declaration, Selector, Simple, Stylesheet};
 
+/// Root `em` size. `rem` is this many CSS pixels.
+pub const REM_PX: f32 = 16.0;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Computed {
     pub display: Display,
     pub color: u32,
     pub background: u32,
     pub font_size: f32,
+    pub font_weight: u16,
     pub margin: f32,
     pub padding: f32,
     pub width: Option<f32>,
     pub max_width: Option<f32>,
+    pub height: Option<f32>,
+    pub border_width: f32,
+    pub border_color: u32,
     pub text_align: Align,
     pub line_height_mult: Option<f32>,
     pub line_height_px: Option<f32>,
@@ -49,11 +56,15 @@ impl Default for Computed {
             display: Display::Block,
             color: 0x00F2F2F2,
             background: 0,
-            font_size: 16.0,
+            font_size: REM_PX,
+            font_weight: 400,
             margin: 0.0,
             padding: 0.0,
             width: None,
             max_width: None,
+            height: None,
+            border_width: 0.0,
+            border_color: 0x00333333,
             text_align: Align::Start,
             line_height_mult: None,
             line_height_px: None,
@@ -85,14 +96,17 @@ pub fn ua_style(tag: &str) -> Computed {
     match tag {
         "h1" => {
             c.font_size = 32.0;
+            c.font_weight = 700;
             c.margin = 8.0;
         }
         "h2" => {
             c.font_size = 24.0;
+            c.font_weight = 700;
             c.margin = 6.0;
         }
         "h3" => {
             c.font_size = 20.0;
+            c.font_weight = 700;
             c.margin = 4.0;
         }
         "blockquote" => {
@@ -126,7 +140,11 @@ pub fn ua_style(tag: &str) -> Computed {
             c.display = Display::Inline;
             c.color = 0x00F5C400;
         }
-        "span" | "em" | "strong" => c.display = Display::Inline,
+        "span" | "em" => c.display = Display::Inline,
+        "strong" | "b" => {
+            c.display = Display::Inline;
+            c.font_weight = 700;
+        }
         "script" | "style" | "head" => c.display = Display::None,
         _ => {}
     }
@@ -150,22 +168,41 @@ pub fn apply(computed: &mut Computed, decls: &[Declaration]) {
             "display" if d.value == "inline" => computed.display = Display::Inline,
             "display" if d.value == "block" => computed.display = Display::Block,
             "font-size" => {
-                if let Some(n) = parse_px(&d.value) {
-                    computed.font_size = n;
+                if let Some(n) =
+                    parse_length(&d.value, computed.font_size, Some(computed.font_size))
+                {
+                    computed.font_size = n.max(1.0);
+                }
+            }
+            "font-weight" => {
+                if let Some(w) = parse_weight(&d.value) {
+                    computed.font_weight = w;
                 }
             }
             "margin" | "margin-top" | "margin-bottom" => {
-                if let Some(n) = parse_px(&d.value) {
+                if let Some(n) = parse_length(&d.value, computed.font_size, None) {
                     computed.margin = n;
                 }
             }
             "padding" => {
-                if let Some(n) = parse_px(&d.value) {
+                if let Some(n) = parse_length(&d.value, computed.font_size, None) {
                     computed.padding = n;
                 }
             }
-            "width" => computed.width = parse_px(&d.value),
-            "max-width" => computed.max_width = parse_px(&d.value),
+            "width" => computed.width = parse_length(&d.value, computed.font_size, None),
+            "max-width" => computed.max_width = parse_length(&d.value, computed.font_size, None),
+            "height" => computed.height = parse_length(&d.value, computed.font_size, None),
+            "border" => apply_border(computed, &d.value),
+            "border-width" => {
+                if let Some(n) = parse_length(&d.value, computed.font_size, None) {
+                    computed.border_width = n;
+                }
+            }
+            "border-color" => {
+                if let Some(c) = parse_color(&d.value) {
+                    computed.border_color = c;
+                }
+            }
             "line-height" => apply_line_height(computed, &d.value),
             "text-align" => {
                 computed.text_align = match d.value.as_str() {
@@ -186,7 +223,7 @@ fn apply_line_height(computed: &mut Computed, value: &str) {
         computed.line_height_px = None;
         return;
     }
-    if let Some(px) = parse_px(v) {
+    if let Some(px) = parse_length(v, computed.font_size, None) {
         computed.line_height_px = Some(px);
         computed.line_height_mult = None;
         return;
@@ -303,15 +340,67 @@ fn parse_hex(hex: &str) -> Option<u32> {
     }
 }
 
-fn parse_px(value: &str) -> Option<f32> {
+/// `px`, `em`, `rem`, `0`. `%` only when `percent_of` is set (font-size).
+pub fn parse_length(value: &str, em: f32, percent_of: Option<f32>) -> Option<f32> {
     let v = value.trim();
-    if let Some(n) = v.strip_suffix("px") {
-        return n.trim().parse().ok();
-    }
     if v == "0" {
         return Some(0.0);
     }
+    if let Some(n) = v.strip_suffix("rem") {
+        return n.trim().parse::<f32>().ok().map(|x| x * REM_PX);
+    }
+    if let Some(n) = v.strip_suffix("em") {
+        return n.trim().parse::<f32>().ok().map(|x| x * em);
+    }
+    if let Some(n) = v.strip_suffix("px") {
+        return n.trim().parse().ok();
+    }
+    if let Some(n) = v.strip_suffix('%') {
+        let p = n.trim().parse::<f32>().ok()?;
+        return percent_of.map(|base| base * p / 100.0);
+    }
     None
+}
+
+fn parse_weight(value: &str) -> Option<u16> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "normal" | "lighter" => Some(400),
+        "bold" | "bolder" => Some(700),
+        n => {
+            let w: u16 = n.parse().ok()?;
+            if (100..=900).contains(&w) && w % 100 == 0 {
+                Some(w)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+fn apply_border(computed: &mut Computed, value: &str) {
+    let v = value.trim();
+    if v.eq_ignore_ascii_case("none") || v == "0" {
+        computed.border_width = 0.0;
+        return;
+    }
+    for token in v.split_whitespace() {
+        if matches!(
+            token,
+            "solid" | "dashed" | "dotted" | "double" | "none" | "hidden"
+        ) {
+            if token == "none" || token == "hidden" {
+                computed.border_width = 0.0;
+            }
+            continue;
+        }
+        if let Some(n) = parse_length(token, computed.font_size, None) {
+            computed.border_width = n;
+            continue;
+        }
+        if let Some(c) = parse_color(token) {
+            computed.border_color = c;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -369,5 +458,21 @@ mod tests {
         let cap = ua_style("caption");
         assert_eq!(cap.text_align, Align::Center);
         assert_eq!(cap.font_size, 14.0);
+        assert_eq!(ua_style("h1").font_weight, 700);
+    }
+
+    #[test]
+    fn em_rem_weight_border() {
+        let sheet = parse_stylesheet(
+            "p { font-size: 2em; font-weight: bold; margin: 1rem; border: 1px solid #334455 }",
+        );
+        let c = style_tag("p", &sheet);
+        assert_eq!(c.font_size, 32.0);
+        assert_eq!(c.font_weight, 700);
+        assert_eq!(c.margin, 16.0);
+        assert_eq!(c.border_width, 1.0);
+        assert_eq!(c.border_color, 0x00334455);
+        let pct = parse_stylesheet("p { font-size: 150% }");
+        assert_eq!(style_tag("p", &pct).font_size, 24.0);
     }
 }

@@ -11,6 +11,7 @@ pub struct SandboxSpec {
     pub seccomp: bool,
     pub landlock: bool,
     pub no_new_privs: bool,
+    pub rlimits: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -18,6 +19,7 @@ pub struct SandboxReport {
     pub no_new_privs: bool,
     pub landlock: bool,
     pub seccomp: bool,
+    pub rlimits: bool,
     pub detail: String,
 }
 
@@ -28,6 +30,7 @@ impl SandboxSpec {
             seccomp: true,
             landlock: true,
             no_new_privs: true,
+            rlimits: true,
         }
     }
 
@@ -42,7 +45,7 @@ impl SandboxSpec {
         }
         #[cfg(not(target_os = "linux"))]
         {
-            let _ = (self.seccomp, self.landlock, self.no_new_privs);
+            let _ = (self.seccomp, self.landlock, self.no_new_privs, self.rlimits);
             return Ok(SandboxReport {
                 detail: "not linux".into(),
                 ..SandboxReport::default()
@@ -74,6 +77,11 @@ pub fn seccomp_denies() -> &'static [&'static str] {
     ]
 }
 
+/// Resource caps the content worker applies to itself.
+pub fn rlimit_names() -> &'static [&'static str] {
+    &["as=256M", "nofile=128", "nproc=0", "core=0"]
+}
+
 #[cfg(target_os = "linux")]
 fn linux_apply(spec: &SandboxSpec) -> Result<SandboxReport> {
     let mut report = SandboxReport::default();
@@ -89,6 +97,12 @@ fn linux_apply(spec: &SandboxSpec) -> Result<SandboxReport> {
                 report.landlock = true;
             }
             Err(e) => append_detail(&mut report.detail, &format!("landlock: {e}")),
+        }
+    }
+    if spec.rlimits {
+        match restrict_rlimits() {
+            Ok(()) => report.rlimits = true,
+            Err(e) => append_detail(&mut report.detail, &format!("rlimit: {e}")),
         }
     }
     if spec.seccomp {
@@ -109,6 +123,9 @@ fn linux_apply(spec: &SandboxSpec) -> Result<SandboxReport> {
         }
         if report.seccomp {
             parts.push("seccomp");
+        }
+        if report.rlimits {
+            parts.push("rlimit");
         }
         report.detail = if parts.is_empty() {
             "none".into()
@@ -248,6 +265,35 @@ fn add_path(ruleset: i32, path: &str, access: u64) -> std::io::Result<()> {
         Err(std::io::Error::last_os_error())
     } else {
         Ok(())
+    }
+}
+
+#[cfg(target_os = "linux")]
+const RLIMIT_AS_BYTES: u64 = 256 * 1024 * 1024;
+#[cfg(target_os = "linux")]
+const RLIMIT_NOFILE_N: u64 = 128;
+
+#[cfg(target_os = "linux")]
+fn restrict_rlimits() -> std::io::Result<()> {
+    set_one(libc::RLIMIT_AS, RLIMIT_AS_BYTES)?;
+    set_one(libc::RLIMIT_NOFILE, RLIMIT_NOFILE_N)?;
+    set_one(libc::RLIMIT_NPROC, 0)?;
+    set_one(libc::RLIMIT_CORE, 0)?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn set_one(resource: libc::__rlimit_resource_t, soft: libc::rlim_t) -> std::io::Result<()> {
+    let lim = libc::rlimit {
+        rlim_cur: soft,
+        rlim_max: soft,
+    };
+    // SAFETY: lim is a valid rlimit for this resource.
+    let rc = unsafe { libc::setrlimit(resource, &lim) };
+    if rc == 0 {
+        Ok(())
+    } else {
+        Err(std::io::Error::last_os_error())
     }
 }
 
@@ -419,9 +465,10 @@ mod tests {
     #[test]
     fn content_default_is_on() {
         let s = SandboxSpec::content_default();
-        assert!(s.enabled && s.landlock && s.no_new_privs && s.seccomp);
+        assert!(s.enabled && s.landlock && s.no_new_privs && s.seccomp && s.rlimits);
         assert!(seccomp_denies().contains(&"socket"));
         assert!(seccomp_denies().contains(&"exec"));
+        assert!(rlimit_names().iter().any(|n| n.starts_with("as=")));
     }
 
     #[test]
@@ -430,6 +477,7 @@ mod tests {
         assert!(!r.landlock);
         assert!(!r.no_new_privs);
         assert!(!r.seccomp);
+        assert!(!r.rlimits);
     }
 
     #[cfg(target_os = "linux")]
@@ -445,6 +493,7 @@ mod tests {
             seccomp: false,
             landlock: true,
             no_new_privs: true,
+            rlimits: false,
         };
         let mut cmd = Command::new("/bin/true");
         let status = unsafe {
@@ -470,6 +519,7 @@ mod tests {
             seccomp: true,
             landlock: false,
             no_new_privs: true,
+            rlimits: false,
         };
         let mut cmd = Command::new("/bin/true");
         let status = unsafe {
@@ -487,6 +537,42 @@ mod tests {
                     }
                 } else {
                     libc::close(fd);
+                }
+                libc::_exit(2);
+            })
+            .status()
+        }
+        .expect("spawn");
+        assert!(status.success());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn rlimits_cap_nofile() {
+        use std::os::unix::process::CommandExt;
+        use std::process::Command;
+
+        let spec = SandboxSpec {
+            enabled: true,
+            seccomp: false,
+            landlock: false,
+            no_new_privs: true,
+            rlimits: true,
+        };
+        let mut cmd = Command::new("/bin/true");
+        let status = unsafe {
+            cmd.pre_exec(move || {
+                spec.apply()
+                    .map(|_| ())
+                    .map_err(|e| std::io::Error::other(e.to_string()))?;
+                let mut lim = libc::rlimit {
+                    rlim_cur: 0,
+                    rlim_max: 0,
+                };
+                if libc::getrlimit(libc::RLIMIT_NOFILE, &mut lim) == 0
+                    && lim.rlim_cur == RLIMIT_NOFILE_N
+                {
+                    libc::_exit(0);
                 }
                 libc::_exit(2);
             })

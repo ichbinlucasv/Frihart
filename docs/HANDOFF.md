@@ -1,10 +1,10 @@
 # Handoff — continue Frihart
 
-Last session closed **campaigns A, B, C** (crate phases **0, 1, 2**).
 Tag: **v0.1.0**. Head: `main` on Codeberg (primary) and GitHub (mirror).
 
 Do **not** start H (Windows/macOS/Android) or I (media decode, i18n
-depth, print/PDF, extension runtime). JS stays off.
+depth, print/PDF, extension runtime). JS stays off. Do not write a JS
+engine.
 
 ## Who / what
 
@@ -31,47 +31,103 @@ Repos:
 
 Leftovers that did **not** block close: multi-window, HTTP/2, partitioned HTTP cache.
 
-## Open — work here
+## Open
 
 **D Engine (long pole)**  
-HTML subset → CSS (class/id/descendant, user.css) → block layout +
-cosmic-text wrap → display list → chrome paint. Tables are a **column
-grid**. `hr` is a rule fill. `<caption>` and definition lists work.
-Forms GET/POST encode (secrets skipped). Identity autofill only. JS
-off. Img is a box (no decode). `about:sites` + `docs/sites.md` is the
-honest claim list (nothing on the public internet claimed yet).
-
-Done recently: find-in-page on the display list; **one worker process
-per isolation key** (newline JSON jobs); form fields are display-list
-ops (no second paint path). Crash falls back in-process.
-
-Next D slices:
-
-1. Verify a Target site from `about:sites` by actually opening it
-2. More CSS (`border`, `em`/`rem`, `font-weight`)
+HTML → CSS → style → layout → display list → chrome paint. Tables are
+a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`%`
+font-size, `font-weight`, `border`, `height`. Forms GET/POST (secrets
+skipped). JS off. Img is a box. `about:sites` is honest: **no public
+site is claimed yet**.
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
-`no_new_privs` + landlock + **seccomp-bpf** (EPERM on socket / connect /
-clone / exec / ptrace / mount). Chrome never applies the sandbox.
-Closing the last tab for a key kills that worker.
-
-Next E slices:
-
-1. Resource limits (fds, memory) per worker
-2. Network process split (crate seam exists)
+`no_new_privs` + landlock + seccomp-bpf + rlimits (256M / 128 fds /
+nproc 0 / no core). Chrome never applies the sandbox.
 
 **F Linux homes**  
-Detect Arch/Cachy/Manjaro/Endeavour, Fedora, Mint, Tails, Qubes
-(`about:linux`). Tails and Qubes-DVM default to ephemeral unless
-`--profile`. Desktop file has a Private action. Packaging notes exist;
-full Tails/Qubes packages are not published.
+Detect + Tails/Qubes-DVM ephemeral default + packaging notes. Packages
+not published.
 
 **G Script**  
-Refuse-only. Pref flip does not execute and does not open cookie /
-storage / WebRTC / WebSocket. `javascript:` URLs (including
-`javascript://`) parse then refuse — they never become a search query.
-`about:script` lists every `HostApi`.
+Refuse-only. Pref flip is not a grant. `javascript:` refused.
+
+## Plan to finish (honest)
+
+A general-purpose engine is a decade. “Finish” here means **v0.2:
+Linux daily-driver for an honest, named list of static documents**.
+Not Chrome. Not Wikipedia. Not mail.
+
+### Milestone 1 — first claimed public site (this is next)
+
+1. Open `https://example.com/` in Frihart (real fetch).
+2. Fix whatever the subset mangles.
+3. If readable, move it from Target → Claimed on `about:sites` and
+   `docs/sites.md`. Write *why* it works.
+4. Repeat for one RFC HTML and one GNU/suckless page.
+5. Do **not** claim a site you have not opened.
+
+### Milestone 2 — document CSS (still D)
+
+6. `%` width against the viewport (containing block = layout width).
+7. `font-family` only from the engine font list (no web fonts).
+8. `white-space` / `pre-wrap` already partly exists via `preserve`.
+9. Nested inline style (`<strong>` inside a paragraph) as a separate
+   fragment, so UA bold actually paints.
+10. `th` vs `td` weight in the table grid.
+
+### Milestone 3 — isolation you can audit (E)
+
+11. Network stays in chrome until a **network process** exists. Next
+    real split: chrome talks rustls only through `frihart-ipc` to a
+    `--net-worker` that holds cookies. Do not start this until 1–5
+    work; it is a large cut.
+12. Worker death must reload **that** tab only (already mostly true).
+13. Audit test: worker cannot `open()` the profile `prefs.toml`
+    (landlock should already deny `$HOME`).
+
+### Milestone 4 — Linux you can install (F)
+
+14. Build the Arch PKGBUILD on CachyOS/Arch and install locally.
+15. Same for Fedora spec and Debian package.
+16. Tails/Qubes stay notes until 14–15 are real packages a stranger
+    can install.
+
+### Milestone 5 — v0.2 tag
+
+17. Tag **v0.2.0** when: at least **3 named public static sites** are
+    claimed, worker sandbox is on, `cargo test --workspace` green,
+    Linux package files install on one reference distro.
+18. Then — and only then — discuss G (a tiny interpreter) or stay
+    refuse-only another year. Recommendation: **stay refuse**.
+
+### Parked until Linux is a daily driver
+
+- **H** Windows → macOS → Android
+- **I** media decode, i18n depth, print/PDF, extension JS runtime
+- Multi-window, HTTP/2 (leftovers, not blockers)
+
+## Recommendations
+
+1. **One crate-visible slice per session.** Engine morning, chrome
+   only if something is unreadable.
+2. **Claim sites by opening them**, not by adding URLs to a list.
+3. **Do not start a JS engine.** It will eat a year and leak.
+4. **Do not split the network process** until three sites are claimed.
+   Isolation theater is worse than a documented in-process rustls.
+5. **Do not publish Tails/Qubes packages** until Arch/Fedora/Debian
+   install from the files we already have.
+6. **Keep H and I parked.** Ports before Linux is useful waste the
+   one-to-two-year commitment.
+7. **Unsafe stays in `sandbox.rs` only.**
+8. **Policy before I/O.** Tor fail-closed. Downloads never execute.
+   Passwords never stored.
+
+## Next session — start here
+
+**D: open `https://example.com/` and fix layout until it is honest
+enough to claim.** If that is already fine, do nested `<strong>` as
+its own fragment (UA bold that actually paints). Do not start H/I.
 
 ## Commands
 
@@ -81,10 +137,9 @@ cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 cargo run -- about:campaigns
 cargo run -- about:sites
+cargo run -- https://example.com/
 cargo run -- --tor
 ```
-
-Tails/Qubes-DVM: omit `--profile` → memory-only profile.
 
 ## Docs to read first
 

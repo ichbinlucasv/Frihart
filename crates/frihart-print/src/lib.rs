@@ -63,6 +63,7 @@ mod tests {
                     y: 0.0,
                     color: 0,
                     size: 16.0,
+                    weight: 400,
                     text: "Hello".into(),
                     href: None,
                     max_width: 200.0,

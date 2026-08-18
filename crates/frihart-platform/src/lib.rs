@@ -65,7 +65,7 @@ pub fn window_title(page_title: &str) -> String {
     }
 }
 
-pub use sandbox::{SandboxReport, SandboxSpec, landlock_abi, seccomp_denies};
+pub use sandbox::{SandboxReport, SandboxSpec, landlock_abi, rlimit_names, seccomp_denies};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Os {

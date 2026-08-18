@@ -76,7 +76,8 @@ Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.m
 
 On Linux, `cargo run` opens a real window. `https://` fetches over rustls
 and paints the subset via a sandboxed `--content-worker` (`no_new_privs`
-+ landlock + seccomp-bpf; in-process fallback if the worker dies). Find
++ landlock + seccomp-bpf + rlimits; in-process fallback if the worker
+dies). CSS understands `em`/`rem`, `font-weight`, and `border`. Find
 (Ctrl+F) searches the display list. JS is off. `javascript:` is refused.
 Tor tabs dial SOCKS only. `about:sites` is the honest claim list.
 
