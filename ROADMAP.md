@@ -599,6 +599,7 @@ A sustainable rhythm for a long project:
 - [x] w3.org claimed (Making the web work, TPAC 2026, ARIA news link)
 - [x] w3.org/TR claimed (1236 reports / 288 families, heading-links, HTML5 `dl` `div`)
 - [x] w3.org/TR/webarch claimed (REC 2004, Abstract, Identification/Interaction)
+- [x] RFC 9110 claimed (HTTP Semantics, Abstract, Methods, pre ABNF)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)

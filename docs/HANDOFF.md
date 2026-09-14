@@ -49,8 +49,8 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 `about:sites` claimed: **example.com**, **RFC 1918**, **suckless.org**,
 **GNU philosophy**, **kernel.org**, **docs.kernel.org**, **ietf.org**,
 **rfc-editor.org** (index), **w3.org** (landing), **w3.org/TR** (index),
-**webarch**. Settings is the LibreWolf-stance page (native prefs,
-black/yellow).
+**webarch**, **RFC 9110**. Settings is the LibreWolf-stance page (native
+prefs, black/yellow).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -70,9 +70,9 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 ## Plan (do these, in this order)
 
 1. **This / next session — D only.** Fetch live
-   `https://www.rfc-editor.org/rfc/rfc9110.html` (HTTP Semantics). Lay
-   out those exact bytes. Fix what the subset mangles. Claim only if
-   honestly readable. Write why on `about:sites` and `docs/sites.md`.
+   `https://www.w3.org/TR/WCAG22/` (WCAG 2.2). Lay out those exact
+   bytes. Fix what the subset mangles. Claim only if honestly readable.
+   Write why on `about:sites` and `docs/sites.md`.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -85,7 +85,7 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.
-6. **v0.2.0** when: named static list is claimed (11 already), worker
+6. **v0.2.0** when: named static list is claimed (12 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs.
 7. **Then — and only then — discuss G.** Recommendation: stay refuse
@@ -117,15 +117,16 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
 docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
-w3.org/TR index, webarch.
+w3.org/TR index, webarch, RFC 9110 HTML.
 
 ## Next session — start here
 
-**D: fetch live `https://www.rfc-editor.org/rfc/rfc9110.html` (or
-another unclaimed static document), lay out those bytes, claim only
-if readable.** Eleven public sites are claimed. Do not start a JS
-engine. The engine stays Frihart in Rust; G stays refuse. Do not
-start H/I.
+**D: fetch live `https://www.w3.org/TR/WCAG22/` (or another unclaimed
+static document), lay out those bytes, claim only if readable.** Twelve
+public sites are claimed. Do not start a JS engine. The engine stays
+Frihart in Rust; G stays refuse. Do not start H/I. After WCAG (or a
+few more claims): CSS leftovers (`font-family` engine fonts only,
+letterboxing paint), then **F** — actually install the Arch PKGBUILD.
 
 ## Commands
 

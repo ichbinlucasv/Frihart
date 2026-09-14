@@ -631,4 +631,31 @@ mod tests {
         assert!(wide.title.contains("Architecture of the World Wide Web"));
         assert!(wide.boxes.iter().any(|b| b.text.contains("Identification")));
     }
+
+    #[test]
+    fn rfc9110_is_readable() {
+        let html = include_str!("../testdata/rfc9110.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("RFC 9110"));
+        assert!(f.title.contains("HTTP Semantics"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("HTTP Semantics"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("Status of This Memo") || blob.contains("Standards Track"));
+        assert!(blob.contains("Methods") || blob.contains("GET"));
+        assert!(blob.contains("idempotent") || blob.contains("safe"));
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| b.preserve && (b.text.contains("HTTP") || b.text.contains("=")))
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("rfc-editor.org") || h.contains("/rfc/rfc"))
+        }));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("HTTP Semantics"));
+        assert!(wide.boxes.iter().any(|b| b.text.contains("Abstract")));
+    }
 }
