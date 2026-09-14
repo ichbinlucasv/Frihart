@@ -246,14 +246,7 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     if name == "dl" {
         let mut child_ancs = ancs.to_vec();
         child_ancs.push(qual);
-        for child in &node.children {
-            if child.name == "dt" || child.name == "dd" {
-                let t = child.text_content();
-                if !t.is_empty() {
-                    push_frag(out, qual_of(child), &child_ancs, Block::Text(t));
-                }
-            }
-        }
+        emit_dl_children(node, &child_ancs, out);
         return;
     }
     if name == "hr" {
@@ -544,6 +537,23 @@ fn is_headerlink(node: &Node) -> bool {
         .unwrap_or_default()
         .split_whitespace()
         .any(|c| c == "headerlink")
+}
+
+/// HTML5 lets a `dl` wrap `dt`/`dd` groups in `div`. Walk one level of
+/// those wrappers so W3C TR cards keep Tags / Deliverers.
+fn emit_dl_children(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
+    for child in &node.children {
+        if child.name == "dt" || child.name == "dd" {
+            let t = child.text_content();
+            if !t.is_empty() {
+                push_frag(out, qual_of(child), ancs, Block::Text(t));
+            }
+        } else if child.name == "div" {
+            let mut inner = ancs.to_vec();
+            inner.push(qual_of(child));
+            emit_dl_children(child, &inner, out);
+        }
+    }
 }
 
 fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
@@ -931,6 +941,28 @@ line2</pre>
             blocks
                 .iter()
                 .any(|b| matches!(b, Block::Text(t) if t == "def"))
+        );
+    }
+
+    #[test]
+    fn definition_list_div_wrappers() {
+        let html = r#"<dl><div><dt>Tags</dt><dd>Data</dd></div>
+            <div><dt>Deliverers</dt><dd><a href="/groups/wg/rdf-star/">RDF &amp; SPARQL Working Group</a></dd></div></dl>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Text(t) if t == "Tags"))
+        );
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Text(t) if t == "Data"))
+        );
+        assert!(
+            blocks
+                .iter()
+                .any(|b| matches!(b, Block::Text(t) if t.contains("RDF") && t.contains("SPARQL")))
         );
     }
 }

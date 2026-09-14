@@ -39,15 +39,16 @@ Leftovers that did **not** block close: multi-window, HTTP/2, partitioned HTTP c
 
 **D Engine (long pole)**  
 HTML → CSS → style → layout → display list → chrome paint. Tables are
-a column grid. `hr`, caption, definition lists. CSS: `em`/`rem`/`vw`/
+a column grid. `hr`, caption, definition lists (HTML5 `div` wrappers).
+CSS: `em`/`rem`/`vw`/
 `vh`/`%`, `font-weight`, `border`, `:link`. Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
 UTF-8 text (not Latin-1 bytes). Heading with one destination (link-only
 or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 `about:sites` claimed: **example.com**, **RFC 1918**, **suckless.org**,
 **GNU philosophy**, **kernel.org**, **docs.kernel.org**, **ietf.org**,
-**rfc-editor.org** (index), **w3.org** (landing). Settings is the
-LibreWolf-stance page (native prefs, black/yellow).
+**rfc-editor.org** (index), **w3.org** (landing), **w3.org/TR** (index).
+Settings is the LibreWolf-stance page (native prefs, black/yellow).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -64,10 +65,11 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D only.** Fetch live `https://www.w3.org/TR/`
-   (the TR index, not the already-claimed landing). Lay out those exact
-   bytes. Fix what the subset mangles. Claim only if honestly readable.
-   Write why on `about:sites` and `docs/sites.md`.
+1. **This / next session — D only.** Fetch live
+   `https://www.w3.org/TR/webarch/` (Architecture of the WWW, Volume
+   One). Lay out those exact bytes. Fix what the subset mangles. Claim
+   only if honestly readable. Write why on `about:sites` and
+   `docs/sites.md`.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -81,7 +83,7 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.
-6. **v0.2.0** when: named static list is claimed (9 already), worker
+6. **v0.2.0** when: named static list is claimed (10 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs.
 7. **Then — and only then — discuss G.** Recommendation: stay refuse
@@ -112,14 +114,15 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 ## Claimed (do not reopen unless they regress)
 
 example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
-docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing.
+docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
+w3.org/TR index.
 
 ## Next session — start here
 
-**D: fetch live `https://www.w3.org/TR/` (or another unclaimed static
-document), lay out those bytes, claim only if readable.** Nine public
-sites are claimed. Do not start a JS engine. The engine stays Frihart
-in Rust; G stays refuse. Do not start H/I.
+**D: fetch live `https://www.w3.org/TR/webarch/` (or another unclaimed
+static document), lay out those bytes, claim only if readable.** Ten
+public sites are claimed. Do not start a JS engine. The engine stays
+Frihart in Rust; G stays refuse. Do not start H/I.
 
 ## Commands
 

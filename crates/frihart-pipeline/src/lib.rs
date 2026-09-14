@@ -568,4 +568,39 @@ mod tests {
                 .any(|b| b.text.contains("Making the web work"))
         );
     }
+
+    #[test]
+    fn w3_org_tr_index_is_readable() {
+        let html = include_str!("../testdata/w3.org-tr.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("W3C standards and drafts"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("W3C publishes a range of technical reports"));
+        assert!(blob.contains("1236"));
+        assert!(blob.contains("families"));
+        assert!(blob.contains("RDF 1.2 Turtle"));
+        assert!(blob.contains("Draft Standard") || blob.contains("Recommendation"));
+        assert!(
+            f.boxes
+                .iter()
+                .any(|b| b.text.contains("RDF") && !b.text.contains("Turtle"))
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("/TR/rdf12-turtle/"))
+                && b.text.contains("RDF 1.2 Turtle")
+        }));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("/TR/WCAG22/") || h.contains("/TR/wcag-3.0/"))
+                || b.text.contains("WCAG")
+        }));
+        assert!(blob.contains("Tags"));
+        assert!(blob.contains("Deliverers"));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("W3C standards and drafts"));
+        assert!(wide.boxes.iter().any(|b| b.text.contains("RDF 1.2 Turtle")));
+    }
 }

@@ -98,8 +98,14 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.w3.org/TR/",
             name: "w3.org/TR",
+            status: ClaimStatus::Claimed,
+            note: "1236 reports / 288 families, RDF 1.2 Turtle heading-link, Tags/Deliverers; live HTML 2026-09-14",
+        },
+        SiteClaim {
+            url: "https://www.w3.org/TR/webarch/",
+            name: "w3.org/TR/webarch",
             status: ClaimStatus::Target,
-            note: "W3C TR index — not opened yet",
+            note: "Architecture of the WWW — not opened yet",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -143,7 +149,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 9);
+        assert_eq!(public_claimed(), 10);
         assert!(
             claims()
                 .iter()
@@ -191,6 +197,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url == "https://www.w3.org/")
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url == "https://www.w3.org/TR/")
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")
