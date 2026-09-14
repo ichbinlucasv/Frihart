@@ -8,6 +8,8 @@ url="https://codeberg.org/ichbinlucasv/Frihart"
 license=('MIT' 'Apache')
 depends=('gcc-libs' 'fontconfig' 'freetype2')
 makedepends=('cargo' 'git')
+# ring's C/asm core breaks under makepkg CFLAGS / rust LTO.
+options=('!lto' '!buildflags')
 # Release: git tag. Local tree: FRIHART_LOCAL=1 makepkg -f --nocheck
 if [ "${FRIHART_LOCAL:-0}" = 1 ]; then
   source=()
@@ -32,6 +34,8 @@ build() {
   cd "$pkgname"
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
+  # ring's assembly objects do not link with rust-lld on this toolchain.
+  export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-fuse-ld=bfd"
   cargo build --frozen --release --bin frihart
 }
 

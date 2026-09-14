@@ -121,10 +121,11 @@ w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML.
 
 ## Next session — start here
 
-**F: `FRIHART_LOCAL=1 makepkg` in `packaging/arch` and install the
-package.** Fourteen public sites are claimed. `font-family` engine
-slots and letterboxing paint are in. Optional D: RFC 5280. Do not
-start a JS engine. G stays refuse.
+**Optional D: RFC 5280**, then keep claiming static docs. Arch
+PKGBUILD **builds** (`FRIHART_LOCAL=1 makepkg --nocheck` produced
+`frihart-0.1.0-1-x86_64.pkg.tar.zst`). Install still needs
+`sudo pacman -U` on the user's machine. Fourteen public sites.
+Do not start a JS engine. G stays refuse.
 
 ## Commands
 

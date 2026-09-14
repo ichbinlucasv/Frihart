@@ -609,6 +609,7 @@ A sustainable rhythm for a long project:
 - [x] RFC 8446 claimed (TLS 1.3, Abstract, Handshake, pre pages)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] Letterboxing paint (200×100 buckets, pref off by default)
+- [x] Arch PKGBUILD builds locally (`FRIHART_LOCAL=1 makepkg --nocheck`)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)
