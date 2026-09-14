@@ -18,6 +18,8 @@ struct Args {
     private: bool,
     #[arg(long)]
     tor: bool,
+    #[arg(long)]
+    i2p: bool,
     #[arg(long, value_name = "PATH")]
     install_addon: Option<PathBuf>,
     /// Hidden: chrome spawns this to layout HTML under the content sandbox.
@@ -59,7 +61,13 @@ fn try_main() -> frihart_core::Result<()> {
         Profile::open_default()?
     };
 
-    frihart_chrome::run(profile, args.url, args.tor)
+    if args.tor && args.i2p {
+        return Err(frihart_core::FrihartError::Message(
+            "pick one circuit: --tor or --i2p".into(),
+        ));
+    }
+
+    frihart_chrome::run(profile, args.url, args.tor, args.i2p)
 }
 
 fn run_content_worker() -> frihart_core::Result<()> {

@@ -46,7 +46,7 @@ is **harder to own**, for people who treat a leak as a failure.
 - Native **uBlock-class blocker**, on at install (`about:blocker`)
 - Built-in **translator**, DeepL default, no Google (`about:translate`)
 - Swisscows search, DuckDuckGo second (`about:search`)
-- Tor tabs (`--tor`, Ctrl+Shift+O) via your system daemon
+- Tor tabs (`--tor`, Ctrl+Shift+O) and I2P tabs (`--i2p`, Ctrl+Shift+I) via your system daemons. Fail closed.
 - ProtonVPN / Mullvad CLI hooks (`about:vpn`)
 - Wipe / reset / shred this profile only (`about:shred`)
 - Identity autofill; **never** a password store (`about:pass`)
@@ -54,7 +54,8 @@ is **harder to own**, for people who treat a leak as a failure.
 - HTML → CSS → layout → display list (`about:engine`)
 
 Linux is free. Other OS: €100 lifetime, local key, no license server.
-See [docs/pricing.md](docs/pricing.md).
+Voluntary support never unlocks a privacy tier. See
+[docs/pricing.md](docs/pricing.md) and [docs/stance.md](docs/stance.md).
 
 ## Linux homes
 
@@ -103,12 +104,13 @@ cargo run
 cargo run -- about:settings
 cargo run -- --private
 cargo run -- --tor
+cargo run -- --i2p
 cargo run -- --install-addon ./some-firefox-addon.xpi
 cargo run -- --profile ./profile-dev
 ```
 
 ```
-frihart [URL] [--profile PATH] [--private] [--tor] [--version]
+frihart [URL] [--profile PATH] [--private] [--tor] [--i2p] [--version]
 ```
 
 ```bash
@@ -136,6 +138,7 @@ Private windows use memory only. Files are `0600` / dirs `0700`.
 | File | What it is |
 | --- | --- |
 | [PHILOSOPHY.md](PHILOSOPHY.md) | Constitution. Libertarian, LibreWolf stance |
+| [docs/stance.md](docs/stance.md) | Compatibility floor, two modes, money, DNS, quantum |
 | [ROADMAP.md](ROADMAP.md) | Campaigns A–I and crate phases 0–15 |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Where to continue (A–C closed) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate map |

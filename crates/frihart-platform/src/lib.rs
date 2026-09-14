@@ -237,6 +237,20 @@ pub fn detect_tor() -> TorPresence {
     }
 }
 
+/// How we expect to talk to a local I2P daemon (`i2pd` or Java I2P).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct I2pPresence {
+    pub binary: Option<PathBuf>,
+    pub socks_hint: String,
+}
+
+pub fn detect_i2p() -> I2pPresence {
+    I2pPresence {
+        binary: find_in_path("i2pd").or_else(|| find_in_path("i2prouter")),
+        socks_hint: "127.0.0.1:4447".into(),
+    }
+}
+
 /// Official VPN CLIs we are willing to hook, never to reimplement.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VpnPresence {

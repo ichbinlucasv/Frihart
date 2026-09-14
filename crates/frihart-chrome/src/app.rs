@@ -33,8 +33,8 @@ struct Handler {
 }
 
 /// Open the Linux chrome and run until the user quits.
-pub fn run(profile: Profile, initial_url: Option<String>, tor: bool) -> Result<()> {
-    let browser = Browser::new(profile, initial_url, tor);
+pub fn run(profile: Profile, initial_url: Option<String>, tor: bool, i2p: bool) -> Result<()> {
+    let browser = Browser::new(profile, initial_url, tor, i2p);
     let event_loop = EventLoop::new()
         .map_err(|e| FrihartError::Message(format!("could not create event loop: {e}")))?;
     event_loop.set_control_flow(ControlFlow::Wait);
@@ -222,6 +222,11 @@ impl Handler {
                     }
                     "o" if shift => {
                         self.browser.new_tor_tab();
+                        self.request_redraw();
+                        return;
+                    }
+                    "i" if shift => {
+                        self.browser.new_i2p_tab();
                         self.request_redraw();
                         return;
                     }

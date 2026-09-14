@@ -568,6 +568,8 @@ A sustainable rhythm for a long project:
 - [x] rustls fetch + view-source (Phase 2)
 - [x] First-party partitioned cookies, 0600 profile files
 - [x] Tor tabs refuse clearnet (no silent fallback)
+- [x] I2P tabs refuse clearnet (system i2pd/I2P, SOCKS 4447)
+- [x] Quad9 named as system-DNS recommendation; DoH stays off by default
 - [x] HTML subset + arena DOM + CSS/layout/gfx pipeline
 - [x] Identity autofill (no password store)
 - [x] Lists, pre/code, quote, br, img boxes

@@ -10,6 +10,7 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
 | Situation | What happens |
 | --- | --- |
 | Tor tab, no SOCKS / dead daemon | Error. No clearnet. |
+| I2P tab, no SOCKS / dead daemon | Error. No clearnet. |
 | HTTP while HTTPS-only | Interstitial. No fetch. |
 | Download | Written `0600`. Never `+x`. Never executed. |
 | Password field | Not stored. External manager only. |

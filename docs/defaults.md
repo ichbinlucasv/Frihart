@@ -84,6 +84,14 @@ Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
 | `tor.socks_host` | `127.0.0.1` | Local daemon only. |
 | `tor.socks_port` | `9050` | Standard Tor SOCKS. |
 
+## I2P
+
+| Pref | Default | Why |
+| --- | --- | --- |
+| `i2p.enabled` | `true` | I2P tabs are available. They need a system `i2pd` / Java I2P daemon. |
+| `i2p.socks_host` | `127.0.0.1` | Local daemon only. |
+| `i2p.socks_port` | `4447` | Common i2pd SOCKS. Fail closed; no clearnet fallback. |
+
 ## VPN
 
 | Pref | Default | Why |
@@ -103,7 +111,7 @@ Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
 | `network.user_agent` | frozen Frihart UA | No OS micro-version, no engine version salad. |
 | `network.client_hints` | `false` | Client hints exist to fingerprint. |
 | `network.doh_mode` | `off` | System DNS first. DoH is opt-in and user-chosen. |
-| `network.doh_url` | empty | We do not pick a national or corporate resolver for you. |
+| `network.doh_url` | empty | We do not pick a national or corporate resolver for you. Quad9 is the named *system* recommendation (`9.9.9.9` / `dns.quad9.net`), not a forced DoH vendor. See `about:dns`. |
 | `network.http2` | `true` (when implemented) | Performance without a privacy cost by itself. |
 | `network.http3` | `false` until reviewed | QUIC exposes a different fingerprint; later. |
 

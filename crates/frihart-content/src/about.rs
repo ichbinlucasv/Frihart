@@ -1,4 +1,4 @@
-use frihart_config::Prefs;
+use frihart_config::{Prefs, QUAD9_DNS_V4, QUAD9_DOH_URL};
 use frihart_core::{APP_NAME, FROZEN_USER_AGENT, VERSION};
 use frihart_privacy::Policy;
 use frihart_profile::Profile;
@@ -104,6 +104,8 @@ pub fn is_known(name: &str) -> bool {
             | "translate"
             | "search"
             | "tor"
+            | "i2p"
+            | "dns"
             | "vpn"
             | "extensions"
             | "addons"
@@ -147,6 +149,8 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "translate" => translate(url, prefs),
         "search" => search(url, prefs),
         "tor" => tor(url, prefs),
+        "i2p" => i2p(url, prefs),
+        "dns" => dns(url, prefs),
         "vpn" => vpn(url, prefs),
         "extensions" | "addons" => extensions(url, profile),
         "welcome" => welcome(url, prefs),
@@ -281,6 +285,14 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
             href: "about:tor".into(),
         },
         Block::Link {
+            label: "I2P".into(),
+            href: "about:i2p".into(),
+        },
+        Block::Link {
+            label: "DNS".into(),
+            href: "about:dns".into(),
+        },
+        Block::Link {
             label: "VPN".into(),
             href: "about:vpn".into(),
         },
@@ -398,13 +410,14 @@ fn support(url: &Url, prefs: &Prefs) -> Document {
             subtitle: frihart_core::price_label().into(),
         },
         Block::List(vec![
-            "Linux: free".into(),
-            "Android / Windows / macOS / other: €100 lifetime".into(),
-            "Pay: Monero, Bitcoin, or fiat".into(),
+            "Linux: free. Privacy is not a paid tier.".into(),
+            "Android / Windows / macOS / other: €100 lifetime, local key".into(),
+            "Voluntary support (any OS): same €100 or any amount, XMR/BTC/fiat".into(),
+            "No ads. No BAT. No Frihart account. No license server.".into(),
         ]),
         Block::Note(
-            "No Frihart account. No license server. Paid ports will use a key \
-             you keep on disk."
+            "A donation does not unlock features the free Linux build lacks. \
+             Paid ports will use a key you keep on disk."
                 .into(),
         ),
         Block::Heading("Donate".into()),
@@ -1210,6 +1223,7 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
 
 fn config(url: &Url, prefs: &Prefs) -> Document {
     let socks_port = prefs.tor.socks_port.to_string();
+    let i2p_socks_port = prefs.i2p.socks_port.to_string();
     let mut blocks = vec![
         Block::Hero {
             title: "about:config".into(),
@@ -1333,6 +1347,10 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("enabled", bool_str(prefs.tor.enabled)),
         kv("socks_host", &prefs.tor.socks_host),
         kv("socks_port", &socks_port),
+        Block::Heading("i2p".into()),
+        kv("enabled", bool_str(prefs.i2p.enabled)),
+        kv("socks_host", &prefs.i2p.socks_host),
+        kv("socks_port", &i2p_socks_port),
         Block::Heading("vpn".into()),
         kv("provider", &prefs.vpn.provider),
         Block::Heading("extensions".into()),
@@ -1522,6 +1540,10 @@ fn keyboard(url: &Url) -> Document {
             Block::KeyValue {
                 key: "Ctrl+Shift+O".into(),
                 value: "New Tor tab".into(),
+            },
+            Block::KeyValue {
+                key: "Ctrl+Shift+I".into(),
+                value: "New I2P tab".into(),
             },
             Block::KeyValue {
                 key: "Ctrl+K".into(),
@@ -1864,6 +1886,109 @@ fn tor(url: &Url, prefs: &Prefs) -> Document {
             Block::Note(
                 "Tor tabs dial only this SOCKS port. If the daemon is down, the \
                  tab fails. There is no clearnet fallback."
+                    .into(),
+            ),
+        ],
+    })
+}
+
+fn i2p(url: &Url, prefs: &Prefs) -> Document {
+    let presence = frihart_platform::detect_i2p();
+    let binary = presence
+        .binary
+        .as_ref()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|| "not found on PATH (install i2pd or Java I2P)".into());
+    Document::internal(InternalPage {
+        title: "I2P".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "I2P tab".into(),
+                subtitle: "Hidden-network circuit. Uses your system I2P. We do not ship the net."
+                    .into(),
+            },
+            Block::Paragraph(
+                "I2P is a separate network, not a clearnet anonymizer. An I2P tab \
+                 is for .i2p and I2P outproxies you configured. It is not the \
+                 default, and it never falls back to the public internet. \
+                 Ctrl+Shift+I or --i2p."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "SOCKS".into(),
+                value: format!("{}:{}", prefs.i2p.socks_host, prefs.i2p.socks_port),
+            },
+            Block::KeyValue {
+                key: "i2p binary".into(),
+                value: binary,
+            },
+            Block::KeyValue {
+                key: "Enabled".into(),
+                value: if prefs.i2p.enabled {
+                    "on".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::Note(
+                "I2P tabs dial only this SOCKS port. If the daemon is down, the \
+                 tab fails. There is no clearnet fallback."
+                    .into(),
+            ),
+            Block::Link {
+                label: "Stance".into(),
+                href: "about:privacy".into(),
+            },
+        ],
+    })
+}
+
+fn dns(url: &Url, prefs: &Prefs) -> Document {
+    Document::internal(InternalPage {
+        title: "DNS".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "DNS".into(),
+                subtitle: "System resolver by default. No forced DoH vendor.".into(),
+            },
+            Block::Paragraph(
+                "Frihart uses the operating system's DNS. Tails, Qubes, and Tor \
+                 already own name resolution. We will not phone a DoH vendor for \
+                 every Frihart user — that is a fingerprint."
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "doh_mode".into(),
+                value: prefs.network.doh_mode.clone(),
+            },
+            Block::KeyValue {
+                key: "doh_url".into(),
+                value: if prefs.network.doh_url.is_empty() {
+                    "(empty — opt-in only)".into()
+                } else {
+                    prefs.network.doh_url.clone()
+                },
+            },
+            Block::Heading("Named recommendation".into()),
+            Block::Paragraph(
+                "On Arch, Fedora, and Mint, set the *system* resolver to Quad9 \
+                 for malware/C2 blocking without Google Safe Browsing:"
+                    .into(),
+            ),
+            Block::KeyValue {
+                key: "Quad9 IPv4".into(),
+                value: QUAD9_DNS_V4.into(),
+            },
+            Block::KeyValue {
+                key: "Quad9 DoH (opt-in later)".into(),
+                value: QUAD9_DOH_URL.into(),
+            },
+            Block::Note(
+                "DoH is not wired in the fetch stack yet. Enabling a preset \
+                 stores the URL in prefs.toml. It does not send queries until \
+                 DoH is implemented. Default stays off."
                     .into(),
             ),
         ],

@@ -21,6 +21,7 @@ pub enum Circuit {
     Direct,
     Private,
     Tor,
+    I2p,
 }
 
 impl Circuit {
@@ -29,6 +30,7 @@ impl Circuit {
             Self::Direct => "direct",
             Self::Private => "private",
             Self::Tor => "tor",
+            Self::I2p => "i2p",
         }
     }
 }
@@ -112,7 +114,7 @@ pub struct Browser {
 }
 
 impl Browser {
-    pub fn new(mut profile: Profile, initial: Option<String>, tor: bool) -> Self {
+    pub fn new(mut profile: Profile, initial: Option<String>, tor: bool, i2p: bool) -> Self {
         let start = initial.unwrap_or_else(|| {
             if profile.prefs().general.welcome_seen {
                 profile.prefs().general.homepage.clone()
@@ -121,7 +123,9 @@ impl Browser {
             }
         });
         let mut tab = open_tab(&mut profile, &start);
-        if tor {
+        if i2p {
+            tab.circuit = Circuit::I2p;
+        } else if tor {
             tab.circuit = Circuit::Tor;
         } else if profile.is_ephemeral() {
             tab.circuit = Circuit::Private;
@@ -179,6 +183,7 @@ impl Browser {
         tab.container = container;
         tab.circuit = match circuit {
             Circuit::Tor => Circuit::Tor,
+            Circuit::I2p => Circuit::I2p,
             Circuit::Private => Circuit::Private,
             Circuit::Direct => Circuit::Direct,
         };
@@ -357,6 +362,19 @@ impl Browser {
         self.sync_url_bar();
         self.url_focused = false;
         self.status = "tor".into();
+    }
+
+    pub fn new_i2p_tab(&mut self) {
+        let url = self.profile.prefs().general.new_tab_url.clone();
+        let container = self.active_tab().container;
+        let mut tab = open_tab(&mut self.profile, &url);
+        tab.container = container;
+        tab.circuit = Circuit::I2p;
+        self.tabs.push(tab);
+        self.active = self.tabs.len() - 1;
+        self.sync_url_bar();
+        self.url_focused = false;
+        self.status = "i2p".into();
     }
 
     pub fn cycle_container(&mut self) {
@@ -584,6 +602,12 @@ impl Browser {
                 let tor = &self.profile.prefs().tor;
                 FetchMode::Tor {
                     socks: format!("{}:{}", tor.socks_host, tor.socks_port),
+                }
+            }
+            Circuit::I2p => {
+                let i2p = &self.profile.prefs().i2p;
+                FetchMode::I2p {
+                    socks: format!("{}:{}", i2p.socks_host, i2p.socks_port),
                 }
             }
             _ => FetchMode::Direct,

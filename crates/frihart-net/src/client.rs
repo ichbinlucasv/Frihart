@@ -12,6 +12,7 @@ use crate::{HttpClient, Request, Response};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NetFail {
     Tor,
+    I2p,
     Tls,
     Blocked,
     Timeout,
@@ -22,6 +23,8 @@ pub fn classify_error(err: &FrihartError) -> NetFail {
     let s = err.to_string().to_ascii_lowercase();
     if s.contains("tor") {
         NetFail::Tor
+    } else if s.contains("i2p") {
+        NetFail::I2p
     } else if s.contains("certificate") || s.contains("tls") || s.contains("ssl") {
         NetFail::Tls
     } else if s.contains("blocked") {
@@ -37,6 +40,7 @@ impl NetFail {
     pub fn title(self) -> &'static str {
         match self {
             Self::Tor => "Tor",
+            Self::I2p => "I2P",
             Self::Tls => "Certificate",
             Self::Blocked => "Blocked",
             Self::Timeout => "Timeout",
@@ -47,6 +51,7 @@ impl NetFail {
     pub fn hint(self) -> &'static str {
         match self {
             Self::Tor => "SOCKS refused. No clearnet fallback. Start the system tor daemon.",
+            Self::I2p => "SOCKS refused. No clearnet fallback. Start the system i2pd/I2P daemon.",
             Self::Tls => "TLS failed. Frihart will not click through a bad certificate.",
             Self::Blocked => "Policy or the native blocker stopped this request.",
             Self::Timeout => "The host did not answer in time.",
@@ -64,6 +69,10 @@ pub enum FetchMode {
     Direct,
     /// SOCKS5 only. Empty socks is a hard refuse — never clearnet.
     Tor {
+        socks: String,
+    },
+    /// SOCKS5 only. Empty socks is a hard refuse — never clearnet.
+    I2p {
         socks: String,
     },
 }
@@ -90,6 +99,26 @@ impl RustlsClient {
     }
 }
 
+fn socks5_agent(socks: &str, kind: &str) -> Result<ureq::Agent> {
+    let socks = socks.trim();
+    if socks.is_empty() {
+        return Err(FrihartError::network(format!("{kind} refused: no socks")));
+    }
+    if !socks.contains(':') {
+        return Err(FrihartError::network(format!(
+            "{kind} refused: socks host:port"
+        )));
+    }
+    let proxy = ureq::Proxy::new(format!("socks5://{socks}"))
+        .map_err(|_| FrihartError::network(format!("{kind} refused: socks invalid")))?;
+    Ok(ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(TIMEOUT_SECS))
+        .redirects(0)
+        .user_agent("Frihart")
+        .proxy(proxy)
+        .build())
+}
+
 impl HttpClient for RustlsClient {
     fn send(
         &self,
@@ -104,21 +133,11 @@ impl HttpClient for RustlsClient {
         let agent_ref: &ureq::Agent = match &mode {
             FetchMode::Direct => &self.agent,
             FetchMode::Tor { socks } => {
-                let socks = socks.trim();
-                if socks.is_empty() {
-                    return Err(FrihartError::network("tor refused: no socks"));
-                }
-                if !socks.contains(':') {
-                    return Err(FrihartError::network("tor refused: socks host:port"));
-                }
-                let proxy = ureq::Proxy::new(format!("socks5://{socks}"))
-                    .map_err(|_| FrihartError::network("tor refused: socks invalid"))?;
-                agent = ureq::AgentBuilder::new()
-                    .timeout(Duration::from_secs(TIMEOUT_SECS))
-                    .redirects(0)
-                    .user_agent("Frihart")
-                    .proxy(proxy)
-                    .build();
+                agent = socks5_agent(socks, "tor")?;
+                &agent
+            }
+            FetchMode::I2p { socks } => {
+                agent = socks5_agent(socks, "i2p")?;
                 &agent
             }
         };
@@ -311,6 +330,32 @@ mod tests {
             )
             .unwrap_err();
         assert!(bad.to_string().contains("tor"));
+    }
+
+    #[test]
+    fn i2p_never_uses_clearnet() {
+        let client = RustlsClient::new();
+        let policy = Policy::new(Prefs::default());
+        let mut jar = CookieJar::default();
+        let blocker = FilterEngine::new(true);
+        let req = Request::get(Url::parse("https://example.com").unwrap());
+        let empty = client
+            .send(
+                req,
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::I2p {
+                    socks: String::new(),
+                },
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        assert!(empty.to_string().contains("i2p"));
+        assert_eq!(
+            classify_error(&FrihartError::network("i2p refused: no socks")),
+            NetFail::I2p
+        );
     }
 
     #[test]

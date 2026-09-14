@@ -126,6 +126,10 @@ fn network_error(url: &url::Url, err: frihart_core::FrihartError) -> Document {
                 href: "about:tor".into(),
             },
             Block::Link {
+                label: "I2P".into(),
+                href: "about:i2p".into(),
+            },
+            Block::Link {
                 label: "Privacy".into(),
                 href: "about:privacy".into(),
             },
@@ -283,6 +287,8 @@ mod tests {
         assert_eq!(load(&about_url("campaigns"), &profile).title(), "Campaigns");
         assert_eq!(load(&about_url("script"), &profile).title(), "Script");
         assert_eq!(load(&about_url("sites"), &profile).title(), "Sites");
+        assert_eq!(load(&about_url("i2p"), &profile).title(), "I2P");
+        assert_eq!(load(&about_url("dns"), &profile).title(), "DNS");
     }
 
     #[test]

@@ -1,7 +1,14 @@
 # Pricing
 
-Linux is free. Every other OS is a one-time **€100** lifetime fee.
+Linux is **free**. Privacy is not a paid tier.
+
+Every other OS (when it exists) is a one-time **€100** lifetime fee.
 Pay with Monero, Bitcoin, or fiat. No subscription. No Frihart account.
+No ads. No Brave-style attention market.
+
+Linux users may **voluntarily** send the same amount to fund the
+project. That is support, not a license. It does not unlock features
+the free build lacks.
 
 | Platform | Price |
 | --- | --- |

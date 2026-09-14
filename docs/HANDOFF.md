@@ -138,19 +138,21 @@ cargo run -- about:campaigns
 cargo run -- about:sites
 cargo run -- https://example.com/
 cargo run -- --tor
+cargo run -- --i2p
 ```
 
 ## Docs to read first
 
-`PHILOSOPHY.md`, `ROADMAP.md`, `ARCHITECTURE.md`, `docs/opsec.md`,
-`docs/distros.md`, `docs/engine.md`, `docs/css-subset.md`,
-`docs/sites.md`, `docs/defaults.md`.
+`PHILOSOPHY.md`, `docs/stance.md`, `ROADMAP.md`, `ARCHITECTURE.md`,
+`docs/opsec.md`, `docs/distros.md`, `docs/engine.md`,
+`docs/css-subset.md`, `docs/sites.md`, `docs/defaults.md`.
 
 ## Hard rules
 
 - Policy before I/O (`frihart-privacy`).
 - No telemetry crate, no phone-home.
 - Tor never falls back to clearnet.
+- I2P never falls back to clearnet.
 - Downloads never execute (`0600`).
 - Passwords never stored. Proton Pass / KeePassXC / etc. are external.
 - Wipe = session like new (bookmarks stay). Reset = prefs default
@@ -162,4 +164,4 @@ cargo run -- --tor
 
 `about:home`, `about:campaigns`, `about:engine`, `about:sites`,
 `about:processes`, `about:linux`, `about:script`, `about:shred`,
-`about:tor`.
+`about:tor`, `about:i2p`, `about:dns`.

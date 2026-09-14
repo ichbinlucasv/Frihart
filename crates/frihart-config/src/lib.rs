@@ -44,6 +44,7 @@ pub struct Prefs {
     pub translate: TranslatePrefs,
     pub search: SearchPrefs,
     pub tor: TorPrefs,
+    pub i2p: I2pPrefs,
     pub vpn: VpnPrefs,
     pub extensions: ExtensionPrefs,
     pub support: SupportPrefs,
@@ -269,6 +270,30 @@ impl Default for TorPrefs {
     }
 }
 
+/// System I2P daemon (`i2pd` or Java I2P). Frihart does not bundle the net.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct I2pPrefs {
+    pub enabled: bool,
+    pub socks_host: String,
+    pub socks_port: u16,
+}
+
+impl Default for I2pPrefs {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            socks_host: "127.0.0.1".into(),
+            socks_port: 4447,
+        }
+    }
+}
+
+/// Named DoH URL for Quad9. Stored only if the user opts in. Never the default.
+pub const QUAD9_DOH_URL: &str = "https://dns.quad9.net/dns-query";
+/// Quad9 recursive IPv4 (malware/C2 blocking). Set this on the OS, not as forced DoH.
+pub const QUAD9_DNS_V4: &str = "9.9.9.9";
+
 /// Official-client hooks. Frihart is not a VPN vendor.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -396,6 +421,8 @@ mod tests {
         assert!(p.translate.api_key.is_empty());
         assert!(p.tor.enabled);
         assert_eq!(p.tor.socks_port, 9050);
+        assert!(p.i2p.enabled);
+        assert_eq!(p.i2p.socks_port, 4447);
         assert_eq!(p.vpn.provider, "none");
         assert!(p.extensions.enabled);
         assert!(!p.privacy.store_logins);

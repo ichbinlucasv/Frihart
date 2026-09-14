@@ -7,6 +7,8 @@ and Qubes. The engine does not.
 
 - `packaging/arch/PKGBUILD`
 - Install system `tor` if you want Tor tabs: `pacman -S tor`
+- Install `i2pd` if you want I2P tabs: `pacman -S i2pd` (SOCKS `127.0.0.1:4447`)
+- Recommended system DNS: Quad9 `9.9.9.9` (malware/C2, no Google). Frihart does not force DoH.
 - Wayland first (Sway, Hyprland, KDE, GNOME). X11 still works.
 
 CachyOS is treated as Arch. Same package, same paths. Manjaro and

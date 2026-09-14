@@ -145,6 +145,7 @@ See [docs/opsec.md](docs/opsec.md). Short version:
 - No login vault. External managers only (Proton Pass, KeePassXC, …).
 - Wipe / reset / shred are first-class and this-profile-only.
 - Tor tabs fail closed.
+- I2P tabs fail closed (opt-in; not the default).
 - Downloads are `0600` and never execute.
 - Isolation keys (scheme + host + container) from day one.
 - Process split and Linux sandbox before we grow JS.
@@ -207,6 +208,12 @@ The path is a **capability ladder**:
 Until a rung works, we do not advertise the next one. A page that cannot
 be rendered correctly should fail clearly, not half-work in a way that
 trains users to distrust the engine.
+
+We do **not** rebuild CERN line-mode or Mosaic. The engine floor is
+document HTML still in use (~1996 HTML 4 / early CSS through today's
+static pages). We do **not** promise Gmail. Compatibility is per
+claimed document. Product modes, money, DNS, and quantum honesty:
+[docs/stance.md](docs/stance.md).
 
 ## Clean defaults, quiet software
 
