@@ -548,6 +548,64 @@ mod tests {
 
     #[cfg(target_os = "linux")]
     #[test]
+    fn landlock_cannot_open_prefs_toml() {
+        use std::ffi::CString;
+        use std::io::Error;
+        use std::os::unix::process::CommandExt;
+        use std::process::Command;
+
+        if landlock_abi().is_none() {
+            return;
+        }
+
+        let dir = std::env::temp_dir().join(format!("frihart-landlock-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp profile dir");
+        let path = dir.join("prefs.toml");
+        std::fs::write(&path, "# isolation probe — no secrets\n").expect("write prefs");
+        let c_path = CString::new(path.to_str().expect("utf8 path")).expect("c path");
+
+        let spec = SandboxSpec {
+            enabled: true,
+            seccomp: false,
+            landlock: true,
+            no_new_privs: true,
+            rlimits: false,
+        };
+        let mut cmd = Command::new("/bin/true");
+        let status = unsafe {
+            cmd.pre_exec(move || {
+                let report = spec
+                    .apply()
+                    .map_err(|e| std::io::Error::other(e.to_string()))?;
+                if !report.landlock {
+                    libc::_exit(3);
+                }
+                let fd = libc::open(c_path.as_ptr(), libc::O_RDONLY | libc::O_CLOEXEC);
+                if fd < 0 {
+                    let err = Error::last_os_error();
+                    if err.raw_os_error() == Some(libc::EACCES)
+                        || err.raw_os_error() == Some(libc::EPERM)
+                    {
+                        libc::_exit(0);
+                    }
+                    libc::_exit(4);
+                }
+                libc::close(fd);
+                libc::_exit(2);
+            })
+            .status()
+        };
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_dir(&dir);
+        let status = status.expect("spawn");
+        assert!(
+            status.success(),
+            "content landlock must deny open() of profile prefs.toml (status {status})"
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
     fn rlimits_cap_nofile() {
         use std::os::unix::process::CommandExt;
         use std::process::Command;

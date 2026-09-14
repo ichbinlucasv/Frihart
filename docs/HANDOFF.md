@@ -55,7 +55,9 @@ black/yellow).
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
 `no_new_privs` + landlock + seccomp-bpf + rlimits (256M / 128 fds /
-nproc 0 / no core). Chrome never applies the sandbox.
+nproc 0 / no core). Chrome never applies the sandbox. Audit test:
+a landlock child **cannot** `open()` a profile `prefs.toml`. Do not
+split a network process yet.
 
 **F Linux homes**  
 Detect + Tails/Qubes-DVM ephemeral default + packaging notes. Packages
@@ -78,9 +80,8 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
    `font-family` from the engine font list only (no web fonts);
    `th` vs `td` weight if a table page needs it; letterboxing paint
    (pref exists, paint does not).
-4. **E — isolation you can audit.** After more claims, add a test that
-   the content worker cannot `open()` the profile `prefs.toml`. Do
-   **not** split a network process yet.
+4. **E — isolation you can audit.** Landlock child cannot `open()`
+   `prefs.toml` (test in). Do **not** split a network process yet.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.

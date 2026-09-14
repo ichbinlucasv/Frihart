@@ -577,6 +577,7 @@ A sustainable rhythm for a long project:
 - [x] Chrome paints only the pipeline (fields on the display list)
 - [x] Table grid (cells in columns)
 - [x] Content sandbox: no_new_privs + landlock (child only)
+- [x] Landlock child cannot `open()` profile `prefs.toml`
 - [x] seccomp-bpf deny-list on the content worker
 - [x] Find-in-page on the display list
 - [x] `frihart --content-worker` sandboxed layout process

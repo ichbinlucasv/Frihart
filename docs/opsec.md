@@ -57,6 +57,8 @@ Target (Phase 6 / campaign E):
   **rlimits** (256M address space, 128 fds, nproc 0, no core dump).
   Not applied in chrome. Apply only after the worker has started
   (seccomp denies `execve`).
+- Audit: a landlock child cannot `open()` the profile `prefs.toml`
+  (`sandbox::tests::landlock_cannot_open_prefs_toml`).
 - A tab crash reloads that tab, not the browser.
 
 Tails and Qubes DisposableVMs open a private (memory-only) profile

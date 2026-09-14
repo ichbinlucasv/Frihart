@@ -6,6 +6,15 @@ Cargo.lock.bak
 /profile-dev
 /tmp-profile
 
+# Secrets. Never commit.
+.env
+.env.*
+*.pem
+*.p12
+id_rsa
+id_ed25519
+id_ed25519_*
+
 # Editors and OS
 .idea/
 .vscode/
