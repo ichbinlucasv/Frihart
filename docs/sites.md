@@ -25,13 +25,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.rfc-editor.org/ | Live HTML 2026-08-18 (same bytes as the live fetch). Nuxt SSR index. Title, “The official home of RFCs”, Latest RFCs as one hit each (`RFC 10030: Network Time Protocol…` → `/info/rfc10030/`). UTF-8 text (nbsp between RFC and number) is not Latin-1-mangled. SVG icons skipped. Tailwind unused (nav stacks). Also 5120×1440. |
 | https://www.w3.org/ | Live HTML 2026-08-18. Title `W3C`, h1 “Making the web work”, Consortium lead with `/standards/` and mission links, TPAC 2026, Web standards, Latest news “ARIA in HTML” as a heading-link. External CSS unused (nav stacks). Font-loader scripts skipped. Also 5120×1440. |
 | https://www.w3.org/TR/ | Live HTML 2026-09-14. Title / h1 “W3C standards and drafts”. Lead on technical reports. “Showing 1236 reports across 288 families.” Family `h2` (RDF, …) and spec `h3` heading-links (`RDF 1.2 Turtle` → `/TR/rdf12-turtle/`). Maturity (`Draft Standard`) and dates as text. Tags / Deliverers via HTML5 `dl` `div` wrappers. Filter form is GET (JS unused). External CSS unused (nav stacks). Also 5120×1440. |
+| https://www.w3.org/TR/webarch/ | Live HTML 2026-09-14. Title / h1 “Architecture of the World Wide Web, Volume One”. W3C Recommendation 15 December 2004. Abstract (identification / representation / protocols). Sections Identification, Interaction, Data Formats. `dt`/`dd` that is one link (“This version” / “Latest version”) is a hit. `dfn` / `acronym` stay in the text. Named-anchor headings are headings, not fake links. External CSS unused. Also 5120×1440. |
 
 ## Target (open next)
 
-Ten public claims are in. Next named document:
-`https://www.w3.org/TR/webarch/` (Architecture of the World Wide Web,
-Volume One — not opened). Pick that or another static document, open
-it, claim only if the layout is honest.
+Eleven public claims are in. Next named document:
+`https://www.rfc-editor.org/rfc/rfc9110.html` (HTTP Semantics — not
+opened). Pick that or another static document, open it, claim only if
+the layout is honest.
 
 ## Will not claim
 

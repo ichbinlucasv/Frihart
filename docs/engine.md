@@ -21,8 +21,9 @@ not mutate it.
 ## What is on
 
 - Headings, paragraphs, lists, definition lists (including HTML5 `div`
-  wrappers around `dt`/`dd`), pre/code, blockquote, `hr`, br, img boxes
-  (alt only)
+  wrappers around `dt`/`dd`; a `dt`/`dd` that is one link is that hit),
+  pre/code, blockquote, `hr`, br, img boxes (alt only)
+- Spec phrasing: `dfn`, `acronym`, `cite`, `abbr` stay in the text
 - CSS: `em`/`rem`/`vw`/`vh`/`%`, `font-weight`, `border`, `height`, `:link`
 - Nested `<strong>`/`<em>`/`<code>` as their own fragments (UA bold paints)
 - Tables as a column grid, including `<caption>`

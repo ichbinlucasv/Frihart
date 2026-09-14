@@ -81,7 +81,7 @@ dies). CSS understands `em`/`rem`, `font-weight`, and `border`. Find
 (Ctrl+F) searches the display list. JS is off. `javascript:` is refused.
 Tor tabs dial SOCKS only. `about:sites` claims `example.com`, RFC 1918,
 suckless.org, GNU philosophy, kernel.org, docs.kernel.org, ietf.org,
-the RFC Editor index, w3.org, and the W3C TR index. `about:settings` is the LibreWolf-stance page.
+the RFC Editor index, w3.org, the W3C TR index, and webarch. `about:settings` is the LibreWolf-stance page.
 Tracking query keys are stripped. Private-IP redirects are refused.
 Content width follows the window up to 2400 CSS px (G9-class). JS is off
 on purpose. The engine is Frihart in Rust; we will not embed another

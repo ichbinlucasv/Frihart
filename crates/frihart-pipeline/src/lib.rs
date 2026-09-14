@@ -603,4 +603,32 @@ mod tests {
         assert!(wide.title.contains("W3C standards and drafts"));
         assert!(wide.boxes.iter().any(|b| b.text.contains("RDF 1.2 Turtle")));
     }
+
+    #[test]
+    fn webarch_is_readable() {
+        let html = include_str!("../testdata/webarch.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("Architecture of the World Wide Web"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("W3C Recommendation") || blob.contains("15 December 2004"));
+        assert!(blob.contains("identification of resources"));
+        assert!(blob.contains("Identification"));
+        assert!(blob.contains("Interaction"));
+        assert!(blob.contains("Data Formats"));
+        assert!(blob.contains("Orthogonal") || blob.contains("orthogonal"));
+        assert!(blob.contains("URI"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("/TR/webarch") || h.contains("REC-webarch"))
+        }));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("#intro") || h.contains("#identification"))
+        }));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("Architecture of the World Wide Web"));
+        assert!(wide.boxes.iter().any(|b| b.text.contains("Identification")));
+    }
 }

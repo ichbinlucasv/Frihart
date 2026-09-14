@@ -455,6 +455,9 @@ fn is_phrasing(name: &str) -> bool {
             | "u"
             | "small"
             | "abbr"
+            | "acronym"
+            | "dfn"
+            | "cite"
             | "time"
             | "mark"
             | "sub"
@@ -544,16 +547,35 @@ fn is_headerlink(node: &Node) -> bool {
 fn emit_dl_children(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     for child in &node.children {
         if child.name == "dt" || child.name == "dd" {
-            let t = child.text_content();
-            if !t.is_empty() {
-                push_frag(out, qual_of(child), ancs, Block::Text(t));
-            }
+            emit_dl_term(child, ancs, out);
         } else if child.name == "div" {
             let mut inner = ancs.to_vec();
             inner.push(qual_of(child));
             emit_dl_children(child, &inner, out);
         }
     }
+}
+
+/// A `dt`/`dd` that is only one link becomes that hit (W3C TR “This version”).
+fn emit_dl_term(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
+    let t = node.text_content();
+    if t.is_empty() {
+        return;
+    }
+    let links = collect_links(node);
+    if links.len() == 1 && t.trim() == links[0].0.trim() {
+        push_frag(
+            out,
+            qual_of(node),
+            ancs,
+            Block::Link {
+                text: links[0].0.clone(),
+                href: links[0].1.clone(),
+            },
+        );
+        return;
+    }
+    push_frag(out, qual_of(node), ancs, Block::Text(t));
 }
 
 fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
@@ -945,6 +967,17 @@ line2</pre>
     }
 
     #[test]
+    fn spec_phrasing_dfn_acronym_stay_visible() {
+        let html = r#"<p>The <dfn>World Wide Web</dfn> (<acronym>WWW</acronym>) uses <cite>URIs</cite>.</p>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Inline(t) | Block::Text(t)
+                if t.contains("World Wide Web") && t.contains("WWW") && t.contains("URIs")
+        )));
+    }
+
+    #[test]
     fn definition_list_div_wrappers() {
         let html = r#"<dl><div><dt>Tags</dt><dd>Data</dd></div>
             <div><dt>Deliverers</dt><dd><a href="/groups/wg/rdf-star/">RDF &amp; SPARQL Working Group</a></dd></div></dl>"#;
@@ -959,10 +992,27 @@ line2</pre>
                 .iter()
                 .any(|b| matches!(b, Block::Text(t) if t == "Data"))
         );
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Link { text, href }
+                if text.contains("RDF") && text.contains("SPARQL") && href.contains("rdf-star")
+        )));
+    }
+
+    #[test]
+    fn definition_dd_that_is_a_link() {
+        let html = r#"<dl><dt>Latest version:</dt>
+            <dd><a href="https://www.w3.org/TR/webarch/">http://www.w3.org/TR/webarch/</a></dd></dl>"#;
+        let blocks = visible_blocks(&parse(html));
+        assert!(blocks.iter().any(|b| matches!(
+            b,
+            Block::Link { text, href }
+                if text.contains("www.w3.org/TR/webarch") && href.contains("/TR/webarch")
+        )));
         assert!(
             blocks
                 .iter()
-                .any(|b| matches!(b, Block::Text(t) if t.contains("RDF") && t.contains("SPARQL")))
+                .any(|b| matches!(b, Block::Text(t) if t.contains("Latest version")))
         );
     }
 }
