@@ -6,6 +6,7 @@ use frihart_content::{Block, Document, PageItem};
 use frihart_core::display_url;
 use frihart_gfx::DisplayOp;
 use frihart_pipeline::layout_html;
+use frihart_privacy::letterbox_size;
 
 use crate::raster::{Framebuffer, Rect};
 use crate::state::{Browser, Hit};
@@ -69,6 +70,15 @@ pub fn paint(
         w,
         (h - tab_h - toolbar_h - status_h - find_h).max(0),
     );
+    let content = if browser.profile.prefs().privacy.letterboxing {
+        let (iw, ih) = letterbox_size(content.w, content.h);
+        let x = content.x + (content.w - iw) / 2;
+        let y = content.y + (content.h - ih) / 2;
+        fb.fill_rect(content, BG_CHROME);
+        Rect::new(x, y, iw, ih)
+    } else {
+        content
+    };
     paint_content(fb, text, browser, &m, content, &mut hits);
 
     if find_h > 0 {
@@ -641,6 +651,7 @@ fn paint_display_list(
                 color,
                 size,
                 weight,
+                family,
                 text: body,
                 href,
                 max_width,
@@ -648,7 +659,7 @@ fn paint_display_list(
             } => {
                 let px = origin_x + *x as i32;
                 let py = origin_y + *y as i32;
-                let drawn = text.draw(
+                let drawn = text.draw_family(
                     fb,
                     body,
                     DrawText {
@@ -662,6 +673,7 @@ fn paint_display_list(
                         ellipsis: false,
                         wrap: *wrap,
                     },
+                    *family,
                 );
                 if let Some(href) = href {
                     hits.push(HitRegion {

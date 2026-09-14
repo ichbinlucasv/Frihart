@@ -64,6 +64,7 @@ mod tests {
                     color: 0,
                     size: 16.0,
                     weight: 400,
+                    family: frihart_gfx::FontSlot::Sans,
                     text: "Hello".into(),
                     href: None,
                     max_width: 200.0,

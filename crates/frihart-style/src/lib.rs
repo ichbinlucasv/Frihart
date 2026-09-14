@@ -46,6 +46,7 @@ pub struct Computed {
     pub background: u32,
     pub font_size: f32,
     pub font_weight: u16,
+    pub font_family: FontSlot,
     pub margin: f32,
     pub padding: f32,
     pub width: Option<f32>,
@@ -82,6 +83,15 @@ pub enum Align {
     End,
 }
 
+/// Engine font slots. We never query the system inventory (fingerprint).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum FontSlot {
+    #[default]
+    Sans,
+    Serif,
+    Mono,
+}
+
 impl Default for Computed {
     fn default() -> Self {
         Self {
@@ -90,6 +100,7 @@ impl Default for Computed {
             background: 0,
             font_size: REM_PX,
             font_weight: 400,
+            font_family: FontSlot::Sans,
             margin: 0.0,
             padding: 0.0,
             width: None,
@@ -150,10 +161,12 @@ pub fn ua_style(tag: &str) -> Computed {
             c.font_size = 14.0;
             c.padding = 8.0;
             c.background = 0x00181818;
+            c.font_family = FontSlot::Mono;
         }
         "code" => {
             c.display = Display::Inline;
             c.font_size = 14.0;
+            c.font_family = FontSlot::Mono;
         }
         "th" => {
             c.font_weight = 700;
@@ -221,6 +234,11 @@ pub fn apply_in(computed: &mut Computed, decls: &[Declaration], mut ctx: LengthC
                     computed.font_weight = w;
                 }
             }
+            "font-family" => {
+                if let Some(slot) = parse_font_family(&d.value) {
+                    computed.font_family = slot;
+                }
+            }
             "margin" | "margin-top" | "margin-bottom" => {
                 apply_margin(computed, &d.value, ctx);
             }
@@ -254,6 +272,37 @@ pub fn apply_in(computed: &mut Computed, decls: &[Declaration], mut ctx: LengthC
             _ => {}
         }
     }
+}
+
+/// Map a CSS `font-family` list onto engine slots. Unknown names are
+/// skipped (no system font probe). If nothing matches, returns `None`
+/// and the current slot stays.
+pub fn parse_font_family(value: &str) -> Option<FontSlot> {
+    for part in value.split(',') {
+        let t = part
+            .trim()
+            .trim_matches(|c| c == '"' || c == '\'')
+            .to_ascii_lowercase();
+        if t.is_empty() {
+            continue;
+        }
+        match t.as_str() {
+            "monospace" | "ui-monospace" | "ui-mono" | "courier" | "courier new" | "menlo"
+            | "consolas" | "monaco" | "liberation mono" | "dejavu sans mono" | "noto sans mono" => {
+                return Some(FontSlot::Mono);
+            }
+            "serif" | "ui-serif" | "times" | "times new roman" | "georgia" | "liberation serif"
+            | "dejavu serif" | "noto serif" => {
+                return Some(FontSlot::Serif);
+            }
+            "sans-serif" | "sans" | "system-ui" | "ui-sans-serif" | "arial" | "helvetica"
+            | "segoe ui" | "ubuntu" | "cantarell" | "noto sans" | "dejavu sans"
+            | "liberation sans" => return Some(FontSlot::Sans),
+            "cursive" | "fantasy" => return Some(FontSlot::Sans),
+            _ => {}
+        }
+    }
+    None
 }
 
 fn apply_line_height(computed: &mut Computed, value: &str, ctx: LengthCtx) {
@@ -573,6 +622,24 @@ mod tests {
         };
         let c = style_element(&el, &Stylesheet::default(), &sheet);
         assert!((c.font_size - 24.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn font_family_maps_to_engine_slots() {
+        assert_eq!(
+            parse_font_family(r#""Comic Sans MS", monospace"#),
+            Some(FontSlot::Mono)
+        );
+        assert_eq!(parse_font_family("Georgia, serif"), Some(FontSlot::Serif));
+        assert_eq!(
+            parse_font_family("system-ui, sans-serif"),
+            Some(FontSlot::Sans)
+        );
+        assert_eq!(parse_font_family("Noto Color Emoji"), None);
+        let sheet = parse_stylesheet("p { font-family: ui-monospace, monospace }");
+        assert_eq!(style_tag("p", &sheet).font_family, FontSlot::Mono);
+        assert_eq!(ua_style("pre").font_family, FontSlot::Mono);
+        assert_eq!(ua_style("code").font_family, FontSlot::Mono);
     }
 
     #[test]

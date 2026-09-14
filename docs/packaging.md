@@ -22,6 +22,11 @@ amnesic default already exist.
 ## Build from source (any distro)
 
 ```bash
+# Arch / CachyOS — package from this tree
+cd packaging/arch
+FRIHART_LOCAL=1 makepkg -f --nocheck
+# then: sudo pacman -U frihart-0.1.0-1-*.pkg.tar.zst
+
 # Arch / CachyOS
 sudo pacman -S rust fontconfig freetype2
 # Fedora

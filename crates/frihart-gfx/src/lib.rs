@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use frihart_layout::LayoutBox;
 
+pub use frihart_style::FontSlot;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum DisplayOp {
     Fill {
@@ -21,6 +23,7 @@ pub enum DisplayOp {
         color: u32,
         size: f32,
         weight: u16,
+        family: FontSlot,
         text: String,
         href: Option<String>,
         max_width: f32,
@@ -149,6 +152,7 @@ pub fn from_boxes(boxes: &[LayoutBox]) -> DisplayList {
                 color: b.style.color,
                 size: b.style.font_size,
                 weight: b.style.font_weight,
+                family: b.style.font_family,
                 text: b.text.clone(),
                 href: b.href.clone(),
                 max_width: (b.w - inset * 2.0).max(1.0),

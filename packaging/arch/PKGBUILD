@@ -8,10 +8,21 @@ url="https://codeberg.org/ichbinlucasv/Frihart"
 license=('MIT' 'Apache')
 depends=('gcc-libs' 'fontconfig' 'freetype2')
 makedepends=('cargo' 'git')
-source=("$pkgname::git+https://codeberg.org/ichbinlucasv/Frihart.git#tag=v$pkgver")
-sha256sums=('SKIP')
+# Release: git tag. Local tree: FRIHART_LOCAL=1 makepkg -f --nocheck
+if [ "${FRIHART_LOCAL:-0}" = 1 ]; then
+  source=()
+  sha256sums=()
+else
+  source=("$pkgname::git+https://codeberg.org/ichbinlucasv/Frihart.git#tag=v$pkgver")
+  sha256sums=('SKIP')
+fi
 
 prepare() {
+  if [ "${FRIHART_LOCAL:-0}" = 1 ]; then
+    rm -rf "$srcdir/$pkgname"
+    mkdir -p "$srcdir/$pkgname"
+    git -C "$startdir/../.." archive HEAD | tar -x -C "$srcdir/$pkgname"
+  fi
   cd "$pkgname"
   export RUSTUP_TOOLCHAIN=stable
   cargo fetch --locked --target "$CARCH-unknown-linux-gnu"

@@ -191,6 +191,7 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use frihart_style::FontSlot;
 
     #[test]
     fn lays_out_heading() {
@@ -209,6 +210,25 @@ mod tests {
         );
         assert!(f.author_css.contains("font-size"));
         assert_eq!(f.boxes[0].style.font_size, 10.0);
+    }
+
+    #[test]
+    fn font_family_uses_engine_slots() {
+        let html =
+            r#"<style>p{font-family:"Comic Sans MS", monospace}</style><p>codey</p><pre>raw</pre>"#;
+        let f = layout_html(html, "", 400.0);
+        let p = f
+            .boxes
+            .iter()
+            .find(|b| b.text.contains("codey"))
+            .expect("p");
+        assert_eq!(p.style.font_family, FontSlot::Mono);
+        let pre = f
+            .boxes
+            .iter()
+            .find(|b| b.text.contains("raw"))
+            .expect("pre");
+        assert_eq!(pre.style.font_family, FontSlot::Mono);
     }
 
     #[test]
@@ -679,5 +699,19 @@ mod tests {
         let wide = layout_html_ex(html, "", 5120.0, 1440.0);
         assert!(wide.title.contains("WCAG") || wide.title.contains("Accessibility"));
         assert!(wide.boxes.iter().any(|b| b.text.contains("Perceivable")));
+    }
+
+    #[test]
+    fn rfc8446_is_readable() {
+        let html = include_str!("../testdata/rfc8446.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("Transport Layer Security") || f.title.contains("TLS"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("TLS") && blob.contains("1.3"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("Handshake") || blob.contains("ClientHello"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("TLS") || wide.title.contains("Transport Layer Security"));
     }
 }

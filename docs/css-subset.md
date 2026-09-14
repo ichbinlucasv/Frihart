@@ -33,10 +33,11 @@ not applied. That is honest: we do not fake a two-column table layout.
 - `border`, `border-width`, `border-color` (1px solid #333)
 - `line-height` (unitless, `px`, `em`)
 - `text-align` (`left`/`start`, `center`, `right`/`end`)
+- `font-family` mapped to engine slots `sans` / `serif` / `mono` only.
+  Unknown names (web fonts, emoji fonts) are skipped. No system inventory.
 
 ## Properties (next)
 
-- `font-family` (engine fonts only)
 - `list-style`, `white-space`
 
 UA extras: `hr` is a 2px rule fill; `caption` is centered 14px.

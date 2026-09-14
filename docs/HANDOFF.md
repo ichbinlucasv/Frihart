@@ -42,15 +42,16 @@ HTML → CSS → style → layout → display list → chrome paint. Tables are
 a column grid. `hr`, caption, definition lists (HTML5 `div` wrappers;
 a `dt`/`dd` that is one link is that hit). `dfn`/`acronym`/`cite` stay
 visible. CSS: `em`/`rem`/`vw`/
-`vh`/`%`, `font-weight`, `border`, `:link`. Nested `<strong>` is its
+`vh`/`%`, `font-weight`, `font-family` (engine slots), `border`, `:link`. Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
 UTF-8 text (not Latin-1 bytes). Heading with one destination (link-only
 or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 `about:sites` claimed: **example.com**, **RFC 1918**, **suckless.org**,
 **GNU philosophy**, **kernel.org**, **docs.kernel.org**, **ietf.org**,
 **rfc-editor.org** (index), **w3.org** (landing), **w3.org/TR** (index),
-**webarch**, **RFC 9110**, **WCAG 2.2**. Settings is the LibreWolf-stance
-page (native prefs, black/yellow).
+**webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**. Settings is the
+LibreWolf-stance page (native prefs, black/yellow). CSS `font-family`
+is engine slots only; letterboxing paint exists (pref off).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -70,25 +71,21 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D CSS leftovers, or RFC 8446.** Either
-   `font-family` from the engine font list only (no web fonts) and
-   letterboxing paint, or fetch live
-   `https://www.rfc-editor.org/rfc/rfc8446.html` (TLS 1.3) and claim
-   only if honestly readable.
+1. **This / next session — F.** Build and install the Arch PKGBUILD
+   locally (`FRIHART_LOCAL=1 makepkg`). Optional D: fetch live
+   `https://www.rfc-editor.org/rfc/rfc5280.html` (X.509 PKI).
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
-3. **Document CSS leftovers (still D, after a few more claims):**
-   `font-family` from the engine font list only (no web fonts);
-   `th` vs `td` weight if a table page needs it; letterboxing paint
-   (pref exists, paint does not).
+3. **CSS leftovers remaining:** `list-style`, `white-space`.
+   `font-family` slots and letterboxing paint are in. `th` is bold.
 4. **E — isolation you can audit.** Landlock child cannot `open()`
    `prefs.toml` (test in). IsolationKey + cookie jar include the
    circuit (direct/tor/i2p). Do **not** split a network process yet.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.
-6. **v0.2.0** when: named static list is claimed (13 already), worker
+6. **v0.2.0** when: named static list is claimed (14 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs.
 7. **Then — and only then — discuss G.** Recommendation: stay refuse
@@ -120,15 +117,14 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
 docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
-w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2.
+w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML.
 
 ## Next session — start here
 
-**D CSS leftovers** (`font-family` engine fonts only, letterboxing
-paint) **or** fetch live `https://www.rfc-editor.org/rfc/rfc8446.html`.
-Thirteen public sites are claimed. Isolation keys include the circuit
-(Tor/I2P/direct). Do not start a JS engine. G stays refuse. Then **F**
-— actually install the Arch PKGBUILD.
+**F: `FRIHART_LOCAL=1 makepkg` in `packaging/arch` and install the
+package.** Fourteen public sites are claimed. `font-family` engine
+slots and letterboxing paint are in. Optional D: RFC 5280. Do not
+start a JS engine. G stays refuse.
 
 ## Commands
 

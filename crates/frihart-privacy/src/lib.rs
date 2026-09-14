@@ -355,6 +355,18 @@ fn bool_label(v: bool) -> String {
     if v { "on".into() } else { "off".into() }
 }
 
+/// Tor-style letterbox buckets. Round the content inner size down so
+/// the window size is not a fingerprint. Chrome applies this to the
+/// content pane only.
+pub const LETTERBOX_STEP_W: i32 = 200;
+pub const LETTERBOX_STEP_H: i32 = 100;
+
+pub fn letterbox_size(avail_w: i32, avail_h: i32) -> (i32, i32) {
+    let w = (avail_w / LETTERBOX_STEP_W).max(1) * LETTERBOX_STEP_W;
+    let h = (avail_h / LETTERBOX_STEP_H).max(1) * LETTERBOX_STEP_H;
+    (w.min(avail_w), h.min(avail_h))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -427,5 +439,14 @@ mod tests {
             !p.decide(ResourceKind::Fingerprint(FingerprintSurface::WebGl))
                 .allowed()
         );
+    }
+
+    #[test]
+    fn letterbox_rounds_down_to_buckets() {
+        assert_eq!(letterbox_size(1920, 1080), (1800, 1000));
+        assert_eq!(letterbox_size(400, 250), (400, 200));
+        let (w, h) = letterbox_size(1000, 800);
+        assert_eq!(w % LETTERBOX_STEP_W, 0);
+        assert_eq!(h % LETTERBOX_STEP_H, 0);
     }
 }

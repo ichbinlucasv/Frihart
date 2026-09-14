@@ -8,7 +8,7 @@ use cosmic_text::{
     Attrs, Buffer, Family, FontSystem, Metrics as CosmicMetrics, Shaping, Weight, Wrap,
 };
 
-use frihart_style::{Align, Computed, Display};
+use frihart_style::{Align, Computed, Display, FontSlot};
 
 #[derive(Clone, Debug)]
 pub struct FlowItem {
@@ -64,6 +64,14 @@ thread_local! {
     static FONTS: RefCell<FontSystem> = RefCell::new(FontSystem::new());
 }
 
+fn cosmic_family(slot: FontSlot) -> Family<'static> {
+    match slot {
+        FontSlot::Sans => Family::SansSerif,
+        FontSlot::Serif => Family::Serif,
+        FontSlot::Mono => Family::Monospace,
+    }
+}
+
 pub fn measure_wrapped(
     text: &str,
     font_size: f32,
@@ -71,6 +79,7 @@ pub fn measure_wrapped(
     max_width: f32,
     wrap: bool,
     weight: u16,
+    family: FontSlot,
 ) -> f32 {
     if text.is_empty() {
         return line_height.max(1.0);
@@ -82,7 +91,7 @@ pub fn measure_wrapped(
         buffer.set_wrap(&mut fs, if wrap { Wrap::Word } else { Wrap::None });
         buffer.set_size(&mut fs, Some(max_width.max(1.0)), None);
         let attrs = Attrs::new()
-            .family(Family::SansSerif)
+            .family(cosmic_family(family))
             .weight(Weight(weight.max(1)));
         buffer.set_text(&mut fs, text, &attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut fs, false);
@@ -94,7 +103,13 @@ pub fn measure_wrapped(
     })
 }
 
-pub fn measure_advance(text: &str, font_size: f32, line_height: f32, weight: u16) -> f32 {
+pub fn measure_advance(
+    text: &str,
+    font_size: f32,
+    line_height: f32,
+    weight: u16,
+    family: FontSlot,
+) -> f32 {
     if text.is_empty() {
         return 0.0;
     }
@@ -105,7 +120,7 @@ pub fn measure_advance(text: &str, font_size: f32, line_height: f32, weight: u16
         buffer.set_wrap(&mut fs, Wrap::None);
         buffer.set_size(&mut fs, None, None);
         let attrs = Attrs::new()
-            .family(Family::SansSerif)
+            .family(cosmic_family(family))
             .weight(Weight(weight.max(1)));
         buffer.set_text(&mut fs, text, &attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut fs, false);
@@ -170,7 +185,13 @@ fn layout_inlines(items: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f
     let mut line_h = 0.0;
     for item in items {
         let lh = item.style.line_height();
-        let advance = measure_advance(&item.text, item.style.font_size, lh, item.style.font_weight);
+        let advance = measure_advance(
+            &item.text,
+            item.style.font_size,
+            lh,
+            item.style.font_weight,
+            item.style.font_family,
+        );
         if x > 0.0 && x + advance > vw {
             y += line_h;
             x = 0.0;
@@ -184,6 +205,7 @@ fn layout_inlines(items: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f
                 vw,
                 !item.preserve,
                 item.style.font_weight,
+                item.style.font_family,
             );
             out.push(box_from(item, 0.0, y, vw, h));
             y += h + item.style.margin;
@@ -248,6 +270,7 @@ fn layout_block(item: &FlowItem, vw: f32, y: f32) -> LayoutBox {
             inner_w,
             !item.preserve,
             item.style.font_weight,
+            item.style.font_family,
         )
     };
     let mut h = text_h + inset;
@@ -292,6 +315,7 @@ fn layout_table(rows: &[FlowItem], vw: f32, mut y: f32) -> (Vec<LayoutBox>, f32)
                 inner,
                 true,
                 row.style.font_weight,
+                row.style.font_family,
             ) + pad * 2.0;
             row_h = row_h.max(h);
         }
@@ -357,8 +381,17 @@ mod tests {
             800.0,
             true,
             400,
+            FontSlot::Sans,
         );
-        let narrow = measure_wrapped(&long, style.font_size, style.line_height(), 80.0, true, 400);
+        let narrow = measure_wrapped(
+            &long,
+            style.font_size,
+            style.line_height(),
+            80.0,
+            true,
+            400,
+            FontSlot::Sans,
+        );
         assert!(narrow > wide + style.line_height() * 0.5);
     }
 

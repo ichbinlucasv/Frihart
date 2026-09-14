@@ -606,6 +606,9 @@ A sustainable rhythm for a long project:
 - [x] w3.org/TR/webarch claimed (REC 2004, Abstract, Identification/Interaction)
 - [x] RFC 9110 claimed (HTTP Semantics, Abstract, Methods, pre ABNF)
 - [x] WCAG 2.2 claimed (REC 2024, Perceivable/Operable, Guideline 1.1)
+- [x] RFC 8446 claimed (TLS 1.3, Abstract, Handshake, pre pages)
+- [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
+- [x] Letterboxing paint (200×100 buckets, pref off by default)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)

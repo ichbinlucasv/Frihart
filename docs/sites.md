@@ -28,14 +28,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.w3.org/TR/webarch/ | Live HTML 2026-09-14. Title / h1 “Architecture of the World Wide Web, Volume One”. W3C Recommendation 15 December 2004. Abstract (identification / representation / protocols). Sections Identification, Interaction, Data Formats. `dt`/`dd` that is one link (“This version” / “Latest version”) is a hit. `dfn` / `acronym` stay in the text. Named-anchor headings are headings, not fake links. External CSS unused. Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc9110.html | Live HTML 2026-09-14. Title `RFC 9110: HTTP Semantics`. Abstract, Status of This Memo, Methods/GET, idempotent/safe. `pre` ABNF kept. rfc-editor links. External CSS unused. Also 5120×1440. Layout of this document is slow (large HTML + many `pre`); that is honest, not a skip. |
 | https://www.w3.org/TR/WCAG22/ | Live HTML 2026-09-14. Title / h1 “Web Content Accessibility Guidelines (WCAG) 2.2”. W3C Recommendation 12 December 2024. Abstract, Perceivable / Operable / Understandable / Robust. Guideline 1.1 Text Alternatives. This-version `dt`/`dd` link is a hit. External CSS unused. Also 5120×1440. |
+| https://www.rfc-editor.org/rfc/rfc8446.html | Live HTML 2026-09-14. Title from `span.h1`: “The Transport Layer Security (TLS) Protocol Version 1.3”. Abstract, Handshake/ClientHello, `pre` pages (same shape as RFC 1918). Also 5120×1440. |
 
 ## Target (open next)
 
-Thirteen public claims are in. Next named document:
-`https://www.rfc-editor.org/rfc/rfc8446.html` (TLS 1.3 — not opened),
-or CSS leftovers (`font-family` engine fonts only, letterboxing paint).
-Pick that or another static document, open it, claim only if the layout
-is honest.
+Fourteen public claims are in. Next named document:
+`https://www.rfc-editor.org/rfc/rfc5280.html` (Internet X.509 PKI — not
+opened). CSS `font-family` (engine slots) and letterboxing paint are in.
+Then **F**: actually install the Arch PKGBUILD.
 
 ## Will not claim
 

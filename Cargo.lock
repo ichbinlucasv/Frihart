@@ -883,6 +883,7 @@ name = "frihart-style"
 version = "0.1.0"
 dependencies = [
  "frihart-css",
+ "serde",
 ]
 
 [[package]]

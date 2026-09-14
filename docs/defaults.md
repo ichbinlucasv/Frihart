@@ -48,7 +48,7 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.safe_browsing` | `false` | Forced. No Google list. |
 | `privacy.clear_on_shutdown` | `false` | Optional session-only jar. |
 | `privacy.punycode_hosts` | `true` | IDN shown as xn--. |
-| `privacy.letterboxing` | `false` | Pref exists; paint later. |
+| `privacy.letterboxing` | `false` | Opt-in. Content pane rounds down to 200×100 buckets (Tor-style). Chrome chrome is full-width. |
 | `content.autoplay` | `false` | Nothing plays until asked. |
 | `network.captive_portal` | `false` | No connectivity probe. |
 | `network.connectivity_check` | `false` | Same. |
