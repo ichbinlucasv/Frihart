@@ -658,4 +658,26 @@ mod tests {
         assert!(wide.title.contains("HTTP Semantics"));
         assert!(wide.boxes.iter().any(|b| b.text.contains("Abstract")));
     }
+
+    #[test]
+    fn wcag22_is_readable() {
+        let html = include_str!("../testdata/wcag22.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("WCAG 2.2") || f.title.contains("Web Content Accessibility"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Web Content Accessibility Guidelines"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("Perceivable"));
+        assert!(blob.contains("Operable"));
+        assert!(blob.contains("Understandable") || blob.contains("Robust"));
+        assert!(blob.contains("Guideline 1.1") || blob.contains("Text Alternatives"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("/TR/WCAG22") || h.contains("REC-WCAG22"))
+        }));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(wide.title.contains("WCAG") || wide.title.contains("Accessibility"));
+        assert!(wide.boxes.iter().any(|b| b.text.contains("Perceivable")));
+    }
 }

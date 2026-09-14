@@ -49,15 +49,16 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 `about:sites` claimed: **example.com**, **RFC 1918**, **suckless.org**,
 **GNU philosophy**, **kernel.org**, **docs.kernel.org**, **ietf.org**,
 **rfc-editor.org** (index), **w3.org** (landing), **w3.org/TR** (index),
-**webarch**, **RFC 9110**. Settings is the LibreWolf-stance page (native
-prefs, black/yellow).
+**webarch**, **RFC 9110**, **WCAG 2.2**. Settings is the LibreWolf-stance
+page (native prefs, black/yellow).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
 `no_new_privs` + landlock + seccomp-bpf + rlimits (256M / 128 fds /
 nproc 0 / no core). Chrome never applies the sandbox. Audit test:
-a landlock child **cannot** `open()` a profile `prefs.toml`. Do not
-split a network process yet.
+a landlock child **cannot** `open()` a profile `prefs.toml`. The
+isolation key and cookie jar include the circuit (direct / tor /
+i2p). Do not split a network process yet.
 
 **F Linux homes**  
 Detect + Tails/Qubes-DVM ephemeral default + packaging notes. Packages
@@ -69,10 +70,11 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D only.** Fetch live
-   `https://www.w3.org/TR/WCAG22/` (WCAG 2.2). Lay out those exact
-   bytes. Fix what the subset mangles. Claim only if honestly readable.
-   Write why on `about:sites` and `docs/sites.md`.
+1. **This / next session — D CSS leftovers, or RFC 8446.** Either
+   `font-family` from the engine font list only (no web fonts) and
+   letterboxing paint, or fetch live
+   `https://www.rfc-editor.org/rfc/rfc8446.html` (TLS 1.3) and claim
+   only if honestly readable.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -81,11 +83,12 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
    `th` vs `td` weight if a table page needs it; letterboxing paint
    (pref exists, paint does not).
 4. **E — isolation you can audit.** Landlock child cannot `open()`
-   `prefs.toml` (test in). Do **not** split a network process yet.
+   `prefs.toml` (test in). IsolationKey + cookie jar include the
+   circuit (direct/tor/i2p). Do **not** split a network process yet.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.
-6. **v0.2.0** when: named static list is claimed (12 already), worker
+6. **v0.2.0** when: named static list is claimed (13 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs.
 7. **Then — and only then — discuss G.** Recommendation: stay refuse
@@ -117,16 +120,15 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
 docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
-w3.org/TR index, webarch, RFC 9110 HTML.
+w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2.
 
 ## Next session — start here
 
-**D: fetch live `https://www.w3.org/TR/WCAG22/` (or another unclaimed
-static document), lay out those bytes, claim only if readable.** Twelve
-public sites are claimed. Do not start a JS engine. The engine stays
-Frihart in Rust; G stays refuse. Do not start H/I. After WCAG (or a
-few more claims): CSS leftovers (`font-family` engine fonts only,
-letterboxing paint), then **F** — actually install the Arch PKGBUILD.
+**D CSS leftovers** (`font-family` engine fonts only, letterboxing
+paint) **or** fetch live `https://www.rfc-editor.org/rfc/rfc8446.html`.
+Thirteen public sites are claimed. Isolation keys include the circuit
+(Tor/I2P/direct). Do not start a JS engine. G stays refuse. Then **F**
+— actually install the Arch PKGBUILD.
 
 ## Commands
 

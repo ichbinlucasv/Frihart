@@ -116,8 +116,14 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.w3.org/TR/WCAG22/",
             name: "WCAG 2.2",
+            status: ClaimStatus::Claimed,
+            note: "REC 2024, Abstract, Perceivable/Operable/Understandable, Guideline 1.1; live HTML 2026-09-14",
+        },
+        SiteClaim {
+            url: "https://www.rfc-editor.org/rfc/rfc8446.html",
+            name: "RFC 8446 HTML",
             status: ClaimStatus::Target,
-            note: "Web Content Accessibility Guidelines — not opened yet",
+            note: "TLS 1.3 — not opened yet",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -161,7 +167,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 12);
+        assert_eq!(public_claimed(), 13);
         assert!(
             claims()
                 .iter()
@@ -224,6 +230,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc9110"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("WCAG22"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

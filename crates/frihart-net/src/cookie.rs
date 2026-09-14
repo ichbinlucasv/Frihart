@@ -3,7 +3,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use frihart_core::{ContainerId, Result, write_private_str};
+use frihart_core::{CircuitKind, ContainerId, Result, write_private_str};
 use frihart_privacy::{Policy, ResourceKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -16,6 +16,9 @@ pub struct StoredCookie {
     pub http_only: bool,
     pub partition_host: String,
     pub container: u32,
+    /// `direct` / `tor` / `i2p`. Missing in old jars means direct.
+    #[serde(default)]
+    pub circuit: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -50,12 +53,14 @@ impl CookieJar {
         self.cookies.clear();
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn store(
         &mut self,
         set_cookie: &str,
         request_url: &Url,
         first_party: &str,
         container: ContainerId,
+        circuit: CircuitKind,
         policy: &Policy,
         third_party: bool,
     ) {
@@ -80,21 +85,25 @@ impl CookieJar {
             http_only: parsed.http_only,
             partition_host: first_party.to_ascii_lowercase(),
             container: container.0,
+            circuit: circuit.slug().into(),
         };
         self.cookies.retain(|c| {
             !(c.name == stored.name
                 && c.domain == stored.domain
                 && c.container == stored.container
-                && c.partition_host == stored.partition_host)
+                && c.partition_host == stored.partition_host
+                && CircuitKind::from_slug(&c.circuit) == circuit)
         });
         self.cookies.push(stored);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn header_for(
         &self,
         url: &Url,
         first_party: &str,
         container: ContainerId,
+        circuit: CircuitKind,
         policy: &Policy,
         third_party: bool,
     ) -> Option<String> {
@@ -111,6 +120,9 @@ impl CookieJar {
         let mut pairs = Vec::new();
         for c in &self.cookies {
             if c.container != container.0 {
+                continue;
+            }
+            if CircuitKind::from_slug(&c.circuit) != circuit {
                 continue;
             }
             if c.partition_host != part {
@@ -205,11 +217,19 @@ mod tests {
             &url,
             "a.example",
             ContainerId(1),
+            CircuitKind::Direct,
             &policy,
             false,
         );
         let hdr = jar
-            .header_for(&url, "a.example", ContainerId(1), &policy, false)
+            .header_for(
+                &url,
+                "a.example",
+                ContainerId(1),
+                CircuitKind::Direct,
+                &policy,
+                false,
+            )
             .unwrap();
         assert_eq!(hdr, "sid=1");
     }
@@ -219,7 +239,15 @@ mod tests {
         let mut jar = CookieJar::default();
         let policy = Policy::new(Prefs::default());
         let url = Url::parse("https://tracker.test/p").unwrap();
-        jar.store("t=1", &url, "news.test", ContainerId(1), &policy, true);
+        jar.store(
+            "t=1",
+            &url,
+            "news.test",
+            ContainerId(1),
+            CircuitKind::Direct,
+            &policy,
+            true,
+        );
         assert!(jar.is_empty());
     }
 
@@ -233,12 +261,58 @@ mod tests {
             &url,
             "bank.example",
             ContainerId(3),
+            CircuitKind::Direct,
             &policy,
             false,
         );
         assert!(
-            jar.header_for(&url, "bank.example", ContainerId(4), &policy, false)
-                .is_none()
+            jar.header_for(
+                &url,
+                "bank.example",
+                ContainerId(4),
+                CircuitKind::Direct,
+                &policy,
+                false,
+            )
+            .is_none()
         );
+    }
+
+    #[test]
+    fn circuits_do_not_share_cookies() {
+        let mut jar = CookieJar::default();
+        let policy = Policy::new(Prefs::default());
+        let url = Url::parse("https://a.example/").unwrap();
+        jar.store(
+            "sid=tor",
+            &url,
+            "a.example",
+            ContainerId(1),
+            CircuitKind::Tor,
+            &policy,
+            false,
+        );
+        assert!(
+            jar.header_for(
+                &url,
+                "a.example",
+                ContainerId(1),
+                CircuitKind::Direct,
+                &policy,
+                false,
+            )
+            .is_none()
+        );
+        let hdr = jar
+            .header_for(
+                &url,
+                "a.example",
+                ContainerId(1),
+                CircuitKind::Tor,
+                &policy,
+                false,
+            )
+            .unwrap();
+        assert_eq!(hdr, "sid=tor");
     }
 }

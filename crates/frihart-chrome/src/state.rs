@@ -4,7 +4,7 @@ use frihart_autofill::Identity;
 use frihart_blocker::FilterEngine;
 use frihart_content::{Document, FetchRequest, PageItem, PrefToggle, SessionHistory, fetch, load};
 use frihart_core::{
-    ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
+    CircuitKind, ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
     parse_user_input,
 };
 use frihart_gfx::DisplayList;
@@ -31,6 +31,14 @@ impl Circuit {
             Self::Private => "private",
             Self::Tor => "tor",
             Self::I2p => "i2p",
+        }
+    }
+
+    pub fn kind(self) -> CircuitKind {
+        match self {
+            Self::Direct | Self::Private => CircuitKind::Direct,
+            Self::Tor => CircuitKind::Tor,
+            Self::I2p => CircuitKind::I2p,
         }
     }
 }
@@ -216,7 +224,7 @@ impl Browser {
         let keep: Vec<IsolationKey> = self
             .tabs
             .iter()
-            .map(|t| IsolationKey::from_url(&t.url(), t.container))
+            .map(|t| IsolationKey::from_url_on(&t.url(), t.container, t.circuit.kind()))
             .collect();
         self.workers.retain_keys(&keep);
     }
@@ -497,7 +505,7 @@ impl Browser {
         if tab.frame.is_some() && (tab.frame_w - width).abs() < 8.0 {
             return;
         }
-        let key = IsolationKey::from_url(&tab.url(), tab.container);
+        let key = IsolationKey::from_url_on(&tab.url(), tab.container, tab.circuit.kind());
         let out = self.workers.layout(
             key,
             &LayoutJob {
@@ -563,7 +571,7 @@ impl Browser {
         let doc = self.open_url(&url);
         let title = doc.title().to_string();
         let container = self.active_tab().container;
-        let key = IsolationKey::from_url(&url, container);
+        let key = IsolationKey::from_url_on(&url, container, self.active_tab().circuit.kind());
         if self.active_tab().circuit == Circuit::Direct {
             let _ = self.profile.record_visit(url.as_str(), &title);
         }

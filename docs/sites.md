@@ -27,13 +27,15 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.w3.org/TR/ | Live HTML 2026-09-14. Title / h1 “W3C standards and drafts”. Lead on technical reports. “Showing 1236 reports across 288 families.” Family `h2` (RDF, …) and spec `h3` heading-links (`RDF 1.2 Turtle` → `/TR/rdf12-turtle/`). Maturity (`Draft Standard`) and dates as text. Tags / Deliverers via HTML5 `dl` `div` wrappers. Filter form is GET (JS unused). External CSS unused (nav stacks). Also 5120×1440. |
 | https://www.w3.org/TR/webarch/ | Live HTML 2026-09-14. Title / h1 “Architecture of the World Wide Web, Volume One”. W3C Recommendation 15 December 2004. Abstract (identification / representation / protocols). Sections Identification, Interaction, Data Formats. `dt`/`dd` that is one link (“This version” / “Latest version”) is a hit. `dfn` / `acronym` stay in the text. Named-anchor headings are headings, not fake links. External CSS unused. Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc9110.html | Live HTML 2026-09-14. Title `RFC 9110: HTTP Semantics`. Abstract, Status of This Memo, Methods/GET, idempotent/safe. `pre` ABNF kept. rfc-editor links. External CSS unused. Also 5120×1440. Layout of this document is slow (large HTML + many `pre`); that is honest, not a skip. |
+| https://www.w3.org/TR/WCAG22/ | Live HTML 2026-09-14. Title / h1 “Web Content Accessibility Guidelines (WCAG) 2.2”. W3C Recommendation 12 December 2024. Abstract, Perceivable / Operable / Understandable / Robust. Guideline 1.1 Text Alternatives. This-version `dt`/`dd` link is a hit. External CSS unused. Also 5120×1440. |
 
 ## Target (open next)
 
-Twelve public claims are in. Next named document:
-`https://www.w3.org/TR/WCAG22/` (Web Content Accessibility Guidelines
-2.2 — not opened). Pick that or another static document, open it,
-claim only if the layout is honest.
+Thirteen public claims are in. Next named document:
+`https://www.rfc-editor.org/rfc/rfc8446.html` (TLS 1.3 — not opened),
+or CSS leftovers (`font-family` engine fonts only, letterboxing paint).
+Pick that or another static document, open it, claim only if the layout
+is honest.
 
 ## Will not claim
 

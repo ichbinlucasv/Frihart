@@ -147,7 +147,7 @@ See [docs/opsec.md](docs/opsec.md). Short version:
 - Tor tabs fail closed.
 - I2P tabs fail closed (opt-in; not the default).
 - Downloads are `0600` and never execute.
-- Isolation keys (scheme + host + container) from day one.
+- Isolation keys (scheme + host + container + circuit) from day one.
 - Process split and Linux sandbox before we grow JS.
 
 ## Original code, borrowed primitives

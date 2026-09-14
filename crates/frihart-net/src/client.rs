@@ -2,7 +2,9 @@ use std::io::Read;
 use std::time::Duration;
 
 use frihart_blocker::FilterEngine;
-use frihart_core::{ContainerId, FrihartError, HiddenNet, Result, hidden_net, sanitize_error};
+use frihart_core::{
+    CircuitKind, ContainerId, FrihartError, HiddenNet, Result, hidden_net, sanitize_error,
+};
 use frihart_privacy::{Policy, ResourceKind};
 
 use crate::cookie::CookieJar;
@@ -161,6 +163,11 @@ impl HttpClient for RustlsClient {
         container: ContainerId,
     ) -> Result<Response> {
         refuse_wrong_net(&mode, &request.url)?;
+        let circuit = match &mode {
+            FetchMode::Direct => CircuitKind::Direct,
+            FetchMode::Tor { .. } => CircuitKind::Tor,
+            FetchMode::I2p { .. } => CircuitKind::I2p,
+        };
         let agent;
         let agent_ref: &ureq::Agent = match &mode {
             FetchMode::Direct => &self.agent,
@@ -203,7 +210,9 @@ impl HttpClient for RustlsClient {
 
             request.url = current.clone();
             apply_identity_headers(&mut request, policy);
-            if let Some(cookie) = jar.header_for(&current, &first_party, container, policy, false) {
+            if let Some(cookie) =
+                jar.header_for(&current, &first_party, container, circuit, policy, false)
+            {
                 request.headers.push(("Cookie".into(), cookie));
             }
 
@@ -242,7 +251,15 @@ impl HttpClient for RustlsClient {
             for (name, value) in &headers {
                 if name.eq_ignore_ascii_case("set-cookie") {
                     let third = current.host_str().unwrap_or("") != first_party;
-                    jar.store(value, &current, &first_party, container, policy, third);
+                    jar.store(
+                        value,
+                        &current,
+                        &first_party,
+                        container,
+                        circuit,
+                        policy,
+                        third,
+                    );
                 }
             }
 

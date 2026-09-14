@@ -582,6 +582,7 @@ A sustainable rhythm for a long project:
 - [x] Table grid (cells in columns)
 - [x] Content sandbox: no_new_privs + landlock (child only)
 - [x] Landlock child cannot `open()` profile `prefs.toml`
+- [x] IsolationKey + cookie jar partitioned by circuit (direct/tor/i2p)
 - [x] seccomp-bpf deny-list on the content worker
 - [x] Find-in-page on the display list
 - [x] `frihart --content-worker` sandboxed layout process
@@ -604,6 +605,7 @@ A sustainable rhythm for a long project:
 - [x] w3.org/TR claimed (1236 reports / 288 families, heading-links, HTML5 `dl` `div`)
 - [x] w3.org/TR/webarch claimed (REC 2004, Abstract, Identification/Interaction)
 - [x] RFC 9110 claimed (HTTP Semantics, Abstract, Methods, pre ABNF)
+- [x] WCAG 2.2 claimed (REC 2024, Perceivable/Operable, Guideline 1.1)
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)

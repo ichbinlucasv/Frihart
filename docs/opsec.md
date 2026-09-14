@@ -39,7 +39,7 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
 - Frozen User-Agent. No Client Hints.
 - No `Referer` path. No DNT bit. GPC may be sent.
 - First-party cookies, partitioned by isolation key (scheme + host +
-  container).
+  container + circuit). Tor and I2P never share the clearnet jar.
 - Blocker on at install. Lists are local. No Frihart list server.
 
 ## Memory and process

@@ -12,7 +12,7 @@ mod opsec;
 mod urls;
 
 pub use error::{FrihartError, Result};
-pub use ids::{ContainerId, DocumentId, IsolationKey, TabId, WindowId};
+pub use ids::{CircuitKind, ContainerId, DocumentId, IsolationKey, TabId, WindowId};
 pub use license::{licensed_locally, linux_is_free, list_price_eur, price_label};
 pub use opsec::{
     ensure_private_dir, safe_host, sanitize_error, shred_file, shred_tree, write_private,

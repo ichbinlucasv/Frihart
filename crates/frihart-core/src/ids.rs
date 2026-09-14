@@ -85,12 +85,41 @@ impl fmt::Display for ContainerId {
     }
 }
 
-/// Site isolation key: scheme + host + container.
+/// Network circuit. Private windows still use Direct on the wire;
+/// amnesia is the profile, not a fourth net.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Hash)]
+pub enum CircuitKind {
+    #[default]
+    Direct,
+    Tor,
+    I2p,
+}
+
+impl CircuitKind {
+    pub fn slug(self) -> &'static str {
+        match self {
+            Self::Direct => "direct",
+            Self::Tor => "tor",
+            Self::I2p => "i2p",
+        }
+    }
+
+    pub fn from_slug(s: &str) -> Self {
+        match s {
+            "tor" => Self::Tor,
+            "i2p" => Self::I2p,
+            _ => Self::Direct,
+        }
+    }
+}
+
+/// Site isolation key: scheme + host + container + circuit.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct IsolationKey {
     pub scheme: String,
     pub host: String,
     pub container: ContainerId,
+    pub circuit: CircuitKind,
 }
 
 impl IsolationKey {
@@ -99,19 +128,36 @@ impl IsolationKey {
             scheme: scheme.into(),
             host: host.into(),
             container,
+            circuit: CircuitKind::Direct,
         }
     }
 
+    pub fn with_circuit(mut self, circuit: CircuitKind) -> Self {
+        self.circuit = circuit;
+        self
+    }
+
     pub fn from_url(url: &url::Url, container: ContainerId) -> Self {
+        Self::from_url_on(url, container, CircuitKind::Direct)
+    }
+
+    pub fn from_url_on(url: &url::Url, container: ContainerId, circuit: CircuitKind) -> Self {
         Self::new(
             url.scheme(),
             url.host_str().unwrap_or("").to_ascii_lowercase(),
             container,
         )
+        .with_circuit(circuit)
     }
 
     pub fn label(&self) -> String {
-        format!("{}://{} · {}", self.scheme, self.host, self.container)
+        format!(
+            "{}://{} · {} · {}",
+            self.scheme,
+            self.host,
+            self.container,
+            self.circuit.slug()
+        )
     }
 }
 
@@ -158,5 +204,16 @@ mod tests {
         );
         assert_ne!(a, b);
         assert_ne!(a, c);
+    }
+
+    #[test]
+    fn circuit_splits_isolation() {
+        let url = url::Url::parse("https://a.test").unwrap();
+        let direct = IsolationKey::from_url(&url, ContainerId::PERSONAL);
+        let tor = IsolationKey::from_url_on(&url, ContainerId::PERSONAL, CircuitKind::Tor);
+        let i2p = IsolationKey::from_url_on(&url, ContainerId::PERSONAL, CircuitKind::I2p);
+        assert_ne!(direct, tor);
+        assert_ne!(tor, i2p);
+        assert_eq!(direct.circuit, CircuitKind::Direct);
     }
 }

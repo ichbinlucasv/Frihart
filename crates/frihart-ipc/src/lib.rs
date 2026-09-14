@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use frihart_core::{ContainerId, IsolationKey, TabId};
+use frihart_core::{CircuitKind, ContainerId, IsolationKey, TabId};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProcessKind {
@@ -54,6 +54,8 @@ pub struct IsolationWire {
     pub scheme: String,
     pub host: String,
     pub container: u32,
+    #[serde(default)]
+    pub circuit: String,
 }
 
 impl IsolationWire {
@@ -62,6 +64,7 @@ impl IsolationWire {
             scheme: key.scheme.clone(),
             host: key.host.clone(),
             container: key.container.0,
+            circuit: key.circuit.slug().into(),
         }
     }
 
@@ -71,6 +74,7 @@ impl IsolationWire {
             self.host.clone(),
             ContainerId(self.container),
         )
+        .with_circuit(CircuitKind::from_slug(&self.circuit))
     }
 }
 
