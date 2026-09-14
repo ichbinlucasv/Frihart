@@ -29,13 +29,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.rfc-editor.org/rfc/rfc9110.html | Live HTML 2026-09-14. Title `RFC 9110: HTTP Semantics`. Abstract, Status of This Memo, Methods/GET, idempotent/safe. `pre` ABNF kept. rfc-editor links. External CSS unused. Also 5120×1440. Layout of this document is slow (large HTML + many `pre`); that is honest, not a skip. |
 | https://www.w3.org/TR/WCAG22/ | Live HTML 2026-09-14. Title / h1 “Web Content Accessibility Guidelines (WCAG) 2.2”. W3C Recommendation 12 December 2024. Abstract, Perceivable / Operable / Understandable / Robust. Guideline 1.1 Text Alternatives. This-version `dt`/`dd` link is a hit. External CSS unused. Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc8446.html | Live HTML 2026-09-14. Title from `span.h1`: “The Transport Layer Security (TLS) Protocol Version 1.3”. Abstract, Handshake/ClientHello, `pre` pages (same shape as RFC 1918). Also 5120×1440. |
+| https://www.rfc-editor.org/rfc/rfc5280.html | Live HTML 2026-09-14. Title from `span.h1`: “Internet X.509 Public Key Infrastructure Certificate…”. Abstract, Certificate/CRL, `pre` pages. Also 5120×1440. |
 
 ## Target (open next)
 
-Fourteen public claims are in. Next named document:
-`https://www.rfc-editor.org/rfc/rfc5280.html` (Internet X.509 PKI — not
-opened). CSS `font-family` (engine slots) and letterboxing paint are in.
-Then **F**: actually install the Arch PKGBUILD.
+Fifteen public claims are in. Next named document:
+`https://www.rfc-editor.org/rfc/rfc8032.html` (EdDSA / Ed25519 — not
+opened). CSS leftovers: `list-style`, `white-space`. Arch package
+builds; install is `sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

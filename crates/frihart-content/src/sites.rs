@@ -128,8 +128,14 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.rfc-editor.org/rfc/rfc5280.html",
             name: "RFC 5280 HTML",
+            status: ClaimStatus::Claimed,
+            note: "X.509 PKI, Abstract, Certificate/CRL, pre pages; live HTML 2026-09-14",
+        },
+        SiteClaim {
+            url: "https://www.rfc-editor.org/rfc/rfc8032.html",
+            name: "RFC 8032 HTML",
             status: ClaimStatus::Target,
-            note: "Internet X.509 PKI — not opened yet",
+            note: "EdDSA (Ed25519) — not opened yet",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -173,7 +179,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 14);
+        assert_eq!(public_claimed(), 15);
         assert!(
             claims()
                 .iter()
@@ -246,6 +252,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc8446"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc5280"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

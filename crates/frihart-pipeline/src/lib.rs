@@ -714,4 +714,26 @@ mod tests {
         let wide = layout_html_ex(html, "", 5120.0, 1440.0);
         assert!(wide.title.contains("TLS") || wide.title.contains("Transport Layer Security"));
     }
+
+    #[test]
+    fn rfc5280_is_readable() {
+        let html = include_str!("../testdata/rfc5280.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(
+            f.title.contains("X.509")
+                || f.title.contains("Public Key Infrastructure")
+                || f.title.contains("Certificate")
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("X.509"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("Certificate") || blob.contains("CRL"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(
+            wide.title.contains("X.509")
+                || wide.title.contains("Certificate")
+                || wide.title.contains("Public Key")
+        );
+    }
 }
