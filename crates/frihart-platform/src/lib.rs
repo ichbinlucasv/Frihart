@@ -251,6 +251,94 @@ pub fn detect_i2p() -> I2pPresence {
     }
 }
 
+/// Local tools this community already runs. Frihart detects and may
+/// launch GUIs. It does not vendor messengers, wallets, or radios.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StackTool {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub job: &'static str,
+    pub launchable: bool,
+    pub path: Option<PathBuf>,
+}
+
+pub fn detect_community_stack() -> Vec<StackTool> {
+    const TOOLS: &[(&str, &str, &str, bool, &[&str])] = &[
+        (
+            "tor",
+            "Tor",
+            "anonymous clearnet and .onion",
+            false,
+            &["tor"],
+        ),
+        (
+            "i2p",
+            "I2P",
+            "hidden services (.i2p)",
+            false,
+            &["i2pd", "i2prouter"],
+        ),
+        ("gpg", "GnuPG", "OpenPGP", false, &["gpg", "gpg2"]),
+        ("age", "age", "file encryption", false, &["age"]),
+        ("pass", "pass", "passwords (external)", true, &["pass"]),
+        (
+            "keepassxc",
+            "KeePassXC",
+            "passwords (external)",
+            true,
+            &["keepassxc"],
+        ),
+        (
+            "simplex",
+            "SimpleX Chat",
+            "messenger with no user identifiers",
+            true,
+            &["simplex-chat", "simplex"],
+        ),
+        (
+            "session",
+            "Session",
+            "messenger",
+            true,
+            &["session-desktop", "session"],
+        ),
+        (
+            "meshtastic",
+            "Meshtastic",
+            "LoRa mesh — not a browser job",
+            false,
+            &["meshtastic"],
+        ),
+        (
+            "monero",
+            "Monero wallet",
+            "external only — Frihart is not a wallet",
+            true,
+            &["monero-wallet-gui", "monero-wallet-cli"],
+        ),
+        (
+            "onionshare",
+            "OnionShare",
+            "anonymous file send",
+            true,
+            &["onionshare", "onionshare-cli"],
+        ),
+    ];
+    TOOLS
+        .iter()
+        .map(|(id, name, job, launchable, bins)| {
+            let path = bins.iter().find_map(|b| find_in_path(b));
+            StackTool {
+                id,
+                name,
+                job,
+                launchable: *launchable,
+                path,
+            }
+        })
+        .collect()
+}
+
 /// Official VPN CLIs we are willing to hook, never to reimplement.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VpnPresence {

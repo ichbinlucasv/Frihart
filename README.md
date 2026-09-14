@@ -139,6 +139,7 @@ Private windows use memory only. Files are `0600` / dirs `0700`.
 | --- | --- |
 | [PHILOSOPHY.md](PHILOSOPHY.md) | Constitution. Libertarian, LibreWolf stance |
 | [docs/stance.md](docs/stance.md) | Compatibility floor, two modes, money, DNS, quantum |
+| [docs/community.md](docs/community.md) | Tor/I2P/Monero/GPG/SimpleX — launch, don't embed |
 | [ROADMAP.md](ROADMAP.md) | Campaigns A–I and crate phases 0–15 |
 | [docs/HANDOFF.md](docs/HANDOFF.md) | Where to continue (A–C closed) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Crate map |

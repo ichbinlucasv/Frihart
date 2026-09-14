@@ -340,7 +340,16 @@ impl Browser {
             parse_user_input(override_url).ok()
         } else {
             let engine = id.as_deref().and_then(by_id).unwrap_or_else(primary);
-            resolve(engine, query)
+            if engine.id == "searxng" {
+                let t = self.profile.prefs().search.searxng.clone();
+                if t.is_empty() {
+                    parse_user_input("about:search").ok()
+                } else {
+                    parse_user_input(&t.replace("{q}", query).replace("%s", query)).ok()
+                }
+            } else {
+                resolve(engine, query)
+            }
         };
         match url {
             Some(url) => {
@@ -542,6 +551,10 @@ impl Browser {
                 self.launch_pass(id);
                 return;
             }
+            if let Some(id) = spec.strip_prefix("stack/") {
+                self.launch_stack(id);
+                return;
+            }
             if let Some(target) = spec.strip_prefix("unbookmark/") {
                 self.remove_bookmark(target);
                 return;
@@ -726,6 +739,24 @@ impl Browser {
             let _ = frihart_platform::launch_local(&mgr.path);
         }
         self.status.clear();
+    }
+
+    pub fn launch_stack(&mut self, id: &str) {
+        let found = frihart_platform::detect_community_stack();
+        let Some(tool) = found.iter().find(|t| t.id == id) else {
+            self.status = "not found".into();
+            return;
+        };
+        if !tool.launchable {
+            self.status = "not a launcher".into();
+            return;
+        }
+        if let Some(path) = &tool.path {
+            let _ = frihart_platform::launch_local(path);
+            self.status.clear();
+        } else {
+            self.status = format!("{} not on PATH", tool.name);
+        }
     }
 
     pub fn focus_field(&mut self, index: usize) {

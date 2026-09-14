@@ -46,6 +46,15 @@ anonymity. Tor/I2P are anonymity plus a circuit.
 
 We do not bundle Tor or I2P. We do not start a second daemon on Tails.
 
+The first audience is the people who already live this way — Monero,
+I2P, Tor, GnuPG, SimpleX, Session, Meshtastic, Tails, Qubes. The
+browser joins that stack. It does not replace it. Details:
+[community.md](community.md).
+
+**Hidden names:** `.onion` is Tor-tab only. `.i2p` is I2P-tab only.
+Direct tabs never resolve those labels (no system DNS leak). I2P tabs
+refuse clearnet; use Tor if you need anonymous public HTTP.
+
 ## Money
 
 Linux stays **free**. There is no ad tier, no BAT, no sponsored search.

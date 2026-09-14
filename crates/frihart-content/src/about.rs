@@ -106,6 +106,8 @@ pub fn is_known(name: &str) -> bool {
             | "tor"
             | "i2p"
             | "dns"
+            | "stack"
+            | "community"
             | "vpn"
             | "extensions"
             | "addons"
@@ -151,6 +153,7 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "tor" => tor(url, prefs),
         "i2p" => i2p(url, prefs),
         "dns" => dns(url, prefs),
+        "stack" | "community" => stack(url),
         "vpn" => vpn(url, prefs),
         "extensions" | "addons" => extensions(url, profile),
         "welcome" => welcome(url, prefs),
@@ -291,6 +294,10 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
         Block::Link {
             label: "DNS".into(),
             href: "about:dns".into(),
+        },
+        Block::Link {
+            label: "Stack".into(),
+            href: "about:stack".into(),
         },
         Block::Link {
             label: "VPN".into(),
@@ -1343,6 +1350,14 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         Block::Heading("search".into()),
         kv("primary", &prefs.search.primary),
         kv("secondary", &prefs.search.secondary),
+        kv(
+            "searxng",
+            if prefs.search.searxng.is_empty() {
+                "(empty)"
+            } else {
+                &prefs.search.searxng
+            },
+        ),
         Block::Heading("tor".into()),
         kv("enabled", bool_str(prefs.tor.enabled)),
         kv("socks_host", &prefs.tor.socks_host),
@@ -1818,6 +1833,19 @@ fn search(url: &Url, prefs: &Prefs) -> Document {
             key: "Secondary".into(),
             value: prefs.search.secondary.clone(),
         },
+        Block::KeyValue {
+            key: "SearXNG instance".into(),
+            value: if prefs.search.searxng.is_empty() {
+                "(empty — set search.searxng to your instance URL with {q})".into()
+            } else {
+                prefs.search.searxng.clone()
+            },
+        },
+        Block::Note(
+            "We do not pick a public SearXNG for you. That would be a \
+             resolver we have a relationship with. Host yours, or keep Swisscows."
+                .into(),
+        ),
         Block::Heading("Engines we ship".into()),
     ];
     for engine in frihart_search::catalog() {
@@ -1992,6 +2020,58 @@ fn dns(url: &Url, prefs: &Prefs) -> Document {
                     .into(),
             ),
         ],
+    })
+}
+
+fn stack(url: &Url) -> Document {
+    let tools = frihart_platform::detect_community_stack();
+    let mut blocks = vec![
+        Block::Hero {
+            title: "Stack".into(),
+            subtitle: "Your tools. External. Frihart does not vendor them.".into(),
+        },
+        Block::Paragraph(
+            "This community already runs Tor, I2P, GnuPG, SimpleX, Session, \
+             Meshtastic, and Monero. The browser must not leak .onion/.i2p \
+             names onto clearnet DNS, and must not become a wallet, a \
+             messenger, or a radio. Launch what is on PATH. Install the rest \
+             on the OS."
+                .into(),
+        ),
+        Block::Note(
+            ".onion opens only on a Tor tab. .i2p opens only on an I2P tab. \
+             I2P tabs refuse clearnet. Private is amnesia, not anonymity."
+                .into(),
+        ),
+    ];
+    for tool in tools {
+        let value = match &tool.path {
+            Some(p) => format!("{} — {}", tool.job, p.display()),
+            None => format!("{} — not on PATH", tool.job),
+        };
+        blocks.push(Block::KeyValue {
+            key: tool.name.into(),
+            value,
+        });
+        if tool.launchable && tool.path.is_some() {
+            blocks.push(Block::Link {
+                label: format!("Launch {}", tool.name),
+                href: format!("frihart:stack/{}", tool.id),
+            });
+        }
+    }
+    blocks.push(Block::Link {
+        label: "Tor".into(),
+        href: "about:tor".into(),
+    });
+    blocks.push(Block::Link {
+        label: "I2P".into(),
+        href: "about:i2p".into(),
+    });
+    Document::internal(InternalPage {
+        title: "Stack".into(),
+        url: url.clone(),
+        blocks,
     })
 }
 

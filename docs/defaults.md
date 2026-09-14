@@ -73,6 +73,7 @@ The implementing type is `frihart_config::Prefs`.
 | --- | --- | --- |
 | `search.primary` | `swisscows` | Swiss, no-tracking search. Chosen as the product default. |
 | `search.secondary` | `duckduckgo` | Fallback. Also privacy-focused. |
+| `search.searxng` | empty | Your SearXNG URL with `{q}`. We do not ship a public instance. |
 
 Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
 

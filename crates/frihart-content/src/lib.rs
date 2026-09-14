@@ -9,7 +9,9 @@ mod sites;
 
 use frihart_autofill::{FieldKind, classify};
 use frihart_blocker::FilterEngine;
-use frihart_core::{ContainerId, UrlKind, about_page, classify_url, is_script_scheme, safe_host};
+use frihart_core::{
+    ContainerId, UrlKind, about_page, classify_url, hidden_net, is_script_scheme, safe_host,
+};
 use frihart_html::{document_title, parse, visible_blocks};
 use frihart_net::{
     CookieJar, DownloadLog, DownloadRecord, FetchMode, HttpClient, Request, RustlsClient,
@@ -77,7 +79,7 @@ pub fn fetch(req: FetchRequest<'_>) -> Document {
         return load(req.url, req.profile);
     }
     let policy = Policy::from_prefs(req.profile.prefs());
-    if req.url.scheme() != "https" && policy.https_only() {
+    if req.url.scheme() != "https" && policy.https_only() && hidden_net(req.url).is_none() {
         return https_only_or_empty(req.url, req.profile.prefs());
     }
     match req.client.send(
@@ -128,6 +130,10 @@ fn network_error(url: &url::Url, err: frihart_core::FrihartError) -> Document {
             Block::Link {
                 label: "I2P".into(),
                 href: "about:i2p".into(),
+            },
+            Block::Link {
+                label: "Stack".into(),
+                href: "about:stack".into(),
             },
             Block::Link {
                 label: "Privacy".into(),
@@ -289,6 +295,7 @@ mod tests {
         assert_eq!(load(&about_url("sites"), &profile).title(), "Sites");
         assert_eq!(load(&about_url("i2p"), &profile).title(), "I2P");
         assert_eq!(load(&about_url("dns"), &profile).title(), "DNS");
+        assert_eq!(load(&about_url("stack"), &profile).title(), "Stack");
     }
 
     #[test]

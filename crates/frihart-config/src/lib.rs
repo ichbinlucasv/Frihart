@@ -240,6 +240,8 @@ impl Default for TranslatePrefs {
 pub struct SearchPrefs {
     pub primary: String,
     pub secondary: String,
+    /// Your SearXNG search URL with `{q}`. Empty = not configured.
+    pub searxng: String,
 }
 
 impl Default for SearchPrefs {
@@ -247,6 +249,7 @@ impl Default for SearchPrefs {
         Self {
             primary: "swisscows".into(),
             secondary: "duckduckgo".into(),
+            searxng: String::new(),
         }
     }
 }

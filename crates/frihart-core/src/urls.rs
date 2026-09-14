@@ -13,6 +13,29 @@ pub enum UrlKind {
     Other,
 }
 
+/// Hidden-service name. Classification is string-only — no DNS.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HiddenNet {
+    Onion,
+    I2p,
+}
+
+/// `.onion` / `.i2p` from the host label. Never looks up a name.
+pub fn hidden_net(url: &Url) -> Option<HiddenNet> {
+    hidden_net_host(url.host_str()?)
+}
+
+pub fn hidden_net_host(host: &str) -> Option<HiddenNet> {
+    let h = host.trim_end_matches('.').to_ascii_lowercase();
+    if h.ends_with(".onion") {
+        Some(HiddenNet::Onion)
+    } else if h.ends_with(".i2p") {
+        Some(HiddenNet::I2p)
+    } else {
+        None
+    }
+}
+
 /// Parse what the user typed into the URL bar.
 pub fn parse_user_input(input: &str) -> Result<Url> {
     try_parse_user_input(input).ok_or_else(|| FrihartError::InvalidUrl(input.to_string()))
@@ -267,5 +290,16 @@ mod tests {
         assert_eq!(classify_url(&url), UrlKind::Other);
         let bypass = parse_user_input("javascript://x.test/%0Aalert(1)").unwrap();
         assert!(is_script_scheme(bypass.scheme()));
+    }
+
+    #[test]
+    fn onion_and_i2p_are_hidden_names() {
+        let onion = parse_user_input("http://www.example.onion/").unwrap();
+        assert_eq!(hidden_net(&onion), Some(HiddenNet::Onion));
+        assert!(looks_like_destination("www.example.onion"));
+        let i2p = parse_user_input("http://zzz.i2p/").unwrap();
+        assert_eq!(hidden_net(&i2p), Some(HiddenNet::I2p));
+        assert_eq!(hidden_net_host("docs.example.com"), None);
+        assert_eq!(hidden_net_host("zzz.i2p."), Some(HiddenNet::I2p));
     }
 }

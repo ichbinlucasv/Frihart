@@ -2,7 +2,7 @@ use std::io::Read;
 use std::time::Duration;
 
 use frihart_blocker::FilterEngine;
-use frihart_core::{ContainerId, FrihartError, Result, sanitize_error};
+use frihart_core::{ContainerId, FrihartError, HiddenNet, Result, hidden_net, sanitize_error};
 use frihart_privacy::{Policy, ResourceKind};
 
 use crate::cookie::CookieJar;
@@ -13,6 +13,7 @@ use crate::{HttpClient, Request, Response};
 pub enum NetFail {
     Tor,
     I2p,
+    WrongNet,
     Tls,
     Blocked,
     Timeout,
@@ -21,7 +22,9 @@ pub enum NetFail {
 
 pub fn classify_error(err: &FrihartError) -> NetFail {
     let s = err.to_string().to_ascii_lowercase();
-    if s.contains("tor") {
+    if s.contains("wrong net") {
+        NetFail::WrongNet
+    } else if s.contains("tor") {
         NetFail::Tor
     } else if s.contains("i2p") {
         NetFail::I2p
@@ -41,6 +44,7 @@ impl NetFail {
         match self {
             Self::Tor => "Tor",
             Self::I2p => "I2P",
+            Self::WrongNet => "Wrong network",
             Self::Tls => "Certificate",
             Self::Blocked => "Blocked",
             Self::Timeout => "Timeout",
@@ -52,6 +56,9 @@ impl NetFail {
         match self {
             Self::Tor => "SOCKS refused. No clearnet fallback. Start the system tor daemon.",
             Self::I2p => "SOCKS refused. No clearnet fallback. Start the system i2pd/I2P daemon.",
+            Self::WrongNet => {
+                ".onion is Tor only. .i2p is I2P only. Clearnet DNS is never used for those names."
+            }
             Self::Tls => "TLS failed. Frihart will not click through a bad certificate.",
             Self::Blocked => "Policy or the native blocker stopped this request.",
             Self::Timeout => "The host did not answer in time.",
@@ -119,6 +126,30 @@ fn socks5_agent(socks: &str, kind: &str) -> Result<ureq::Agent> {
         .build())
 }
 
+/// No DNS, no socket: hidden names stay on the matching circuit.
+pub fn refuse_wrong_net(mode: &FetchMode, url: &url::Url) -> Result<()> {
+    match (mode, hidden_net(url)) {
+        (FetchMode::Direct, Some(HiddenNet::Onion)) => Err(FrihartError::network(
+            "wrong net: .onion stays on a Tor tab (no clearnet DNS)",
+        )),
+        (FetchMode::Direct, Some(HiddenNet::I2p)) => Err(FrihartError::network(
+            "wrong net: .i2p stays on an I2P tab (no clearnet DNS)",
+        )),
+        (FetchMode::Tor { .. }, Some(HiddenNet::I2p)) => Err(FrihartError::network(
+            "wrong net: .i2p is not reachable via Tor",
+        )),
+        (FetchMode::I2p { .. }, Some(HiddenNet::Onion)) => Err(FrihartError::network(
+            "wrong net: .onion is not reachable via I2P",
+        )),
+        (FetchMode::I2p { .. }, None) => Err(FrihartError::network(
+            "wrong net: I2P tabs are for .i2p names; use Tor for anonymous clearnet",
+        )),
+        (FetchMode::Tor { .. }, Some(HiddenNet::Onion) | None)
+        | (FetchMode::I2p { .. }, Some(HiddenNet::I2p))
+        | (FetchMode::Direct, None) => Ok(()),
+    }
+}
+
 impl HttpClient for RustlsClient {
     fn send(
         &self,
@@ -129,6 +160,7 @@ impl HttpClient for RustlsClient {
         mode: FetchMode,
         container: ContainerId,
     ) -> Result<Response> {
+        refuse_wrong_net(&mode, &request.url)?;
         let agent;
         let agent_ref: &ureq::Agent = match &mode {
             FetchMode::Direct => &self.agent,
@@ -156,7 +188,9 @@ impl HttpClient for RustlsClient {
             if crate::private_redirect(&first_party, current.host_str().unwrap_or("")) {
                 return Err(FrihartError::network("blocked private"));
             }
-            let https = current.scheme() == "https";
+            // .onion / .i2p http is inside an encrypted circuit. HTTPS-only
+            // must not force those names onto clearnet DNS.
+            let https = current.scheme() == "https" || hidden_net(&current).is_some();
             if !policy
                 .decide(ResourceKind::OutboundHttp { https })
                 .allowed()
@@ -339,9 +373,24 @@ mod tests {
         let mut jar = CookieJar::default();
         let blocker = FilterEngine::new(true);
         let req = Request::get(Url::parse("https://example.com").unwrap());
-        let empty = client
+        let err = client
             .send(
                 req,
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::I2p {
+                    socks: "127.0.0.1:4447".into(),
+                },
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        assert!(err.to_string().contains("wrong net"));
+        assert_eq!(classify_error(&err), NetFail::WrongNet);
+        let hidden = Request::get(Url::parse("http://zzz.i2p/").unwrap());
+        let empty = client
+            .send(
+                hidden,
                 &policy,
                 &mut jar,
                 &blocker,
@@ -356,6 +405,54 @@ mod tests {
             classify_error(&FrihartError::network("i2p refused: no socks")),
             NetFail::I2p
         );
+    }
+
+    #[test]
+    fn onion_never_hits_clearnet_dns() {
+        let client = RustlsClient::new();
+        let policy = Policy::new(Prefs::default());
+        let mut jar = CookieJar::default();
+        let blocker = FilterEngine::new(true);
+        let onion = Request::get(Url::parse("http://www.example.onion/").unwrap());
+        let direct = client
+            .send(
+                onion.clone(),
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::Direct,
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        assert!(direct.to_string().contains("wrong net"));
+        assert!(direct.to_string().contains("onion"));
+        let i2p_tab = client
+            .send(
+                onion,
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::I2p {
+                    socks: "127.0.0.1:4447".into(),
+                },
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        assert!(i2p_tab.to_string().contains("wrong net"));
+        let i2p_name = Request::get(Url::parse("http://zzz.i2p/").unwrap());
+        let on_tor = client
+            .send(
+                i2p_name,
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::Tor {
+                    socks: "127.0.0.1:9050".into(),
+                },
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        assert!(on_tor.to_string().contains(".i2p"));
     }
 
     #[test]

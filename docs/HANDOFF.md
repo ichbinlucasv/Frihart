@@ -145,7 +145,8 @@ cargo run -- --i2p
 
 `PHILOSOPHY.md`, `docs/stance.md`, `ROADMAP.md`, `ARCHITECTURE.md`,
 `docs/opsec.md`, `docs/distros.md`, `docs/engine.md`,
-`docs/css-subset.md`, `docs/sites.md`, `docs/defaults.md`.
+`docs/css-subset.md`, `docs/sites.md`, `docs/defaults.md`, `docs/stance.md`,
+`docs/community.md`.
 
 ## Hard rules
 
@@ -164,4 +165,4 @@ cargo run -- --i2p
 
 `about:home`, `about:campaigns`, `about:engine`, `about:sites`,
 `about:processes`, `about:linux`, `about:script`, `about:shred`,
-`about:tor`, `about:i2p`, `about:dns`.
+`about:tor`, `about:i2p`, `about:dns`, `about:stack`.

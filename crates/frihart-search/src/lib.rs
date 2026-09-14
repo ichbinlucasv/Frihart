@@ -63,10 +63,18 @@ pub const BRAVE: SearchEngine = SearchEngine {
     template: "https://search.brave.com/search?q={q}",
 };
 
+/// Self-hosted only. Template is empty until `search.searxng` is set.
+pub const SEARXNG: SearchEngine = SearchEngine {
+    id: "searxng",
+    name: "SearXNG (your instance)",
+    region: "self-hosted",
+    template: "",
+};
+
 /// Primary, then secondary, then the rest. Order is product policy.
 pub fn catalog() -> &'static [SearchEngine] {
     &[
-        SWISSCOWS, DUCKDUCKGO, STARTPAGE, MOJEEK, QWANT, METAGER, BRAVE,
+        SWISSCOWS, DUCKDUCKGO, STARTPAGE, MOJEEK, QWANT, METAGER, BRAVE, SEARXNG,
     ]
 }
 
@@ -83,6 +91,9 @@ pub fn by_id(id: &str) -> Option<SearchEngine> {
 }
 
 pub fn resolve(engine: SearchEngine, query: &str) -> Option<Url> {
+    if engine.template.is_empty() {
+        return None;
+    }
     let encoded = urlencoding(query);
     let raw = engine.template.replace("{q}", &encoded);
     Url::parse(&raw).ok()
@@ -123,5 +134,7 @@ mod tests {
     #[test]
     fn unknown_id() {
         assert!(by_id("google").is_none());
+        assert_eq!(by_id("searxng").map(|e| e.id), Some("searxng"));
+        assert!(resolve(SEARXNG, "x").is_none());
     }
 }

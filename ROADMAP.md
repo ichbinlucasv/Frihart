@@ -570,6 +570,8 @@ A sustainable rhythm for a long project:
 - [x] Tor tabs refuse clearnet (no silent fallback)
 - [x] I2P tabs refuse clearnet (system i2pd/I2P, SOCKS 4447)
 - [x] Quad9 named as system-DNS recommendation; DoH stays off by default
+- [x] `.onion` / `.i2p` fail closed on the wrong circuit (no clearnet DNS)
+- [x] `about:stack` detects local Tor/I2P/GPG/SimpleX/Session/Meshtastic/XMR
 - [x] HTML subset + arena DOM + CSS/layout/gfx pipeline
 - [x] Identity autofill (no password store)
 - [x] Lists, pre/code, quote, br, img boxes
