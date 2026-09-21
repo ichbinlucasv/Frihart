@@ -1,5 +1,9 @@
 # Frihart
 
+<p align="center">
+  <img src="branding/frihart-lockup.png" alt="Frihart" width="480"/>
+</p>
+
 A **libertarian**, privacy-first web browser written in **Rust**.
 Original code. Not a fork of Firefox, LibreWolf, Chromium, or anything
 else.
