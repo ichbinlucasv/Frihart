@@ -25,7 +25,8 @@ not mutate it.
   pre/code, blockquote, `hr`, br, img boxes (alt only)
 - Spec phrasing: `dfn`, `acronym`, `cite`, `abbr` stay in the text
 - CSS: `em`/`rem`/`vw`/`vh`/`%`, `font-weight`, `font-family` (engine
-  sans/serif/mono slots), `border`, `height`, `:link`
+  sans/serif/mono slots), `list-style`, `white-space`, `border`,
+  `height`, `:link`
 - Nested `<strong>`/`<em>`/`<code>` as their own fragments (UA bold paints)
 - Tables as a column grid, including `<caption>`
 - Links: one display-list path, clickable. A heading with one

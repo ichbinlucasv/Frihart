@@ -35,10 +35,14 @@ not applied. That is honest: we do not fake a two-column table layout.
 - `text-align` (`left`/`start`, `center`, `right`/`end`)
 - `font-family` mapped to engine slots `sans` / `serif` / `mono` only.
   Unknown names (web fonts, emoji fonts) are skipped. No system inventory.
+- `list-style` / `list-style-type` (`none`, `disc`, `circle`, `square`,
+  `decimal`). Inherits from `ul`/`ol`. Position and image tokens ignored.
+- `white-space` (`normal`, `nowrap`, `pre`, `pre-wrap`, `pre-line`).
+  Soft-wrap off for `pre`/`nowrap`; on otherwise. `<pre>` UA is `pre`.
 
 ## Properties (next)
 
-- `list-style`, `white-space`
+- (first subset complete for the named list)
 
 UA extras: `hr` is a 2px rule fill; `caption` is centered 14px.
 

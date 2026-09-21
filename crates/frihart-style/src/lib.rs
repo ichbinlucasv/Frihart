@@ -47,6 +47,8 @@ pub struct Computed {
     pub font_size: f32,
     pub font_weight: u16,
     pub font_family: FontSlot,
+    pub list_style: ListStyle,
+    pub white_space: WhiteSpace,
     pub margin: f32,
     pub padding: f32,
     pub width: Option<f32>,
@@ -92,6 +94,35 @@ pub enum FontSlot {
     Mono,
 }
 
+/// CSS `list-style-type` (and the type token of `list-style`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ListStyle {
+    None,
+    #[default]
+    Disc,
+    Circle,
+    Square,
+    Decimal,
+}
+
+/// CSS `white-space`. Controls wrap; preformatted text still comes from `<pre>`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WhiteSpace {
+    #[default]
+    Normal,
+    Nowrap,
+    Pre,
+    PreWrap,
+    PreLine,
+}
+
+impl WhiteSpace {
+    /// `true` when lines must not soft-wrap (`pre`, `nowrap`).
+    pub fn no_wrap(self) -> bool {
+        matches!(self, Self::Pre | Self::Nowrap)
+    }
+}
+
 impl Default for Computed {
     fn default() -> Self {
         Self {
@@ -101,6 +132,8 @@ impl Default for Computed {
             font_size: REM_PX,
             font_weight: 400,
             font_family: FontSlot::Sans,
+            list_style: ListStyle::Disc,
+            white_space: WhiteSpace::Normal,
             margin: 0.0,
             padding: 0.0,
             width: None,
@@ -162,6 +195,13 @@ pub fn ua_style(tag: &str) -> Computed {
             c.padding = 8.0;
             c.background = 0x00181818;
             c.font_family = FontSlot::Mono;
+            c.white_space = WhiteSpace::Pre;
+        }
+        "ul" => {
+            c.list_style = ListStyle::Disc;
+        }
+        "ol" => {
+            c.list_style = ListStyle::Decimal;
         }
         "code" => {
             c.display = Display::Inline;
@@ -239,6 +279,16 @@ pub fn apply_in(computed: &mut Computed, decls: &[Declaration], mut ctx: LengthC
                     computed.font_family = slot;
                 }
             }
+            "list-style" | "list-style-type" => {
+                if let Some(ls) = parse_list_style(&d.value) {
+                    computed.list_style = ls;
+                }
+            }
+            "white-space" => {
+                if let Some(ws) = parse_white_space(&d.value) {
+                    computed.white_space = ws;
+                }
+            }
             "margin" | "margin-top" | "margin-bottom" => {
                 apply_margin(computed, &d.value, ctx);
             }
@@ -305,6 +355,49 @@ pub fn parse_font_family(value: &str) -> Option<FontSlot> {
     None
 }
 
+/// Parse `list-style` / `list-style-type`. Position and image tokens are ignored.
+pub fn parse_list_style(value: &str) -> Option<ListStyle> {
+    let mut found = None;
+    for token in value.split_whitespace() {
+        let t = token.trim().to_ascii_lowercase();
+        if t.starts_with("url(") {
+            continue;
+        }
+        match t.as_str() {
+            "none" => return Some(ListStyle::None),
+            "disc" => found = Some(ListStyle::Disc),
+            "circle" => found = Some(ListStyle::Circle),
+            "square" => found = Some(ListStyle::Square),
+            "decimal" | "decimal-leading-zero" => found = Some(ListStyle::Decimal),
+            "inside" | "outside" => {}
+            _ => {}
+        }
+    }
+    found
+}
+
+pub fn parse_white_space(value: &str) -> Option<WhiteSpace> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "normal" => Some(WhiteSpace::Normal),
+        "nowrap" => Some(WhiteSpace::Nowrap),
+        "pre" => Some(WhiteSpace::Pre),
+        "pre-wrap" => Some(WhiteSpace::PreWrap),
+        "pre-line" => Some(WhiteSpace::PreLine),
+        _ => None,
+    }
+}
+
+/// Marker text for a list item (`index` is 1-based).
+pub fn list_marker(style: ListStyle, index: usize) -> String {
+    match style {
+        ListStyle::None => String::new(),
+        ListStyle::Disc => "• ".into(),
+        ListStyle::Circle => "◦ ".into(),
+        ListStyle::Square => "▪ ".into(),
+        ListStyle::Decimal => format!("{index}. "),
+    }
+}
+
 fn apply_line_height(computed: &mut Computed, value: &str, ctx: LengthCtx) {
     let v = value.trim();
     if v.eq_ignore_ascii_case("normal") {
@@ -342,9 +435,76 @@ pub fn style_in(
 ) -> Computed {
     let ctx = LengthCtx::for_element(el, vw, vh);
     let mut c = ua_style(&el.tag);
+    // list-style and white-space inherit. UA sets them on ul/ol/pre;
+    // other tags take the parent's computed value, then user/author win.
+    inherit_list_and_ws(&mut c, el, user, author, vw, vh);
     apply_matching(&mut c, user, el, ctx);
     apply_matching(&mut c, author, el, ctx);
     c
+}
+
+fn ws_rule_needs_inherit(sheet: &Stylesheet) -> bool {
+    // `pre { white-space: ... }` applies on the element itself. Inheritance
+    // is only needed when some other selector sets it (e.g. a wrapper).
+    sheet.rules.iter().any(|r| {
+        if !r.declarations.iter().any(|d| d.name == "white-space") {
+            return false;
+        }
+        let sel = r.selector.trim();
+        !(sel == "pre"
+            || sel.starts_with("pre.")
+            || sel.starts_with("pre#")
+            || sel.starts_with("pre:")
+            || sel.starts_with("pre["))
+    })
+}
+
+fn inherit_list_and_ws(
+    c: &mut Computed,
+    el: &Element,
+    user: &Stylesheet,
+    author: &Stylesheet,
+    vw: f32,
+    vh: f32,
+) {
+    let need_list = el.tag == "li";
+    let need_ws = el.tag != "pre"
+        && (el.ancestors.iter().any(|a| a.tag == "pre")
+            || ws_rule_needs_inherit(user)
+            || ws_rule_needs_inherit(author));
+    if !need_list && !need_ws {
+        return;
+    }
+
+    // Walk root → parent once, carrying only list-style / white-space.
+    let mut list = ListStyle::Disc;
+    let mut ws = WhiteSpace::Normal;
+    for i in 0..el.ancestors.len() {
+        let anc = Element {
+            tag: el.ancestors[i].tag.clone(),
+            id: el.ancestors[i].id.clone(),
+            classes: el.ancestors[i].classes.clone(),
+            ancestors: el.ancestors[..i].to_vec(),
+        };
+        let mut ac = ua_style(&anc.tag);
+        if !matches!(anc.tag.as_str(), "ul" | "ol") {
+            ac.list_style = list;
+        }
+        if anc.tag != "pre" {
+            ac.white_space = ws;
+        }
+        let ctx = LengthCtx::for_element(&anc, vw, vh);
+        apply_matching(&mut ac, user, &anc, ctx);
+        apply_matching(&mut ac, author, &anc, ctx);
+        list = ac.list_style;
+        ws = ac.white_space;
+    }
+    if need_list {
+        c.list_style = list;
+    }
+    if need_ws {
+        c.white_space = ws;
+    }
 }
 
 fn apply_matching(computed: &mut Computed, sheet: &Stylesheet, el: &Element, ctx: LengthCtx) {
@@ -665,5 +825,31 @@ mod tests {
             800.0,
         );
         assert_eq!(a.color, 0x00334488);
+    }
+
+    #[test]
+    fn list_style_and_white_space() {
+        assert_eq!(parse_list_style("none"), Some(ListStyle::None));
+        assert_eq!(parse_list_style("square outside"), Some(ListStyle::Square));
+        assert_eq!(parse_list_style("decimal"), Some(ListStyle::Decimal));
+        assert_eq!(parse_white_space("nowrap"), Some(WhiteSpace::Nowrap));
+        assert_eq!(parse_white_space("pre-wrap"), Some(WhiteSpace::PreWrap));
+        assert!(WhiteSpace::Pre.no_wrap());
+        assert!(!WhiteSpace::PreWrap.no_wrap());
+        assert_eq!(list_marker(ListStyle::None, 1), "");
+        assert_eq!(list_marker(ListStyle::Decimal, 3), "3. ");
+        assert_eq!(ua_style("pre").white_space, WhiteSpace::Pre);
+        assert_eq!(ua_style("ol").list_style, ListStyle::Decimal);
+        assert_eq!(ua_style("ul").list_style, ListStyle::Disc);
+
+        let sheet = parse_stylesheet("ul { list-style: none } li { white-space: nowrap }");
+        let li = Element {
+            tag: "li".into(),
+            ancestors: vec![Element::tag("ul")],
+            ..Element::default()
+        };
+        let c = style_element(&li, &Stylesheet::default(), &sheet);
+        assert_eq!(c.list_style, ListStyle::None);
+        assert_eq!(c.white_space, WhiteSpace::Nowrap);
     }
 }

@@ -42,7 +42,8 @@ HTML → CSS → style → layout → display list → chrome paint. Tables are
 a column grid. `hr`, caption, definition lists (HTML5 `div` wrappers;
 a `dt`/`dd` that is one link is that hit). `dfn`/`acronym`/`cite` stay
 visible. CSS: `em`/`rem`/`vw`/
-`vh`/`%`, `font-weight`, `font-family` (engine slots), `border`, `:link`. Nested `<strong>` is its
+`vh`/`%`, `font-weight`, `font-family` (engine slots), `list-style`,
+`white-space`, `border`, `:link`. Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
 UTF-8 text (not Latin-1 bytes). Heading with one destination (link-only
 or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
@@ -52,7 +53,7 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519). Settings is the LibreWolf-stance page (native
 prefs, black/yellow). CSS `font-family` is engine slots only;
-letterboxing paint exists (pref off).
+`list-style` / `white-space` are in. Letterboxing paint exists (pref off).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -72,14 +73,13 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D.** CSS leftovers: `list-style`,
-   `white-space`. Or claim another static document (not Wikipedia /
-   GitHub / mail).
+1. **This / next session — D.** Claim another static document (not
+   Wikipedia / GitHub / mail). First CSS subset leftovers are done.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
-3. **CSS leftovers remaining:** `list-style`, `white-space`.
-   `font-family` slots and letterboxing paint are in. `th` is bold.
+3. **CSS first subset:** `list-style`, `white-space`, `font-family`
+   slots, letterboxing paint, `th` bold — all in.
 4. **E — isolation you can audit.** Landlock child cannot `open()`
    `prefs.toml` (test in). IsolationKey + cookie jar include the
    circuit (direct/tor/i2p). Do **not** split a network process yet.
@@ -123,9 +123,10 @@ RFC 5280 HTML, RFC 8032 HTML (Ed25519).
 
 ## Next session — start here
 
-**D: CSS `list-style` / `white-space`, or another static document.**
-Sixteen public sites (RFC 8032 Ed25519 claimed). Arch package builds;
-install is `sudo pacman -U`. Do not start a JS engine. G stays refuse.
+**D: claim another static document** (not Wikipedia / GitHub / mail).
+CSS leftovers `list-style` / `white-space` are in. Sixteen public sites.
+Arch package builds; install is `sudo pacman -U`. Do not start a JS
+engine. G stays refuse.
 
 ## Commands
 

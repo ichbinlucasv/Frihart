@@ -559,7 +559,7 @@ fn engine_page(url: &Url) -> Document {
                 "1 chrome / profiles / wipe / HiDPI scale".into(),
                 "2 rustls / cookies / HTTPS-only / downloads dest".into(),
                 "3 html tokenizer + arena DOM + tables + hr/caption".into(),
-                "4 css / style / block layout / gfx ops (em, weight, border)".into(),
+                "4 css / style / block layout / gfx ops (em, weight, border, list-style, white-space)".into(),
                 "5 forms GET + POST encode (secrets skipped)".into(),
                 "6 ipc envelopes (in-process bus)".into(),
                 "7 js types; exec and fingerprint APIs off".into(),

@@ -9,7 +9,7 @@ use frihart_gfx::DisplayOp;
 use frihart_gfx::{DisplayList, from_boxes};
 use frihart_html::{Block, author_css, document_title, parse, visible_fragments};
 use frihart_layout::{FlowItem, LayoutBox, block_flow};
-use frihart_style::{Align, Display, Element, contrast_on, style_in};
+use frihart_style::{Align, Display, Element, contrast_on, list_marker, style_in};
 
 /// JSON job for the sandboxed content worker (`frihart --content-worker`).
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -68,29 +68,20 @@ pub fn layout_html_ex(html: &str, extra_css: &str, viewport_w: f32, viewport_h: 
         let mut style = style_in(&el, &user, &author_sheet, content_w, viewport_h);
         style.color = contrast_on(body.background, style.color);
         let inline = matches!(frag.kind, Block::Inline(_) | Block::Link { .. });
-        let (text, href, preserve, image, cells, field, rule) = match frag.kind {
+        let (text, href, image, cells, field, rule) = match frag.kind {
             Block::Heading(_, t)
             | Block::Text(t)
             | Block::Inline(t)
             | Block::Quote(t)
-            | Block::Caption(t) => (t, None, false, false, Vec::new(), None, false),
-            Block::Pre(t) => (t, None, true, false, Vec::new(), None, false),
-            Block::Link { text, href } => (text, Some(href), false, false, Vec::new(), None, false),
-            Block::Rule => (String::new(), None, false, false, Vec::new(), None, true),
-            Block::ListItem {
-                ordered,
-                index,
-                text,
-            } => {
-                let prefix = if ordered {
-                    format!("{index}. ")
-                } else {
-                    "• ".into()
-                };
+            | Block::Caption(t)
+            | Block::Pre(t) => (t, None, false, Vec::new(), None, false),
+            Block::Link { text, href } => (text, Some(href), false, Vec::new(), None, false),
+            Block::Rule => (String::new(), None, false, Vec::new(), None, true),
+            Block::ListItem { index, text, .. } => {
+                let prefix = list_marker(style.list_style, index);
                 (
                     format!("{prefix}{text}"),
                     None,
-                    false,
                     false,
                     Vec::new(),
                     None,
@@ -103,7 +94,7 @@ pub fn layout_html_ex(html: &str, extra_css: &str, viewport_w: f32, viewport_h: 
                 } else {
                     format!("[img] {alt}")
                 };
-                (label, None, false, true, Vec::new(), None, false)
+                (label, None, true, Vec::new(), None, false)
             }
             Block::Field(f) => {
                 let name = if f.label.is_empty() { f.name } else { f.label };
@@ -113,15 +104,17 @@ pub fn layout_html_ex(html: &str, extra_css: &str, viewport_w: f32, viewport_h: 
                     secret,
                 });
                 field_i += 1;
-                (name, None, false, false, Vec::new(), slot, false)
+                (name, None, false, Vec::new(), slot, false)
             }
             Block::TableRow { cells, header } => {
                 if header {
                     style.font_weight = 700;
                 }
-                (String::new(), None, false, false, cells, None, false)
+                (String::new(), None, false, cells, None, false)
             }
         };
+        // soft-wrap off for `pre` / `nowrap`; on for `normal` / `pre-wrap` / `pre-line`
+        let preserve = style.white_space.no_wrap();
         if inline {
             style.display = Display::Inline;
         }
@@ -757,5 +750,40 @@ mod tests {
                 || wide.title.contains("Edwards-Curve")
                 || wide.title.contains("Ed25519")
         );
+    }
+
+    #[test]
+    fn list_style_none_drops_markers() {
+        let html = r#"<style>ul{list-style:none} ol{list-style-type:square}</style>
+<ul><li>alpha</li><li>beta</li></ul>
+<ol><li>one</li></ol>"#;
+        let f = layout_html(html, "", 640.0);
+        let texts: Vec<&str> = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(texts.iter().any(|t| *t == "alpha"), "{texts:?}");
+        assert!(texts.iter().any(|t| *t == "beta"), "{texts:?}");
+        assert!(!texts.iter().any(|t| t.starts_with("•")), "{texts:?}");
+        assert!(
+            texts
+                .iter()
+                .any(|t| t.starts_with("▪ ") && t.contains("one")),
+            "{texts:?}"
+        );
+    }
+
+    #[test]
+    fn white_space_nowrap_and_pre_wrap() {
+        let html = r#"<style>p{white-space:nowrap} pre{white-space:pre-wrap}</style>
+<p>plain</p><pre>line1
+line2</pre>"#;
+        let f = layout_html(html, "", 640.0);
+        let p = f.boxes.iter().find(|b| b.text == "plain").expect("p");
+        assert!(p.preserve, "nowrap → no soft wrap");
+        let pre = f
+            .boxes
+            .iter()
+            .find(|b| b.text.contains("line1"))
+            .expect("pre");
+        assert!(!pre.preserve, "pre-wrap soft-wraps");
+        assert_eq!(pre.style.white_space, frihart_style::WhiteSpace::PreWrap);
     }
 }

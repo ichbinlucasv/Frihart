@@ -35,9 +35,9 @@ These are our chrome. They do not prove the HTML engine.
 ## Target (open next)
 
 Sixteen public claims are in. Named RFC list for this pass is done.
-Next engine work: CSS leftovers `list-style`, `white-space`. Or keep
-claiming another static document (not Wikipedia / GitHub / mail). Arch
-package builds; install is `sudo pacman -U` on the user's machine.
+CSS leftovers `list-style` / `white-space` are in. Next: claim another
+static document (not Wikipedia / GitHub / mail). Arch package builds;
+install is `sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

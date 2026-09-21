@@ -82,7 +82,7 @@ Details: [docs/distros.md](docs/distros.md). OPSEC: [docs/opsec.md](docs/opsec.m
 On Linux, `cargo run` opens a real window. `https://` fetches over rustls
 and paints the subset via a sandboxed `--content-worker` (`no_new_privs`
 + landlock + seccomp-bpf + rlimits; in-process fallback if the worker
-dies). CSS understands `em`/`rem`, `font-weight`, and `border`. Find
+dies). CSS understands `em`/`rem`, `font-weight`, `border`, `list-style`, and `white-space`. Find
 (Ctrl+F) searches the display list. JS is off. `javascript:` is refused.
 Tor tabs dial SOCKS only. `about:sites` claims `example.com`, RFC 1918,
 suckless.org, GNU philosophy, kernel.org, docs.kernel.org, ietf.org,
