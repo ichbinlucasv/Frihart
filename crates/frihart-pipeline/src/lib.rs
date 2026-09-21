@@ -753,6 +753,28 @@ mod tests {
     }
 
     #[test]
+    fn rfc7748_is_readable() {
+        let html = include_str!("../testdata/rfc7748.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(
+            f.title.contains("Elliptic Curves")
+                || f.title.contains("Curve25519")
+                || f.title.contains("X25519")
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Curve25519") || blob.contains("X25519"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("Elliptic") || blob.contains("X25519"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(
+            wide.title.contains("Elliptic Curves")
+                || wide.title.contains("Curve25519")
+                || wide.title.contains("X25519")
+        );
+    }
+
+    #[test]
     fn list_style_none_drops_markers() {
         let html = r#"<style>ul{list-style:none} ol{list-style-type:square}</style>
 <ul><li>alpha</li><li>beta</li></ul>
