@@ -639,7 +639,7 @@ fn campaigns_page(url: &Url) -> Document {
                 "A Foundation — closed".into(),
                 "B Chrome — closed".into(),
                 "C Network OPSEC — closed".into(),
-                "D Engine — open (15 public static documents claimed)".into(),
+                "D Engine — open (16 public static documents claimed)".into(),
                 "E Isolation — open (nnp + landlock + seccomp + rlimits; prefs.toml denied)".into(),
                 "F Linux homes — open (detect + Tails/Qubes private default)".into(),
                 "G Script — refuse-only (pref flip is not a grant)".into(),

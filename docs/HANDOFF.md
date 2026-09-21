@@ -49,10 +49,10 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 `about:sites` claimed: **example.com**, **RFC 1918**, **suckless.org**,
 **GNU philosophy**, **kernel.org**, **docs.kernel.org**, **ietf.org**,
 **rfc-editor.org** (index), **w3.org** (landing), **w3.org/TR** (index),
-**webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**.
-Settings is the LibreWolf-stance page (native prefs, black/yellow).
-CSS `font-family` is engine slots only; letterboxing paint exists
-(pref off).
+**webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
+**RFC 8032** (Ed25519). Settings is the LibreWolf-stance page (native
+prefs, black/yellow). CSS `font-family` is engine slots only;
+letterboxing paint exists (pref off).
 
 **E Isolation**  
 One long-lived `--content-worker` per `IsolationKey`. Child applies
@@ -72,9 +72,9 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D.** Fetch live
-   `https://www.rfc-editor.org/rfc/rfc8032.html` (EdDSA / Ed25519).
-   Or CSS leftovers: `list-style`, `white-space`.
+1. **This / next session — D.** CSS leftovers: `list-style`,
+   `white-space`. Or claim another static document (not Wikipedia /
+   GitHub / mail).
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -86,7 +86,7 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.
-6. **v0.2.0** when: named static list is claimed (15 already), worker
+6. **v0.2.0** when: named static list is claimed (16 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs (`pacman -U` the `.pkg.tar.zst`).
 7. **Then — and only then — discuss G.** Recommendation: stay refuse
@@ -119,14 +119,13 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
 docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
 w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
-RFC 5280 HTML.
+RFC 5280 HTML, RFC 8032 HTML (Ed25519).
 
 ## Next session — start here
 
-**D: fetch live `https://www.rfc-editor.org/rfc/rfc8032.html` (Ed25519)
-or CSS `list-style` / `white-space`.** Fifteen public sites. Arch
-package builds; install is `sudo pacman -U`. Do not start a JS engine.
-G stays refuse.
+**D: CSS `list-style` / `white-space`, or another static document.**
+Sixteen public sites (RFC 8032 Ed25519 claimed). Arch package builds;
+install is `sudo pacman -U`. Do not start a JS engine. G stays refuse.
 
 ## Commands
 

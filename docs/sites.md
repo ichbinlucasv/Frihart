@@ -30,13 +30,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.w3.org/TR/WCAG22/ | Live HTML 2026-09-14. Title / h1 “Web Content Accessibility Guidelines (WCAG) 2.2”. W3C Recommendation 12 December 2024. Abstract, Perceivable / Operable / Understandable / Robust. Guideline 1.1 Text Alternatives. This-version `dt`/`dd` link is a hit. External CSS unused. Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc8446.html | Live HTML 2026-09-14. Title from `span.h1`: “The Transport Layer Security (TLS) Protocol Version 1.3”. Abstract, Handshake/ClientHello, `pre` pages (same shape as RFC 1918). Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc5280.html | Live HTML 2026-09-14. Title from `span.h1`: “Internet X.509 Public Key Infrastructure Certificate…”. Abstract, Certificate/CRL, `pre` pages. Also 5120×1440. |
+| https://www.rfc-editor.org/rfc/rfc8032.html | Live HTML 2026-09-22. Title from `span.h1`: “Edwards-Curve Digital Signature Algorithm (EdDSA)”. Abstract, Ed25519 / edwards25519, `pre` pages (same shape as RFC 1918/8446/5280). Also 5120×1440. |
 
 ## Target (open next)
 
-Fifteen public claims are in. Next named document:
-`https://www.rfc-editor.org/rfc/rfc8032.html` (EdDSA / Ed25519 — not
-opened). CSS leftovers: `list-style`, `white-space`. Arch package
-builds; install is `sudo pacman -U` on the user's machine.
+Sixteen public claims are in. Named RFC list for this pass is done.
+Next engine work: CSS leftovers `list-style`, `white-space`. Or keep
+claiming another static document (not Wikipedia / GitHub / mail). Arch
+package builds; install is `sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

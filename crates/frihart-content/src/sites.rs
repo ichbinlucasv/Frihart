@@ -4,6 +4,8 @@
 pub enum ClaimStatus {
     Internal,
     Claimed,
+    /// Next named document; may be unused when the queue is empty.
+    #[allow(dead_code)]
     Target,
     NeedsJs,
 }
@@ -134,8 +136,8 @@ pub fn claims() -> &'static [SiteClaim] {
         SiteClaim {
             url: "https://www.rfc-editor.org/rfc/rfc8032.html",
             name: "RFC 8032 HTML",
-            status: ClaimStatus::Target,
-            note: "EdDSA (Ed25519) — not opened yet",
+            status: ClaimStatus::Claimed,
+            note: "EdDSA / Ed25519, Abstract, edwards25519, pre pages; live HTML 2026-09-22",
         },
         SiteClaim {
             url: "https://en.wikipedia.org/",
@@ -179,7 +181,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 15);
+        assert_eq!(public_claimed(), 16);
         assert!(
             claims()
                 .iter()
@@ -257,6 +259,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc5280"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("rfc8032"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

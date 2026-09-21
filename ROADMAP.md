@@ -608,6 +608,7 @@ A sustainable rhythm for a long project:
 - [x] WCAG 2.2 claimed (REC 2024, Perceivable/Operable, Guideline 1.1)
 - [x] RFC 8446 claimed (TLS 1.3, Abstract, Handshake, pre pages)
 - [x] RFC 5280 claimed (X.509 PKI, Abstract, Certificate/CRL, pre pages)
+- [x] RFC 8032 claimed (EdDSA / Ed25519, Abstract, edwards25519, pre pages)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] Letterboxing paint (200×100 buckets, pref off by default)
 - [x] Arch PKGBUILD builds locally (`FRIHART_LOCAL=1 makepkg --nocheck`)

@@ -736,4 +736,26 @@ mod tests {
                 || wide.title.contains("Public Key")
         );
     }
+
+    #[test]
+    fn rfc8032_is_readable() {
+        let html = include_str!("../testdata/rfc8032.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(
+            f.title.contains("EdDSA")
+                || f.title.contains("Edwards-Curve")
+                || f.title.contains("Ed25519")
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("EdDSA") || blob.contains("Ed25519"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("edwards25519") || blob.contains("Ed25519"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(
+            wide.title.contains("EdDSA")
+                || wide.title.contains("Edwards-Curve")
+                || wide.title.contains("Ed25519")
+        );
+    }
 }
