@@ -851,6 +851,25 @@ mod tests {
     }
 
     #[test]
+    fn openbgpd_org_is_readable() {
+        let html = include_str!("../testdata/openbgpd.org.html");
+        let f = layout_html_ex(html, "https://www.openbgpd.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenBGPD"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("About OpenBGPD") || blob.contains("Project Goals"));
+        assert!(blob.contains("Border Gateway Protocol") || blob.contains("FREE"));
+        assert!(blob.contains("Manual Pages") || blob.contains("Presentations"));
+        assert!(blob.contains("BGP") || blob.contains("OpenBSD"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("goals.html") || h.contains("manual.html"))
+        }));
+        let wide = layout_html_ex(html, "https://www.openbgpd.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("OpenBGPD"));
+    }
+
+    #[test]
     fn rfc5869_is_readable() {
         let html = include_str!("../testdata/rfc5869.html");
         let f = layout_html_ex(html, "", 1000.0, 800.0);

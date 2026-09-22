@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang=en id=project-main>
+	<meta charset=utf-8>
+	<title>OpenBGPD</title>
+	<meta name="description" content="the main OpenBGPD page">
+	<link rel="canonical" href="https://www.openbgpd.org/">
+	<link rel="stylesheet" href="openbsd.css">
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+
+<main>
+<nav>
+
+<header>About OpenBGPD</header>
+<ul>
+	<li><a href="goals.html">Project Goals</a>
+	<li><a href="manual.html">Manual Pages</a>
+	<li><a href="papers.html">Presentations</a>
+	<li><a href="users.html">Testimonials</a>
+	<li><a href="mail.html">Mailing List</a>
+</ul>
+
+<header>For OpenBSD</header>
+<ul>
+	<li><a href="https://www.openbsd.org/anoncvs.html">AnonCVS</a>
+	<li><a href="https://cvsweb.openbsd.org/src/usr.sbin/bgpd">CVSWeb
+	    (bgpd)</a>
+	<li><a href="https://cvsweb.openbsd.org/src/usr.sbin/bgpctl">CVSWeb
+	    (bgpctl)</a>
+</ul>
+
+<header>For other systems</header>
+<ul>
+	<li><a href="ftp.html">Releases</a>
+	<li><a href="https://github.com/openbgpd-portable">Development</a>
+	<li><a href="https://github.com/openbgpd-portable/openbgpd-portable/issues">Bug Reports</a>
+</ul>
+
+</nav>
+<article>
+
+<h2>
+	<img src="images/openbgpd.gif" alt="[OpenBGPD]" height=210 width=599>
+</h2>
+
+<p>
+OpenBGPD is a <strong>FREE</strong> implementation of
+the Border Gateway Protocol,
+Version 4.
+It allows ordinary machines to be used as routers exchanging routes
+with other systems speaking the BGP protocol.
+
+<p>
+Started out of dissatisfaction with other implementations, OpenBGPD
+is a fairly complete BGP implementation, powering many sites.
+Users often praise its ease of use and high performance, as well as its
+reliability.
+
+<p>
+OpenBGPD's companions,
+<a href="https://man.openbsd.org/ospfd">ospfd(8)</a>,
+<a href="https://man.openbsd.org/ospf6d">ospf6d(8)</a>,
+<a href="https://man.openbsd.org/ripd">ripd(8)</a> and
+<a href="https://man.openbsd.org/dvmrpd">dvmrpd(8)</a>
+add support for the respective protocols.
+<a href="https://man.openbsd.org/ldpd">ldpd(8)</a> and
+<a href="https://man.openbsd.org/mpe">mpe(4)</a> add MPLS support.
+<a href="https://man.openbsd.org/rpki-client">rpki-client(8)</a> facilitates
+validation of the Route Origin of a BGP announcement.
+
+<p>
+OpenBGPD is primarily developed by Claudio Jeker, Theo Buehler,
+Henning Brauer, and Peter Hessler.
+All of these daemons are part of the
+<a href="https://www.openbsd.org">OpenBSD Project</a>.
+
+<p>
+The portable version, maintained by Claudio Jeker, is available via periodic tarball releases.
+Contributions are welcome to both the OpenBGPD core and the portable build framework.
+
+<p>
+The software is freely usable and re-usable by everyone under
+a BSD license.
+
+</article>
+</main>
