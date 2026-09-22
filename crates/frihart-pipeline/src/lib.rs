@@ -1188,4 +1188,39 @@ line2</pre>"#;
         let wide = layout_html_ex(html, "https://signal.org/", 5120.0, 1440.0);
         assert!(wide.title.contains("Signal"));
     }
+
+    #[test]
+    fn c2sp_org_age_is_readable() {
+        let html = include_str!("../testdata/c2sp.org-age.html");
+        let f = layout_html_ex(html, "https://c2sp.org/age", 1000.0, 800.0);
+        assert!(f.title.contains("age") && f.title.contains("C2SP"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("age") || blob.contains("C2SP"));
+        assert!(
+            blob.contains("file encryption")
+                || blob.contains("pluggable recipients")
+                || blob.contains("Encrypted file format")
+        );
+        assert!(
+            blob.contains("Native recipient")
+                || blob.contains("X25519")
+                || blob.contains("ChaCha20")
+                || blob.contains("age-encryption.org/v1")
+        );
+        assert!(
+            blob.contains("ASCII armor")
+                || blob.contains("Test vectors")
+                || blob.contains("Conventions used")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/age@")
+                    || h.contains("age-encryption.org")
+                    || h.contains("rfc7539")
+                    || h.contains("FiloSottile")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://c2sp.org/age", 5120.0, 1440.0);
+        assert!(wide.title.contains("age") && wide.title.contains("C2SP"));
+    }
 }

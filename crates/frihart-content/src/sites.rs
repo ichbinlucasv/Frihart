@@ -236,6 +236,18 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title, Get Signal/Blog/Developers/Donate, Speak Freely / Signal Protocol; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://c2sp.org/age",
+            name: "c2sp.org/age",
+            status: ClaimStatus::Claimed,
+            note: "title age|C2SP, h1 age, file encryption format / recipients; /age→/age@v1.1.0 same host; live HTML 2026-09-22",
+        },
+        SiteClaim {
+            url: "https://age-encryption.org/",
+            name: "age-encryption.org",
+            status: ClaimStatus::NeedsJs,
+            note: "Forbidden: apex 302 → github.com/FiloSottile/age; do not claim",
+        },
+        SiteClaim {
             url: "https://en.wikipedia.org/",
             name: "Wikipedia",
             status: ClaimStatus::NeedsJs,
@@ -277,7 +289,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 32);
+        assert_eq!(public_claimed(), 33);
         assert!(
             claims()
                 .iter()
@@ -440,6 +452,18 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("signal.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("c2sp.org/age"))
+        );
+        assert!(
+            claims().iter().any(|s| {
+                s.status == ClaimStatus::NeedsJs
+                    && s.url.contains("age-encryption.org")
+                    && s.note.contains("Forbidden")
+            })
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

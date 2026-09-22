@@ -625,6 +625,8 @@ A sustainable rhythm for a long project:
 - [x] noiseprotocol.org claimed (Resources/Specs/Code, Noise Protocol Framework, WireGuard adopter)
 - [x] curl.se claimed (Download/Documentation/libcurl, command line tool and library, Protocols)
 - [x] signal.org claimed (Get Signal/Blog/Developers/Donate, Speak Freely, Signal Protocol)
+- [x] c2sp.org/age claimed (/age→/age@v1.1.0 same host; age|C2SP, file encryption format, recipients)
+- [x] age-encryption.org Forbidden / NeedsJs (apex 302 → GitHub; left unclaimed)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

@@ -53,7 +53,7 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519), **RFC 7748** (Curve25519 / X25519),
 **RFC 5869** (HKDF), **openbsd.org**, **openssh.com**
-(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**. Settings is
+(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**. Settings is
 the LibreWolf-stance page (native prefs, black/yellow). CSS
 `font-family` is engine slots only; `list-style` / `white-space` are in.
 Letterboxing paint exists (pref off).
@@ -76,9 +76,10 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D.** Claim age-encryption.org (not
-   Wikipedia / GitHub / mail). Thirty-two public claims; CSS leftovers
-   done. Named queue: age-encryption.org next.
+1. **This / next session — D.** Claim libsodium.org (not Wikipedia /
+   GitHub / mail). Thirty-three public claims; CSS leftovers done.
+   **age-encryption.org** Forbidden (apex → GitHub) — unclaimed / NeedsJs.
+   Named queue: libsodium.org next.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -125,13 +126,14 @@ docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
 w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
 RFC 5280 HTML, RFC 8032 HTML (Ed25519), RFC 7748 HTML (Curve25519 /
 X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
-(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org.
+(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org, c2sp.org/age.
 
 ## Next session — start here
 
-**D: claim age-encryption.org** (not Wikipedia / GitHub / mail).
-Thirty-two public sites (signal.org claimed). Next named:
-age-encryption.org, then libsodium.org, torproject.org,
+**D: claim libsodium.org** (not Wikipedia / GitHub / mail).
+Thirty-three public sites (c2sp.org/age claimed).
+**age-encryption.org** Forbidden (apex 302 → GitHub) — NeedsJs,
+left unclaimed. Next named: libsodium.org, then torproject.org,
 i2pd.website, mullvad.net, privacyguides.org. Arch package
 builds; install is `sudo pacman -U`. Do not start a JS engine.
 G stays refuse.

@@ -47,12 +47,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://noiseprotocol.org/ | Live HTML 2026-09-22 (apex; www TLS name mismatch). Title `Noise Protocol Framework`. Home / Resources nav. Specs / Code / Wiki / Adopters (WireGuard). External CSS unused (nav stacks). jQuery/bootstrap/Clicky scripts skipped. Also 5120×1440. |
 | https://curl.se/ | Live HTML 2026-09-22 (www 301 → apex; same bytes). Title `curl`. Download / Documentation / libcurl / Get Help / Development nav (`details`/`summary`). Lead “command line tool and library for transferring data with URLs”. Protocols table, version 8.22.0. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://signal.org/ | Live HTML 2026-09-22 (www 301 → apex). Title `Signal >> Home`. Get Signal / Help / Blog / Developers / Careers / Donate nav. h1 “Speak Freely”, Signal Protocol, “No ads. No trackers.”, Free for Everyone (501c3). External CSS unused (nav stacks). jQuery / lottie / language-modal / burger scripts skipped. Also 5120×1440. |
+| https://c2sp.org/age | Live HTML 2026-09-22 (`/age` 302 → `/age@v1.1.0` same host; not GitHub). Title `age | C2SP`. Path `c2sp.org/age`, h1 age, modern file encryption format / pluggable recipients, Encrypted file format, Native recipient types, ASCII armor, Test vectors. External CSS unused. No script. Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty-two public claims are in. CSS leftovers `list-style` /
-`white-space` are in. signal.org claimed this session. Next is
-**age-encryption.org**. Then libsodium.org, torproject.org,
+Thirty-three public claims are in. CSS leftovers `list-style` /
+`white-space` are in. c2sp.org/age claimed this session.
+**age-encryption.org** is Forbidden (apex 302 → GitHub) — left
+unclaimed. Next is **libsodium.org**. Then torproject.org,
 i2pd.website, mullvad.net, privacyguides.org. Not Wikipedia /
 GitHub / mail. Arch package builds; install is `sudo pacman -U`
 on the user's machine.
@@ -64,6 +66,7 @@ on the user's machine.
 | Wikipedia | Infobox / more CSS first |
 | GitHub, Gmail, maps, banks, social | JS apps |
 | Proton Mail | JS app (Proton Pass is an external manager) |
+| age-encryption.org | Forbidden: apex 302 → github.com/FiloSottile/age |
 
 A missing JS app is expected. A broken static layout is a bug.
 
