@@ -248,6 +248,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "Forbidden: apex 302 → github.com/FiloSottile/age; do not claim",
         },
         SiteClaim {
+            url: "https://libsodium.org/",
+            name: "libsodium.org",
+            status: ClaimStatus::NeedsJs,
+            note: "Forbidden: apex/www 307 → doc.libsodium.org 302 → libsodium.gitbook.io/doc; do not claim",
+        },
+        SiteClaim {
             url: "https://en.wikipedia.org/",
             name: "Wikipedia",
             status: ClaimStatus::NeedsJs,
@@ -463,6 +469,14 @@ mod tests {
                 s.status == ClaimStatus::NeedsJs
                     && s.url.contains("age-encryption.org")
                     && s.note.contains("Forbidden")
+            })
+        );
+        assert!(
+            claims().iter().any(|s| {
+                s.status == ClaimStatus::NeedsJs
+                    && s.url.contains("libsodium.org")
+                    && s.note.contains("Forbidden")
+                    && s.note.contains("gitbook")
             })
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs

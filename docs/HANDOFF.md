@@ -76,10 +76,11 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D.** Claim libsodium.org (not Wikipedia /
+1. **This / next session — D.** Claim torproject.org (not Wikipedia /
    GitHub / mail). Thirty-three public claims; CSS leftovers done.
+   **libsodium.org** Forbidden (apex→doc→gitbook.io) — unclaimed / NeedsJs.
    **age-encryption.org** Forbidden (apex → GitHub) — unclaimed / NeedsJs.
-   Named queue: libsodium.org next.
+   Named queue: torproject.org next.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -130,13 +131,14 @@ X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
 
 ## Next session — start here
 
-**D: claim libsodium.org** (not Wikipedia / GitHub / mail).
-Thirty-three public sites (c2sp.org/age claimed).
-**age-encryption.org** Forbidden (apex 302 → GitHub) — NeedsJs,
-left unclaimed. Next named: libsodium.org, then torproject.org,
-i2pd.website, mullvad.net, privacyguides.org. Arch package
-builds; install is `sudo pacman -U`. Do not start a JS engine.
-G stays refuse.
+**D: claim torproject.org** (not Wikipedia / GitHub / mail).
+Thirty-three public sites (c2sp.org/age last Claimed).
+**libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
+libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.
+**age-encryption.org** Forbidden (apex → GitHub) — NeedsJs, left
+unclaimed. Next named: torproject.org, then i2pd.website,
+mullvad.net, privacyguides.org. Arch package builds; install is
+`sudo pacman -U`. Do not start a JS engine. G stays refuse.
 
 ## Commands
 

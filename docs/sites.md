@@ -52,12 +52,12 @@ These are our chrome. They do not prove the HTML engine.
 ## Target (open next)
 
 Thirty-three public claims are in. CSS leftovers `list-style` /
-`white-space` are in. c2sp.org/age claimed this session.
-**age-encryption.org** is Forbidden (apex 302 → GitHub) — left
-unclaimed. Next is **libsodium.org**. Then torproject.org,
-i2pd.website, mullvad.net, privacyguides.org. Not Wikipedia /
-GitHub / mail. Arch package builds; install is `sudo pacman -U`
-on the user's machine.
+`white-space` are in. **libsodium.org** is Forbidden (apex/www 307 →
+doc.libsodium.org 302 → libsodium.gitbook.io/doc) — left unclaimed.
+**age-encryption.org** Forbidden (apex → GitHub) remains unclaimed.
+Next is **torproject.org**. Then i2pd.website, mullvad.net,
+privacyguides.org. Not Wikipedia / GitHub / mail. Arch package
+builds; install is `sudo pacman -U` on the user's machine.
 
 ## Will not claim
 
@@ -67,6 +67,7 @@ on the user's machine.
 | GitHub, Gmail, maps, banks, social | JS apps |
 | Proton Mail | JS app (Proton Pass is an external manager) |
 | age-encryption.org | Forbidden: apex 302 → github.com/FiloSottile/age |
+| libsodium.org | Forbidden: apex/www → doc.libsodium.org → libsodium.gitbook.io/doc |
 
 A missing JS app is expected. A broken static layout is a bug.
 
