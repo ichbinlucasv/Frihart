@@ -53,7 +53,7 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519), **RFC 7748** (Curve25519 / X25519),
 **RFC 5869** (HKDF), **openbsd.org**, **openssh.com**
-(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**. Settings is
+(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**. Settings is
 the LibreWolf-stance page (native prefs, black/yellow). CSS
 `font-family` is engine slots only; `list-style` / `white-space` are in.
 Letterboxing paint exists (pref off).
@@ -77,8 +77,9 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 ## Plan (do these, in this order)
 
 1. **This / next session — D.** Claim another static document (not
-   Wikipedia / GitHub / mail). Twenty-seven public claims; CSS leftovers
-   done. Next: wireguard.com if static, or similar.
+   Wikipedia / GitHub / mail). Twenty-eight public claims; CSS leftovers
+   done. Named queue empty; suggest gnupg.org (or curl.se /
+   noiseprotocol.org).
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -125,14 +126,15 @@ docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
 w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
 RFC 5280 HTML, RFC 8032 HTML (Ed25519), RFC 7748 HTML (Curve25519 /
 X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
-(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org.
+(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com.
 
 ## Next session — start here
 
 **D: claim another static document** (not Wikipedia / GitHub / mail).
-Twenty-seven public sites (bearssl.org claimed). Next if still
-static/readable: wireguard.com, or similar. Arch package builds;
-install is `sudo pacman -U`. Do not start a JS engine. G stays refuse.
+Twenty-eight public sites (wireguard.com claimed). Named queue empty;
+suggest next: gnupg.org, or curl.se / noiseprotocol.org if still
+static/readable. Arch package builds; install is `sudo pacman -U`. Do
+not start a JS engine. G stays refuse.
 
 ## Commands
 

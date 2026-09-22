@@ -908,6 +908,41 @@ mod tests {
     }
 
     #[test]
+    fn wireguard_com_is_readable() {
+        let html = include_str!("../testdata/wireguard.com.html");
+        let f = layout_html_ex(html, "https://www.wireguard.com/", 1000.0, 800.0);
+        assert!(f.title.contains("WireGuard"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Installation") || blob.contains("Quick Start"));
+        assert!(
+            blob.contains("VPN")
+                || blob.contains("cryptography")
+                || blob.contains("Cryptokey")
+        );
+        assert!(
+            blob.contains("Protocol")
+                || blob.contains("Conceptual Overview")
+                || blob.contains("Simple Network Interface")
+        );
+        assert!(
+            blob.contains("fast")
+                || blob.contains("modern")
+                || blob.contains("secure")
+                || blob.contains("WireGuard")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("install")
+                    || h.contains("quickstart")
+                    || h.contains("protocol")
+                    || h.contains("donations")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://www.wireguard.com/", 5120.0, 1440.0);
+        assert!(wide.title.contains("WireGuard"));
+    }
+
+    #[test]
     fn bearssl_org_is_readable() {
         let html = include_str!("../testdata/bearssl.org.html");
         let f = layout_html_ex(html, "https://www.bearssl.org/", 1000.0, 800.0);

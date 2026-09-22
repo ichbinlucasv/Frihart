@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="WireGuard: fast, modern, secure VPN tunnel">
+        <meta name="author" content="Jason A. Donenfeld">
+        <link rel="canonical" href="https://www.wireguard.com/">
+        <meta name="theme-color" content="#88171a">
+        <meta name="apple-mobile-web-app-status-bar-style" content="#88171a">
+        <meta name="msapplication-TileColor" content="#333333">
+        <link rel="icon" sizes="16x16" href="./img/icons/favicon-16.png">
+        <link rel="icon" sizes="32x32" href="./img/icons/favicon-32.png">
+        <link rel="icon" sizes="64x64" href="./img/icons/favicon-64.png">
+        <link rel="icon" sizes="128x128" href="./img/icons/favicon-128.png">
+        <link rel="icon" sizes="192x192" href="./img/icons/favicon-192.png">
+        <link rel="icon" sizes="256x256" href="./img/icons/favicon-256.png">
+        <link rel="icon" sizes="512x512" href="./img/icons/favicon-512.png">
+        <link rel="apple-touch-icon" sizes="57x57" href="./img/icons/apple-touch-icon-57.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="./img/icons/apple-touch-icon-72.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="./img/icons/apple-touch-icon-76.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="./img/icons/apple-touch-icon-114.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="./img/icons/apple-touch-icon-120.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="./img/icons/apple-touch-icon-144.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="./img/icons/apple-touch-icon-152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="./img/icons/apple-touch-icon-180.png">
+        <meta name="msapplication-TileImage" content="./img/icons/msapplication-144.png">
+        <meta name="msapplication-square150x150logo" content="./img/icons/msapplication-150.png">
+        <meta name="msapplication-square70x70logo" content="./img/icons/msapplication-70.png">
+        <meta name="msapplication-square310x310logo" content="./img/icons/msapplication-310.png">
+        <meta name="og:image" content="https://www.wireguard.com/img/icons/og-logo.png?a=obiDa7ee">
+        <meta name="og:image:width" content="1200">
+        <meta name="og:image:height" content="630">
+        <title>WireGuard: fast, modern, secure VPN tunnel</title>
+        <link href="./css/styles.min.css" rel="stylesheet" type="text/css">
+        <script src="./js/scripts.min.js"></script>
+    </head>
+    <body>
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href=".">WireGuard</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+            <li>
+                    <a href="install/">Installation</a>
+                </li>
+            <li>
+                    <a href="quickstart/">Quick Start</a>
+                </li>
+            <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Interworkings <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                    <li>
+    <a href="compilation/">Compilation from Source Code</a>
+</li>
+
+                    <li>
+    <a href="protocol/">Protocol & Cryptography</a>
+</li>
+
+                    <li>
+    <a href="formal-verification/">Formal Verification</a>
+</li>
+
+                    <li>
+    <a href="xplatform/">Cross-platform Interface</a>
+</li>
+
+                    <li>
+    <a href="netns/">Routing & Network Namespaces</a>
+</li>
+
+                    <li>
+    <a href="embedding/">Embedding into Applications</a>
+</li>
+
+                    <li>
+    <a href="build-status/">Build Status</a>
+</li>
+
+                    <li>
+    <a href="known-limitations/">Known Limitations</a>
+</li>
+
+                    <li>
+    <a href="performance/">Performance</a>
+</li>
+
+                    <li>
+    <a href="todo/">Project Todo</a>
+</li>
+
+                    <li>
+    <a href="presentations/">Presentations</a>
+</li>
+
+                    </ul>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="./papers/wireguard.pdf"><i class="fa fa-book"></i> Whitepaper</a></li>
+                <li><a href="./donations/"><i class="fa fa-heartbeat"></i> Donate</a></li>
+                <li><a href="./repositories/"><i class="fa fa-git"></i></a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+        <div class="container">
+            <div class="col-md-3 visible-md visible-lg"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+    <li class="main active"><a href="#conceptual-overview">Conceptual Overview</a></li>
+        <li><a href="#simple-network-interface">Simple Network Interface</a></li>
+        <li><a href="#cryptokey-routing">Cryptokey Routing</a></li>
+        <li><a href="#built-in-roaming">Built-in Roaming</a></li>
+        <li><a href="#ready-for-containers">Ready for Containers</a></li>
+        <li><a href="#learning-more">Learning More</a></li>
+        <li class="main"><a href="#about-the-project">About The Project</a></li>
+        <li><a href="#source-code">Source Code</a></li>
+        <li><a href="#license">License</a></li>
+        </ul>
+</div></div>
+            <div class="col-md-9" role="main"><h1 id="title"><img alt="WireGuard: fast, modern, secure VPN tunnel" title="WireGuard: fast, modern, secure VPN tunnel" src="img/wireguard.svg"></h1>
+
+<hr />
+<p>WireGuard<sup>&reg;</sup> is an extremely simple yet fast and modern VPN that utilizes <strong>state-of-the-art <a href="protocol/">cryptography</a></strong>. It aims to be <a href="performance/">faster</a>, <a href="quickstart/">simpler</a>, leaner, and more useful than IPsec, while avoiding the massive headache. It intends to be considerably more performant than OpenVPN. WireGuard is designed as a general purpose VPN for running on embedded interfaces and super computers alike, fit for many different circumstances. Initially released for the Linux kernel, it is now cross-platform (Windows, macOS, BSD, iOS, Android) and widely deployable. It is currently under heavy development, but already it might be regarded as the most secure, easiest to use, and simplest VPN solution in the industry.</p>
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-hashtag"></i> Simple &amp; Easy-to-use</h3>
+  </div>
+  <div class="panel-body">
+    WireGuard aims to be as easy to configure and deploy as SSH. A VPN connection is made simply by exchanging very simple public keys &ndash; exactly like exchanging SSH keys &ndash; and all the rest is transparently handled by WireGuard. It is even capable of roaming between IP addresses, just like <a href="http://mosh.mit.edu/">Mosh</a>. There is no need to manage connections, be concerned about state, manage daemons, or worry about what's under the hood. WireGuard presents an extremely basic yet powerful interface.
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-key"></i> Cryptographically Sound</h3>
+  </div>
+  <div class="panel-body">
+    WireGuard uses state-of-the-art cryptography, like the <a href="http://www.noiseprotocol.org">Noise protocol framework</a>, <a href="http://cr.yp.to/ecdh.html">Curve25519</a>, <a href="http://cr.yp.to/chacha.html">ChaCha20</a>, <a href="http://cr.yp.to/mac.html">Poly1305</a>, <a href="https://blake2.net/">BLAKE2</a>, <a href="https://131002.net/siphash/">SipHash24</a>, <a href="https://eprint.iacr.org/2010/264">HKDF</a>, and secure trusted constructions. It makes conservative and reasonable choices and has been reviewed by cryptographers.
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-code"></i> Minimal Attack Surface</h3>
+  </div>
+  <div class="panel-body">
+    WireGuard has been designed with ease-of-implementation and simplicity in mind. It is meant to be easily implemented in very few lines of code, and easily auditable for security vulnerabilities. Compared to behemoths like *Swan/IPsec or OpenVPN/OpenSSL, in which auditing the gigantic codebases is an overwhelming task even for large teams of security experts, WireGuard is meant to be comprehensively reviewable by single individuals.
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-bolt"></i> High Performance</h3>
+  </div>
+  <div class="panel-body">
+    A combination of extremely high-speed cryptographic primitives and the fact that WireGuard lives inside the Linux kernel means that secure networking can be very high-speed. It is suitable for both small embedded devices like smartphones and fully loaded backbone routers.
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title"><i class="fa fa-graduation-cap"></i> Well Defined &amp; Thoroughly Considered</h3>
+  </div>
+  <div class="panel-body">
+    WireGuard is the result of a lengthy and thoroughly considered academic process, resulting in the <a href="papers/wireguard.pdf">technical whitepaper</a>, an academic research paper which clearly defines the protocol and the intense considerations that went into each decision.
+  </div>
+</div>
+
+<h1 id="conceptual-overview">Conceptual Overview</h1>
+<p>If you'd like a general conceptual overview of what WireGuard is about, read onward here. You then may progress to <a href="install/">installation</a> and reading <a href="quickstart/">the quickstart instructions</a> on how to use it.</p>
+<p>If you're interested in the internal inner workings, you might be interested in the brief summary of the <a href="protocol/">protocol</a>, or go more in depth by reading the <a href="papers/wireguard.pdf">technical whitepaper</a>, which goes into more detail on the protocol, cryptography, and fundamentals. If you intend to implement WireGuard for a new platform, please read the <a href="xplatform/">cross-platform notes</a>.</p>
+<p>WireGuard securely encapsulates IP packets over UDP. You add a WireGuard interface, configure it with your private key and your peers' public keys, and then you send packets across it. All issues of key distribution and pushed configurations are <em>out of scope</em> of WireGuard; these are issues much better left for other layers, lest we end up with the bloat of IKE or OpenVPN. In contrast, it more mimics the model of SSH and Mosh; both parties have each other's public keys, and then they're simply able to begin exchanging packets through the interface.</p>
+<h2 id="simple-network-interface">Simple Network Interface</h2>
+<p>WireGuard works by adding a network interface (or multiple), like <code>eth0</code> or <code>wlan0</code>, called <code>wg0</code> (or <code>wg1</code>, <code>wg2</code>, <code>wg3</code>, etc). This network interface can then be configured normally using <code>ifconfig(8)</code> or <code>ip-address(8)</code>, with routes for it added and removed using <code>route(8)</code> or <code>ip-route(8)</code>, and so on with all the ordinary networking utilities. The specific WireGuard aspects of the interface are configured using the <a href="https://git.zx2c4.com/wireguard-tools/about/src/man/wg.8"><code>wg(8)</code></a> tool. This interface acts as a tunnel interface.</p>
+<p>WireGuard associates tunnel IP addresses with public keys and remote endpoints. When the interface sends a packet to a peer, it does the following:</p>
+<ol>
+<li>This packet is meant for 192.168.30.8. Which peer is that? Let me look... Okay, it's for peer <code>ABCDEFGH</code>. (Or if it's not for any configured peer, drop the packet.)</li>
+<li>Encrypt entire IP packet using peer <code>ABCDEFGH</code>'s public key.</li>
+<li>What is the remote endpoint of peer <code>ABCDEFGH</code>? Let me look... Okay, the endpoint is UDP port 53133 on host 216.58.211.110.</li>
+<li>Send encrypted bytes from step 2 over the Internet to 216.58.211.110:53133 using UDP.</li>
+</ol>
+<p>When the interface receives a packet, this happens:</p>
+<ol>
+<li>I just got a packet from UDP port 7361 on host 98.139.183.24. Let's decrypt it!</li>
+<li>It decrypted and authenticated properly for peer <code>LMNOPQRS</code>. Okay, let's remember that peer <code>LMNOPQRS</code>'s most recent Internet endpoint is 98.139.183.24:7361 using UDP.</li>
+<li>Once decrypted, the plain-text packet is from 192.168.43.89. Is peer <code>LMNOPQRS</code> allowed to be sending us packets as 192.168.43.89?</li>
+<li>If so, accept the packet on the interface. If not, drop it.</li>
+</ol>
+<p>Behind the scenes there is much happening to provide proper privacy, authenticity, and perfect forward secrecy, using state-of-the-art cryptography.</p>
+<h2 id="cryptokey-routing">Cryptokey Routing</h2>
+<p>At the heart of WireGuard is a concept called <em>Cryptokey Routing</em>, which works by associating public keys with a list of tunnel IP addresses that are allowed inside the tunnel. Each network interface has a private key and a list of peers. Each peer has a public key. Public keys are short and simple, and are used by peers to authenticate each other. They can be passed around for use in configuration files by any out-of-band method, similar to how one might send their SSH public key to a friend for access to a shell server.</p>
+<p>For example, a server computer might have this configuration:</p>
+<div style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>[Interface]
+PrivateKey = yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk=
+ListenPort = 51820
+
+[Peer]
+PublicKey = xTIBA5rboUvnH4htodjb6e697QjLERt1NAB4mZqp8Dg=
+AllowedIPs = 10.192.122.3/32, 10.192.124.1/24
+
+[Peer]
+PublicKey = TrMvSoP4jYQlY6RIzBgbssQqY3vxI2Pi+y71lOWWXX0=
+AllowedIPs = 10.192.122.4/32, 192.168.0.0/16
+
+[Peer]
+PublicKey = gN65BkIKy1eCE9pP1wdc8ROUtkHLF2PfAqYdyYBz6EA=
+AllowedIPs = 10.10.10.230/32
+</code></pre></div>
+
+<p>And a client computer might have this simpler configuration:</p>
+<div style="background: #ffffff"><pre style="line-height: 125%;"><span></span><code>[Interface]
+PrivateKey = gI6EdUSYvn8ugXOt8QQD6Yc+JyiZxIhp3GInSWRfWGE=
+ListenPort = 21841
+
+[Peer]
+PublicKey = HIgo9xNzJMWLKASShiTqIybxZ0U3wGLiUeJ1PKf8ykw=
+Endpoint = 192.95.5.69:51820
+AllowedIPs = 0.0.0.0/0
+</code></pre></div>
+
+<p>In the server configuration, each peer (a client) will be able to send packets to the network interface with a source IP matching his corresponding list of allowed IPs. For example, when a packet is received by the server from peer <code>gN65BkIK...</code>, after being decrypted and authenticated, if its source IP is 10.10.10.230, then it's allowed onto the interface; otherwise it's dropped.</p>
+<p>In the server configuration, when the network interface wants to send a packet to a peer (a client), it looks at that packet's destination IP and compares it to each peer's list of allowed IPs to see which peer to send it to. For example, if the network interface is asked to send a packet with a destination IP of 10.10.10.230, it will encrypt it using the public key of peer <code>gN65BkIK...</code>, and then send it to that peer's most recent Internet endpoint.</p>
+<p>In the client configuration, its single peer (the server) will be able to send packets to the network interface with <em>any</em> source IP (since 0.0.0.0/0 is a wildcard). For example, when a packet is received from peer <code>HIgo9xNz...</code>, if it decrypts and authenticates correctly, with any source IP, then it's allowed onto the interface; otherwise it's dropped.</p>
+<p>In the client configuration, when the network interface wants to send a packet to its single peer (the server), it will encrypt packets for the single peer with <em>any</em> destination IP address (since 0.0.0.0/0 is a wildcard). For example, if the network interface is asked to send a packet with any destination IP, it will encrypt it using the public key of the single peer <code>HIgo9xNz...</code>, and then send it to the single peer's most recent Internet endpoint.</p>
+<p>In other words, when sending packets, the list of allowed IPs behaves as a sort of routing table, and when receiving packets, the list of allowed IPs behaves as a sort of access control list.</p>
+<p>This is what we call a <em>Cryptokey Routing Table</em>: the simple association of public keys and allowed IPs.</p>
+<p>Any combination of IPv4 and IPv6 can be used, for any of the fields. WireGuard is fully capable of encapsulating one inside the other if necessary.</p>
+<p>Because all packets sent on the WireGuard interface are encrypted and authenticated, and because there is such a tight coupling between the identity of a peer and the allowed IP address of a peer, system administrators do not need complicated firewall extensions, such as in the case of IPsec, but rather they can simply match on "is it from this IP? on this interface?", and be assured that it is a secure and authentic packet. This greatly simplifies network management and access control, and provides a great deal more assurance that your iptables rules are actually doing what you intended for them to do.</p>
+<h2 id="built-in-roaming">Built-in Roaming</h2>
+<p>The client configuration contains an <em>initial</em> endpoint of its single peer (the server), so that it knows where to send encrypted data before it has received encrypted data. The server configuration doesn't have any initial endpoints of its peers (the clients). This is because the server discovers the endpoint of its peers by examining from where correctly authenticated data originates. If the server itself changes its own endpoint, and sends data to the clients, the clients will discover the new server endpoint and update the configuration just the same. Both client and server send encrypted data to the most recent IP endpoint for which they authentically decrypted data. Thus, there is full IP roaming on both ends.</p>
+<h2 id="ready-for-containers">Ready for Containers</h2>
+<p>WireGuard <a href="netns/">sends and receives encrypted packets using the network namespace in which the WireGuard interface was originally created</a>. This means that you can create the WireGuard interface in your main network namespace, which has access to the Internet, and then move it into a network namespace belonging to a Docker container as that container's <em>only</em> interface. This ensures that the only possible way that container is able to access the network is through a secure encrypted WireGuard tunnel.</p>
+<h2 id="learning-more">Learning More</h2>
+<p>Consider glancing at the <a href="quickstart/">commands &amp; quick start</a> for a good idea of how WireGuard is used in practice. There is also a <a href="protocol/">description of the protocol, cryptography, &amp; key exchange</a>, in addition to the <a href="papers/wireguard.pdf">technical whitepaper</a>, which provides the most detail.</p>
+<h1 id="about-the-project">About The Project</h1>
+<h2 id="source-code">Source Code</h2>
+<p>WireGuard is divided into <a href="repositories/">several repositories</a> hosted in the ZX2C4 Git Repository and elsewhere. Consult the project <a href="repositories/">repository list</a>.</p>
+<h3 id="irc-discussions">IRC Discussions</h3>
+<p>If you're having trouble setting up WireGuard or using it, the best place to get help is the <a href="https://web.libera.chat/#wireguard"><code>#wireguard</code> IRC channel on Libera.Chat</a>. We also discuss development tasks there and plan the future of the project.</p>
+<h3 id="mailing-list">Mailing List</h3>
+<p>Get involved in the WireGuard development discussion by <a href="https://lists.zx2c4.com/mailman/listinfo/wireguard">joining the mailing list</a>. This is where all development activities occur. Submit patches using <code>git-send-email</code>, similar to the style of LKML.</p>
+<h3 id="email-contact">Email Contact</h3>
+<p>If you'd like to contact us privately for a particular reason, you may reach us at <a href="mailto:team@wireguard.com">team@wireguard.com</a>. Keep in mind, though, that "support" requests are much better suited for our IRC channel.</p>
+<h3 id="security-contact">Security Contact</h3>
+<p>Please report any security issues to, and only to, <a href="mailto:security@wireguard.com">security@wireguard.com</a>. Do not send non-security-related issues to this email alias. Do not send security-related issues to different email addresses.</p>
+<h2 id="license">License</h2>
+<p>The kernel components are released under the GPLv2, as is the Linux kernel itself. Other projects are licensed under MIT, BSD, Apache 2.0, or GPL, depending on context.</p></div>
+        </div>
+        <footer class="col-md-12">
+            <p>&copy; Copyright 2015-2022 Jason A. Donenfeld. All Rights Reserved. "WireGuard" and the "WireGuard" logo are registered <a style="color: #2c3e50;" href="/trademark-policy/">trademarks</a> of Jason A. Donenfeld.</p>
+            <p>This project is from <a href="https://www.zx2c4.com/">ZX2C4</a> and from <a href="https://www.edgesecurity.com/">Edge Security</a>, a firm devoted to information security research expertise.</p>
+            <p><a href="https://www.edgesecurity.com/"><img title="Edge Security" alt="Edge Security" src="./img/edgesecurity.svg" width="300"></a></p>
+        </footer>
+    </body>
+</html>

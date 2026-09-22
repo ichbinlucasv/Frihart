@@ -206,6 +206,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title, Overview/Status/Download, SSL/TLS in C, constant-time; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://www.wireguard.com/",
+            name: "wireguard.com",
+            status: ClaimStatus::Claimed,
+            note: "title, Installation/Quick Start/Protocol, Cryptokey Routing; live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://en.wikipedia.org/",
             name: "Wikipedia",
             status: ClaimStatus::NeedsJs,
@@ -247,7 +253,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 27);
+        assert_eq!(public_claimed(), 28);
         assert!(
             claims()
                 .iter()
@@ -385,6 +391,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("bearssl.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("wireguard.com"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")
