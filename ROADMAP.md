@@ -613,6 +613,7 @@ A sustainable rhythm for a long project:
 - [x] RFC 5869 claimed (HKDF, Abstract, Extract-and-Expand / HKDF-Extract, pre pages)
 - [x] openbsd.org claimed (About/Project Goals/Security, FREE, OpenSSH, remote holes / 7.9)
 - [x] openssh.com claimed (→ openssh.org; About/Project Goals/Security, OpenSSH 10.5, ssh/scp/sftp)
+- [x] libressl.org claimed (→ www; About/Project Goals, LibreSSL 4.3.2, libcrypto/libssl/libtls)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

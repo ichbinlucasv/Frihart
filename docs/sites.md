@@ -35,13 +35,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.rfc-editor.org/rfc/rfc5869.html | Live HTML 2026-09-22. Title from `span.h1`: “HMAC-based Extract-and-Expand Key Derivation Function (HKDF)”. Abstract, HKDF-Extract / HKDF-Expand, `pre` pages (same shape as RFC 1918/8446/5280/8032/7748). Also 5120×1440. |
 | https://www.openbsd.org/ | Live HTML 2026-09-22. Title `OpenBSD`. About / Project Goals / Security / Crypto nav. Callout “Only two remote holes…”. FREE / OpenSSH / OpenBSD 7.9. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.openssh.org/ | Live HTML 2026-09-22 (`openssh.com` 301 → `openssh.org`). Title `OpenSSH`. About / Project Goals / Security nav. Callout OpenSSH 10.5. ssh / scp / sftp suite. External CSS unused (nav stacks). No script. Also 5120×1440. |
+| https://www.libressl.org/ | Live HTML 2026-09-22 (`libressl.org` 301 → `www.libressl.org`). Title `LibreSSL`. About / Project Goals / Papers nav. Callout LibreSSL 4.3.2. libcrypto / libssl / libtls. External CSS unused (nav stacks). No script. Also 5120×1440. |
 
 ## Target (open next)
 
-Twenty public claims are in. CSS leftovers `list-style` /
+Twenty-one public claims are in. CSS leftovers `list-style` /
 `white-space` are in. Next: claim another static document (not
 Wikipedia / GitHub / mail). Sensible candidates: another OPSEC-relevant
-static homepage (e.g. libressl.org), or a similar docs
+static homepage (e.g. openbsdfoundation.org), or a similar docs
 landing. Arch package builds; install is `sudo pacman -U` on the user's
 machine.
 
