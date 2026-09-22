@@ -908,6 +908,29 @@ mod tests {
     }
 
     #[test]
+    fn openiked_org_is_readable() {
+        let html = include_str!("../testdata/openiked.org.html");
+        let f = layout_html_ex(html, "https://www.openiked.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenIKED"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("About OpenIKED") || blob.contains("Project Goals"));
+        assert!(
+            blob.contains("FREE")
+                || blob.contains("Internet Key Exchange")
+                || blob.contains("IKEv2")
+        );
+        assert!(blob.contains("Manual Pages") || blob.contains("Presentations"));
+        assert!(blob.contains("IPsec") || blob.contains("OpenBSD") || blob.contains("IKEv2"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("goals.html") || h.contains("manual.html"))
+        }));
+        let wide = layout_html_ex(html, "https://www.openiked.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("OpenIKED"));
+    }
+
+    #[test]
     fn rfc5869_is_readable() {
         let html = include_str!("../testdata/rfc5869.html");
         let f = layout_html_ex(html, "", 1000.0, 800.0);

@@ -194,6 +194,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title, About/Project Goals/Manual Pages, FREE Network Time Protocol; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://www.openiked.org/",
+            name: "openiked.org",
+            status: ClaimStatus::Claimed,
+            note: "title, About/Project Goals/Manual Pages, FREE IKEv2 / Internet Key Exchange; live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://en.wikipedia.org/",
             name: "Wikipedia",
             status: ClaimStatus::NeedsJs,
@@ -235,7 +241,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 25);
+        assert_eq!(public_claimed(), 26);
         assert!(
             claims()
                 .iter()
@@ -363,6 +369,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("openntpd.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("openiked.org"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

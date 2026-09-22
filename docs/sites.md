@@ -40,15 +40,16 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.openbgpd.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenBGPD`. About / Project Goals / Manual Pages / Presentations nav. FREE Border Gateway Protocol Version 4. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.opensmtpd.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenSMTPD`. About / Project Goals / Manual Pages / Presentations nav. Callout OpenSMTPD 7.8. FREE server-side SMTP (RFC 5321). External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.openntpd.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenNTPD`. About / Project Goals / Manual Pages / Presentations nav. Callout OpenNTPD 7.9p1. FREE Network Time Protocol. External CSS unused (nav stacks). No script. Also 5120×1440. |
+| https://www.openiked.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenIKED`. About / Project Goals / Manual Pages / Presentations nav. Callout OpenIKED 7.4. FREE IKEv2 / Internet Key Exchange (IPsec VPN). External CSS unused (nav stacks). No script. Also 5120×1440. |
 
 ## Target (open next)
 
-Twenty-five public claims are in. CSS leftovers `list-style` /
-`white-space` are in. Next: claim another static document (not
-Wikipedia / GitHub / mail). Sensible candidates: another OPSEC-relevant
-static homepage (e.g. openiked.org), or a similar docs
-landing. Arch package builds; install is `sudo pacman -U` on the user's
-machine.
+Twenty-six public claims are in. CSS leftovers `list-style` /
+`white-space` are in. Named-candidate queue empty (openiked.org was
+the last named). Next: claim another static OPSEC-relevant homepage
+(not Wikipedia / GitHub / mail) — e.g. bearssl.org or wireguard.com
+if still static/readable, or similar. Arch package builds; install is
+`sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

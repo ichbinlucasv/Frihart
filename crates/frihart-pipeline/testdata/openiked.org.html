@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang=en id=project-main>
+	<meta charset=utf-8>
+	<title>OpenIKED</title>
+	<meta name="description" content="the main OpenIKED page">
+	<link rel="canonical" href="https://www.openiked.org/">
+	<link rel="stylesheet" href="openbsd.css">
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+
+<main>
+<nav>
+
+<header>About OpenIKED</header>
+<ul>
+	<li><a href="goals.html">Project Goals</a>
+	<li><a href="manual.html">Manual Pages</a>
+	<li><a href="papers.html">Presentations</a>
+	<li><a href="security.html">Security</a>
+</ul>
+
+<header>For OpenBSD</header>
+<ul>
+	<li><a href="https://www.openbsd.org/anoncvs.html">AnonCVS</a>
+	<li><a href="https://cvsweb.openbsd.org/src/sbin/iked">CVSWeb</a>
+</ul>
+
+<header>For other systems</header>
+<ul>
+	<li><a href="releases.html">Releases</a>
+	<li><a href="https://github.com/openiked/openiked-portable">Development</a>
+	<li><a href="https://github.com/openiked/openiked-portable/issues">Bug Reports</a>
+</ul>
+
+</nav>
+<article>
+
+<h2>
+	<img src="images/openiked.jpg" alt="[OpenIKED]">
+</h2>
+
+<p id="callout">
+<a href="https://ftp.openbsd.org/pub/OpenBSD/OpenIKED/openiked-7.4-relnotes.txt">OpenIKED 7.4</a> released Apr 10th, 2025
+
+<p>
+OpenIKED is a <strong>FREE</strong> implementation of the Internet Key
+Exchange (IKEv2) protocol which performs mutual authentication and which
+establishes and maintains IPsec VPN security policies and associations
+(SAs) between peers. The IKEv2 protocol is defined in RFC 5996, which
+combines and updates the previous standards: ISAKMP/Oakley (RFC 2408),
+IKE (RFC 2409), and the Internet DOI (RFC 2407). OpenIKED only supports
+the IKEv2 protocol; support for ISAKMP/Oakley and IKEv1 is provided by
+OpenBSD's <a href="https://man.openbsd.org/isakmpd.8">isakmpd(8)</a>
+or other implementations on non-OpenBSD platforms.
+
+<p>
+It is intended to be a lean, clean, secure, better configurable and
+interoperable implementation that focuses on supporting the main
+standards and most important features of IKEv2.
+
+<p>
+OpenIKED is developed as part of <a href="https://www.openbsd.org">the
+OpenBSD Project</a>. The software is freely usable and re-usable by
+everyone under an ISC license.
+
+<p>
+The <a href="https://github.com/openiked/openiked-portable">portable
+version</a> is available via periodic tarball releases. Contributions
+are welcome to both the OpenIKED core and the portable build framework.
+
+<p>
+OpenIKED is developed entirely by volunteers.
+Contributions to
+<a href="https://www.openbsdfoundation.org">The OpenBSD Foundation</a>
+support the development of this and other OpenBSD projects.
+
+</article>
+</main>
