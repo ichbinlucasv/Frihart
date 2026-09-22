@@ -1263,4 +1263,46 @@ line2</pre>"#;
         assert!(wide.title.contains("Tor Project") || wide.title.contains("Anonymity"));
     }
 
+    #[test]
+    fn i2pd_website_is_readable() {
+        let html = include_str!("../testdata/i2pd.website.html");
+        let f = layout_html_ex(html, "https://i2pd.website/", 1000.0, 800.0);
+        assert!(
+            f.title.contains("Invisible Internet Protocol Daemon")
+                || f.title.contains("i2pd")
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(
+            blob.contains("Network without borders")
+                || blob.contains("Invisible Internet Protocol")
+        );
+        assert!(
+            blob.contains("full-featured C++")
+                || blob.contains("I2P Daemon")
+                || blob.contains("i2pd")
+        );
+        assert!(
+            blob.contains("anonymous")
+                || blob.contains("end-to-end encrypted")
+                || blob.contains("without restrictions")
+        );
+        assert!(
+            blob.contains("Downloads")
+                || blob.contains("Documentation")
+                || blob.contains("Free from censorship")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("github.com/PurpleI2P/i2pd")
+                    || h.contains("i2pd.readthedocs.io")
+                    || h.contains("#donations")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://i2pd.website/", 5120.0, 1440.0);
+        assert!(
+            wide.title.contains("Invisible Internet Protocol Daemon")
+                || wide.title.contains("i2pd")
+        );
+    }
+
 }

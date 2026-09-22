@@ -248,6 +248,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title Anonymity Online, Browse Privately/Explore Freely, Download Tor Browser; apex 301→www; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://i2pd.website/",
+            name: "i2pd.website",
+            status: ClaimStatus::Claimed,
+            note: "title Invisible Internet Protocol Daemon, Network without borders, full-featured C++ I2P; GitHub Pages same host; live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -301,7 +307,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 34);
+        assert_eq!(public_claimed(), 35);
         assert!(
             claims()
                 .iter()
@@ -474,6 +480,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("torproject.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("i2pd.website"))
         );
         assert!(
             claims().iter().any(|s| {
