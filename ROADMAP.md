@@ -621,6 +621,7 @@ A sustainable rhythm for a long project:
 - [x] openiked.org claimed (About/Project Goals/Manual Pages, FREE IKEv2 / Internet Key Exchange, OpenIKED 7.4)
 - [x] bearssl.org claimed (Overview/Status/Download, SSL/TLS in C, constant-time, BearSSL 0.6)
 - [x] wireguard.com claimed (Installation/Quick Start/Protocol, Cryptokey Routing, VPN tunnel)
+- [x] gnupg.org claimed (Software/Download/Documentation, OpenPGP / GnuPG, Privacy Guard)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

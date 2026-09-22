@@ -943,6 +943,41 @@ mod tests {
     }
 
     #[test]
+    fn gnupg_org_is_readable() {
+        let html = include_str!("../testdata/gnupg.org.html");
+        let f = layout_html_ex(html, "https://gnupg.org/", 1000.0, 800.0);
+        assert!(f.title.contains("GNU Privacy Guard") || f.title.contains("GnuPG"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Download") || blob.contains("Software"));
+        assert!(
+            blob.contains("OpenPGP")
+                || blob.contains("GnuPG")
+                || blob.contains("Privacy Guard")
+        );
+        assert!(
+            blob.contains("Documentation")
+                || blob.contains("Manuals")
+                || blob.contains("Reconquer your privacy")
+        );
+        assert!(
+            blob.contains("encrypt")
+                || blob.contains("Free Software")
+                || blob.contains("GPG")
+                || blob.contains("GnuPG")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("download")
+                    || h.contains("software")
+                    || h.contains("documentation")
+                    || h.contains("donate")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://gnupg.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("GNU Privacy Guard") || wide.title.contains("GnuPG"));
+    }
+
+    #[test]
     fn bearssl_org_is_readable() {
         let html = include_str!("../testdata/bearssl.org.html");
         let f = layout_html_ex(html, "https://www.bearssl.org/", 1000.0, 800.0);

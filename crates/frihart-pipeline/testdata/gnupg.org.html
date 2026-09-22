@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>The GNU Privacy Guard</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="DC.Date" content="2026-09-11" />
+<meta name="DC.Language" content="en" />
+<meta name="DC.Title" content="The GNU Privacy Guard" />
+<meta name="DC.Description"
+ content="GnuPG is a free implementation of OpenPGP" />
+<meta name="DC.Creator" content="The People of the GnuPG Project" />
+<meta name="DC.Publisher" content="The GnuPG Project" />
+<meta name="DC.Identifier" content="https://gnupg.org/" />
+<meta name="DC.Rights" content="https://gnupg.org/copying.html" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="/share/site.css" type="text/css" />
+<link rel="me" href="https://mstdn.social/@GnuPG" />
+</head>
+<body>
+<div id="wrapper">
+<div id="header"><a href="/index.html" class="logo"
+     ><img src="/share/logo-gnupg-light-purple-bg.png"></a>&nbsp;</div>
+<nav>
+  <ul>
+    <li><span class="topmenuitem">Home</span>
+    <ul class="sub-menu">
+      <li><a href="/index.html">Home</a>
+      </li>
+      <li><a href="/news.html">News</a>
+      </li>
+      <li><a href="/people/index.html">People</a>
+      </li>
+      <li><a href="/verein/index.html">Verein</a>
+      </li>
+      <li><a href="/documentation/sites.html">Sites</a>
+      </li>
+    </ul>
+    </li>
+    <li><span class="topmenuitem">Donate</span>
+    <ul class="sub-menu">
+      <li><a href="/donate/index.html">Donate</a>
+      </li>
+      <li><a href="https://gnupg.myspreadshop.de">Merchandise</a>
+      </li>
+      <li><a href="/donate/kudos.html">List of Donors</a>
+      </li>
+    </ul>
+    </li>
+    <li><span class="topmenuitem">Software</span>
+    <ul class="sub-menu">
+      <li><a href="/software/index.html">GnuPG</a>
+      </li>
+      <li><a href="/software/frontends.html">Frontends</a>
+      </li>
+      <li><a href="/software/tools.html">Tools</a>
+      </li>
+      <li><a href="/software/libraries.html">Libraries</a>
+      </li>
+      <li><a href="/software/swlist.html">All</a>
+      </li>
+    </ul>
+    </li>
+    <li><span class="topmenuitem">Download</span>
+    <ul class="sub-menu">
+      <li><a href="/download/index.html">Download</a>
+      </li>
+      <li><a href="https://repos.gnupg.org/deb/gnupg">Debian&nbsp;Packages</a>
+      </li>
+      <li><a href="/download/integrity_check.html">Integrity&nbsp;Check</a>
+      </li>
+      <li><a href="/signature_key.html">Release&nbsp;Keys</a>
+      </li>
+      <li><a href="/download/supported_systems.html">Supported&nbsp;Systems</a>
+      </li>
+      <li><a href="/download/release_notes.html">Release&nbsp;Notes</a>
+      </li>
+      <li><a href="/download/mirrors.html">Mirrors</a>
+      </li>
+      <li><a href="/download/git.html">GIT</a>
+      </li>
+    </ul>
+    </li>
+    <li><span class="topmenuitem">Documentation</span>
+    <ul class="sub-menu">
+      <li><a href="/documentation/index.html">Overview</a>
+      </li>
+      <li><a href="/documentation/manuals.html">Manuals</a>
+      </li>
+      <li><a href="/documentation/guides.html">Guides</a>
+      </li>
+      <li><a href="/documentation/howtos.html">HOWTOs</a>
+      </li>
+      <li><a href="/documentation/faqs.html">FAQs</a>
+      </li>
+      <li><a href="/documentation/mailing-lists.html">Mailing&nbsp;Lists</a>
+      </li>
+      <li><a href="/service.html">3rd Party Support</a>
+      </li>
+      <li><a href="/documentation/bts.html">Bug&nbsp;Tracker</a>
+      </li>
+      <li><a href="/documentation/security.html">Security</a>
+      </li>
+    </ul>
+    </li>
+    <li><a href="/blog/index.html">Blog</a>
+    </li>
+  </ul>
+</nav>
+<main>
+<div id="content">
+
+<h2 id="org0a14084">The GNU Privacy Guard</h2>
+<p>
+GnuPG is a complete and free implementation of the OpenPGP standard as
+defined by <a href="https://www.ietf.org/rfc/rfc4880.txt">RFC4880</a> (also known as <i>PGP</i>). GnuPG allows you to encrypt and
+sign your data and communications; it features a versatile key management
+system, along with access modules for all kinds of public key
+directories.  GnuPG, also known as <i>GPG</i>, is a command line tool with
+features for easy integration with other applications.  A wealth of
+<a href="software/frontends.html">frontend applications</a> and <a href="software/libraries.html">libraries</a> are available.  GnuPG also
+provides support for S/MIME and Secure Shell (ssh).
+</p>
+
+<p>
+Since its introduction in 1997, GnuPG is <a href="https://www.gnu.org/philosophy/free-sw.html">Free Software</a> (meaning that
+it respects your freedom). It can be freely used, modified and
+distributed under the terms of the <a href="https://www.gnu.org/copyleft/gpl.html">GNU General Public License</a> .
+</p>
+
+<p>
+The current version of GnuPG is 2.5.22.  See the <a href="download/index.html">download</a>
+page for other maintained versions.
+</p>
+
+<p>
+<a href="https://www.gpg4win.org">Gpg4win</a> is a Windows version of GnuPG featuring a context menu tool, a
+crypto manager, and an Outlook plugin to send and receive standard
+PGP/MIME mails.  The current version of Gpg4win is 5.1.0.
+</p>
+
+<div class="pure-g">
+
+
+
+<div class="pure-u-1 pure-u-md-1-2">
+<h2 id="org2ef1fec">Reconquer your privacy</h2>
+<blockquote>
+<p>
+Arguing that you don't care about the right to privacy
+because you have nothing to hide is no different from
+saying you don't care about free speech because you have
+nothing to say.   &ndash;&nbsp;Edward&nbsp;Snowden
+</p>
+</blockquote>
+
+<p>
+Using encryption helps to protect your privacy and the privacy of the
+people you communicate with.  Encryption makes life difficult for bulk
+surveillance systems.  GnuPG is one of the tools that Snowden used to
+uncover the secrets of the NSA.
+</p>
+
+<p>
+Please visit the <a href="https://emailselfdefense.fsf.org">Email Self-Defense</a> site to learn how and why you
+should use GnuPG for your electronic communication.
+</p>
+</div>
+
+
+<div class="pure-u-1 pure-u-md-1-2">
+<h2 id="orga7df380">News</h2>
+<p>
+The latest blog entries:
+</p>
+<!--INSERT-BLOG-HEADLINE--><ul> <li><a href="blog/20260320-some-criticism-matter.html">Why Some Criticisms Matters More Than Others</a></li><li><a href="blog/20251226-cleartext-signatures.html">Cleartext Signatures Considered Harmful</a></li><li><a href="blog/20250827-new-repository.html">New GnuPG Repositories for Debian, Ubuntu, and Devuan: Stable and Development Branches Available</a></li> </ul>
+
+<p>
+The latest release news:<br  />
+(<a href="news.html">all news</a>)
+</p>
+
+<h3 id="org1ef3f01">Libgcrypt 1.12.4 released (2026-09-11)</h3>
+<p>
+Due to a problem building Libgcrypt 1.12.3, which depends on the used
+compiler version, we now provide Libgcrypt version 1.12.4.  This
+version fixes the build problem as well as a few other bugs.  {<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q3/000510.html">Read
+more</a>}
+</p>
+
+
+<h3 id="orgb46e58d">GnuPG 2.5.22 released (2026-08-31)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.22.  This version is mainly a bug fixing release.
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q3/000509.html">Read more</a>}
+</p>
+
+<h3 id="orge561486">Libgcrypt 1.12.3 released (2026-08-26)</h3>
+<p>
+We are pleased to announce the availability Libgcrypt version 1.12.3.
+This version fixes a couple of minor bugs, introduces an additional
+name for an existing curve, and provides some performance
+improvements.
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q3/000508.html">Read more</a>}
+</p>
+
+
+<h3 id="org932b96a">GnuPG 2.5.21 released (2026-07-02)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.21.  This version adds a few new features and fixes some
+bugs.  {<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q3/000506.html">Read more</a>}
+</p>
+
+<h3 id="orgcf4a06d">GnuPG 2.5.20 released (2026-05-13)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.20.  This version adds two features to gpgsm and fixes a
+some minor security bugs.  {<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q2/000505.html">Read more</a>}
+</p>
+
+<h3 id="org21d6e8b">GnuPG 2.5.19 released (2026-04-24)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.19.  This release adds a few new features and fixes a
+couple of bugs.  {<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q2/000504.html">Read more</a>}
+</p>
+
+
+<h3 id="org47f9879">Security advisory T8211 for Libgcrypt (2026-04-21)</h3>
+<p>
+A security bug which can be used to mount a DoS attack on Libgcrypt
+has been reported.  New versions of Libgcrypt have been released to
+fix this bug: Libgcrypt 1.12.2, 1.11.3, and 1.10.4.
+</p>
+
+<p>
+Note that the current stable GnuPG version is not affected.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q2/000503.html">Read more</a>}
+</p>
+
+
+<h3 id="orgce68cb3">Libgcrypt 1.12 is the new stable branch (2026-01-29)</h3>
+<p>
+Although we will keep on maintaining the 1.11 branch for two more
+years, the new stable and LTS branch is now 1.12.  Version 1.12.0
+comes with some performance improvements and new interfaces to better
+support FIPS requirements.  It provides full API and ABI compatibility
+to previous versions.  {<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q1/000502.html">more</a>}
+</p>
+
+<h3 id="org8e58e9f">Security advisory T8044 for GnuPG and Gpg4win (2026-01-27)</h3>
+<p>
+GnuPG 2.5.17 and Gpg4win 5.0.1 have been released to fix a severe
+security bug in GnuPG versions 2.5.13 to 2.5.16.  <b>Please update as
+soon as possible</b>.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2026q1/000501.html">Read more</a>}
+</p>
+
+<h3 id="org4009f66">Debian packages for 2.5.16 are available (2026-01-06)</h3>
+<p>
+GnuPG 2.5.16 packages for <a href="https://debian.org">Debian</a>, <a href="https://devuan.org">Devuan</a>, and <a href="https://ubuntu.com">Ubuntu</a> are now available
+at their usual place <a href="https://repos.gnupg.org/deb/gnupg">repos.gnupg.org</a> - please consider to update.
+</p>
+
+<h3 id="org97160dd">GnuPG 2.5.16 released (2025-12-30)</h3>
+<p>
+We are pleased to announce the availability of a new stable GnuPG release:
+Version 2.5.16.  This release adds new features and fixes a couple of
+bugs.
+</p>
+
+<p>
+Note that the 2.5 series is now declared the stable version of GnuPG.
+Be aware that the oldstable 2.4 series will reach end-of-life in just
+6 months.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q4/000500.html">Read more</a>}
+</p>
+
+<h3 id="org996adb7">GnuPG 2.5.14 released (2025-11-19)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.14.  This release adds new features and fixes a couple of
+bugs.  New Debian packages are also also availabe; see
+<a href="https://repos.gnupg.org/deb/gnupg/trixie-devel/">repos.gnupg.org</a>.
+</p>
+
+<p>
+Note that this 2.5 series is fully supported and thus ready for
+production use.  This means we won't break anything but may add some
+more features before 2.6.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q4/000499.html">Read more</a>}
+</p>
+
+<h3 id="org7e1f79f">GnuPG 2.5.13 and gpg4win 5.0.0-beta395 released (2025-10-22)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.13.  This release adds new features and fixes a couple of
+bugs.
+</p>
+
+<p>
+Along with this GnuPG version we also released a another beta
+version of <a href="https://www.gpg4win.org/version5.html">Gpg4win 5.0</a>.
+</p>
+
+<p>
+Note that this 2.5 series is fully supported and thus ready for
+production use.  This means we won't break anything but may add some
+more features before 2.6.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q4/000498.html">Read more</a>}
+</p>
+
+<h3 id="orgfacb5fb">GnuPG 2.5.12 released (2025-09-02)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+Version 2.5.12.  This release adds new features and fixes two
+regressions.
+</p>
+
+<p>
+Note that this 2.5 series is fully supported and thus ready for
+production use.  This means we won't break anything but may add some
+more features before 2.6.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q3/000497.html">Read more</a>}
+</p>
+
+<h3 id="orgb84d7b6">New GnuPG merchandise available (2025-09-01)</h3>
+<p>
+We have launched a new web shop where you can <a href="https://gnupg.myspreadshop.de">find merchandise</a> to show
+your support for GnuPG. We have been planning to offer merchandise
+again for a long time, and this print-on-demand service enables us to
+offer a wide range of products, so we hope there is something for
+everyone. Please contact us if you can't find what you're looking
+for. You can get a 25% discount for orders within the next 9 days!
+</p>
+
+<h3 id="org113f55c">GnuPG 2.5.9 with Debian packages released (2025-07-14)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release.
+Version 2.5.9 which will soon lead us to the new stable 2.6 series.
+This release mostly fixes regression in the previous releases.  We now
+also provide packages for <a href="https://debian.org">Debian</a>, <a href="https://devuan.org">Devuan</a>, and <a href="https://ubuntu.com">Ubuntu</a> in addition to
+the usual <a href="https://gpg4win.org/version5.html">Gpg4win</a> beta installer.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q3/000495.html">Read more</a>}
+</p>
+
+<h3 id="org6bafff4">GnuPG 2.5.8 released (2025-05-20)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+version 2.5.8.  This release is another one in a series of public
+testing releases eventually leading to a new stable version 2.6.  Do
+not hesitate to use this new version; it is fully functional and
+maintained.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q2/000494.html">Read more</a>}
+</p>
+
+
+<h3 id="org9e0ab49">GnuPG 2.5.6 and Gpg4win 5.0.0-Beta190 released (2025-05-09)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+version 2.5.6.  This release is the third of a series of public
+testing releases eventually leading to a new stable version 2.6.
+</p>
+
+<p>
+Along with this GnuPG version we also released another <b>beta</b>
+version of <a href="https://www.gpg4win.org/version5.html">Gpg4win 5.0</a>.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q2/000492.html">Read more</a>}
+</p>
+
+<h3 id="orgacb46ce">GnuPG 2.5.5 and Gpg4win 5.0.0-beta145 released (2025-03-10)</h3>
+<p>
+We are pleased to announce the availability of a new GnuPG release:
+version 2.5.5.  This release fixes a couple of problems found in the
+previous 2.5 versions.
+</p>
+
+<p>
+Along with this GnuPG version we also released another beta version
+of <a href="https://www.gpg4win.org/version5.html">Gpg4win 5.0</a>.
+</p>
+
+<p>
+{<a href="https://lists.gnupg.org/pipermail/gnupg-announce/2025q1/000491.html">Read more</a>}
+</p>
+
+
+</div><!-- end pure-g -->
+</div>
+</div><!-- end content -->
+</main>
+<div id="footer">
+  <div id="nav_bottom">
+  <ul>
+    <li><a href="/privacy-policy.html">Privacy&nbsp;Policy</a>
+    </li>
+    <li><a href="/imprint.html">Imprint</a>
+    </li>
+    <li><a href="/misc/index.html">Archive</a>
+    </li>
+    <li><a href="/sitemap.html">Sitemap</a>
+    </li>
+    <li><a href="/blog/index.html">Blog</a>
+    </li>
+    <li><a href="/ftp/index.html">Files</a>
+    </li>
+    </ul>
+  </div>
+  <div class="footerbox">
+      <a><img src="/share/traueranzeige-g10_v2015.png"
+          width="200px" height="73px"
+          alt="Traueranzeige: Wir nehmen Abschied von einem sicher geglaubten Freund, dem | Fernmeldegeheimniss | (Artikel 10 Grundgesetz) | * 23. Mai 1949, + 18. Dezember 2015"
+          title="Article 10 of the German constitution (communication privacy) is not anymore with us." /></a>
+      &nbsp;
+      <a href="https://mstdn.social/@GnuPG" target="_blank" rel="me"
+         title="Follow @GnuPG@mstdn.social">
+         <img src="/share/mastodon-icon.png"
+              width="32px" height="34px" style="padding-right: 20px;">
+      </a>
+  <p></p>
+  </div>
+  <div id="cpyright">
+    <a rel="license" href="https://creativecommons.org/licenses/by-sa/3.0/"
+      ><img alt="CC BY-SA 3.0" style="border: 0"
+            src="/share/cc-by-sa_80x15.png"/></a>&nbsp;
+    These web pages are
+    Copyright 1998--2020 The GnuPG Project and licensed under a
+    <a rel="license" href="https://creativecommons.org/licenses/by-sa/3.0/"
+    >Creative Commons Attribution-ShareAlike 3.0 Unported License</a>.  See
+    <a href="/copying.html">copying</a> for details.
+    Page <a href="https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg-doc.git;a=blob;f=web/index.org">source</a> last changed on 2026-09-11.
+  </div>
+</div>
+</div><!-- end wrapper -->
+</body>
+</html>
