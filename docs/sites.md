@@ -33,14 +33,16 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.rfc-editor.org/rfc/rfc8032.html | Live HTML 2026-09-22. Title from `span.h1`: “Edwards-Curve Digital Signature Algorithm (EdDSA)”. Abstract, Ed25519 / edwards25519, `pre` pages (same shape as RFC 1918/8446/5280). Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc7748.html | Live HTML 2026-09-22. Title from `span.h1`: “Elliptic Curves for Security”. Abstract, Curve25519 / X25519, `pre` pages (same shape as RFC 1918/8446/5280/8032). Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc5869.html | Live HTML 2026-09-22. Title from `span.h1`: “HMAC-based Extract-and-Expand Key Derivation Function (HKDF)”. Abstract, HKDF-Extract / HKDF-Expand, `pre` pages (same shape as RFC 1918/8446/5280/8032/7748). Also 5120×1440. |
+| https://www.openbsd.org/ | Live HTML 2026-09-22. Title `OpenBSD`. About / Project Goals / Security / Crypto nav. Callout “Only two remote holes…”. FREE / OpenSSH / OpenBSD 7.9. External CSS unused (nav stacks). No script. Also 5120×1440. |
 
 ## Target (open next)
 
-Eighteen public claims are in. CSS leftovers `list-style` /
+Nineteen public claims are in. CSS leftovers `list-style` /
 `white-space` are in. Next: claim another static document (not
-Wikipedia / GitHub / mail). Sensible candidates: openbsd.org, or
-another OPSEC-relevant static homepage. Arch package builds; install
-is `sudo pacman -U` on the user's machine.
+Wikipedia / GitHub / mail). Sensible candidates: another OPSEC-relevant
+static homepage (e.g. openssh.com, libressl.org), or a similar docs
+landing. Arch package builds; install is `sudo pacman -U` on the user's
+machine.
 
 ## Will not claim
 

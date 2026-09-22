@@ -775,6 +775,25 @@ mod tests {
     }
 
     #[test]
+    fn openbsd_org_is_readable() {
+        let html = include_str!("../testdata/openbsd.org.html");
+        let f = layout_html_ex(html, "https://www.openbsd.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenBSD"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("About OpenBSD") || blob.contains("Project Goals"));
+        assert!(blob.contains("FREE"));
+        assert!(blob.contains("OpenSSH"));
+        assert!(blob.contains("remote holes") || blob.contains("OpenBSD 7.9"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("security.html") || h.contains("openssh.com"))
+        }));
+        let wide = layout_html_ex(html, "https://www.openbsd.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("OpenBSD"));
+    }
+
+    #[test]
     fn rfc5869_is_readable() {
         let html = include_str!("../testdata/rfc5869.html");
         let f = layout_html_ex(html, "", 1000.0, 800.0);
