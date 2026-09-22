@@ -619,6 +619,7 @@ A sustainable rhythm for a long project:
 - [x] opensmtpd.org claimed (About/Project Goals/Manual Pages, FREE SMTP / RFC 5321, OpenSMTPD 7.8)
 - [x] openntpd.org claimed (About/Project Goals/Manual Pages, FREE Network Time Protocol, OpenNTPD 7.9p1)
 - [x] openiked.org claimed (About/Project Goals/Manual Pages, FREE IKEv2 / Internet Key Exchange, OpenIKED 7.4)
+- [x] bearssl.org claimed (Overview/Status/Download, SSL/TLS in C, constant-time, BearSSL 0.6)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

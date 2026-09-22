@@ -41,15 +41,15 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.opensmtpd.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenSMTPD`. About / Project Goals / Manual Pages / Presentations nav. Callout OpenSMTPD 7.8. FREE server-side SMTP (RFC 5321). External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.openntpd.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenNTPD`. About / Project Goals / Manual Pages / Presentations nav. Callout OpenNTPD 7.9p1. FREE Network Time Protocol. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.openiked.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `OpenIKED`. About / Project Goals / Manual Pages / Presentations nav. Callout OpenIKED 7.4. FREE IKEv2 / Internet Key Exchange (IPsec VPN). External CSS unused (nav stacks). No script. Also 5120×1440. |
+| https://www.bearssl.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `BearSSL - Main`. Overview / Status / Download and Installation / Features. SSL/TLS in C (RFC 5246), constant-time crypto, no `malloc`. External CSS unused (nav stacks). IE conditional scripts skipped. Also 5120×1440. |
 
 ## Target (open next)
 
-Twenty-six public claims are in. CSS leftovers `list-style` /
-`white-space` are in. Named-candidate queue empty (openiked.org was
-the last named). Next: claim another static OPSEC-relevant homepage
-(not Wikipedia / GitHub / mail) — e.g. bearssl.org or wireguard.com
-if still static/readable, or similar. Arch package builds; install is
-`sudo pacman -U` on the user's machine.
+Twenty-seven public claims are in. CSS leftovers `list-style` /
+`white-space` are in. bearssl.org claimed this session. Next: claim
+another static OPSEC-relevant homepage (not Wikipedia / GitHub / mail)
+— wireguard.com if still static/readable, or similar. Arch package
+builds; install is `sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

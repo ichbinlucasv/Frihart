@@ -908,6 +908,37 @@ mod tests {
     }
 
     #[test]
+    fn bearssl_org_is_readable() {
+        let html = include_str!("../testdata/bearssl.org.html");
+        let f = layout_html_ex(html, "https://www.bearssl.org/", 1000.0, 800.0);
+        assert!(f.title.contains("BearSSL"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Overview") || blob.contains("SSL/TLS"));
+        assert!(
+            blob.contains("SSL/TLS")
+                || blob.contains("TLS")
+                || blob.contains("implementation of the SSL")
+        );
+        assert!(blob.contains("Download") || blob.contains("Documentation") || blob.contains("Features"));
+        assert!(
+            blob.contains("constant-time")
+                || blob.contains("Constant-Time")
+                || blob.contains("Project Goals")
+                || blob.contains("written in C")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("goals.html")
+                    || h.contains("apidoc")
+                    || h.contains("constanttime")
+                    || h.contains("bearssl-0.6")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://www.bearssl.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("BearSSL"));
+    }
+
+    #[test]
     fn openiked_org_is_readable() {
         let html = include_str!("../testdata/openiked.org.html");
         let f = layout_html_ex(html, "https://www.openiked.org/", 1000.0, 800.0);
