@@ -170,6 +170,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title, About/Project Goals, LibreSSL 4.3.2, libcrypto/libssl/libtls; libressl.org→www; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://www.openbsdfoundation.org/",
+            name: "openbsdfoundation.org",
+            status: ClaimStatus::Claimed,
+            note: "title, Funding for OpenBSD, Bylaws/Donations/Activities, 2026 Campaign; openbsdfoundation.org→www; live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://en.wikipedia.org/",
             name: "Wikipedia",
             status: ClaimStatus::NeedsJs,
@@ -211,7 +217,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 21);
+        assert_eq!(public_claimed(), 22);
         assert!(
             claims()
                 .iter()
@@ -319,6 +325,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("libressl.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("openbsdfoundation.org"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")

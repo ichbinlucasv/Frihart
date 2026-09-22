@@ -614,6 +614,7 @@ A sustainable rhythm for a long project:
 - [x] openbsd.org claimed (About/Project Goals/Security, FREE, OpenSSH, remote holes / 7.9)
 - [x] openssh.com claimed (→ openssh.org; About/Project Goals/Security, OpenSSH 10.5, ssh/scp/sftp)
 - [x] libressl.org claimed (→ www; About/Project Goals, LibreSSL 4.3.2, libcrypto/libssl/libtls)
+- [x] openbsdfoundation.org claimed (→ www; Funding for OpenBSD, Bylaws/Donations, 2026 Campaign)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

@@ -36,13 +36,14 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.openbsd.org/ | Live HTML 2026-09-22. Title `OpenBSD`. About / Project Goals / Security / Crypto nav. Callout “Only two remote holes…”. FREE / OpenSSH / OpenBSD 7.9. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.openssh.org/ | Live HTML 2026-09-22 (`openssh.com` 301 → `openssh.org`). Title `OpenSSH`. About / Project Goals / Security nav. Callout OpenSSH 10.5. ssh / scp / sftp suite. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://www.libressl.org/ | Live HTML 2026-09-22 (`libressl.org` 301 → `www.libressl.org`). Title `LibreSSL`. About / Project Goals / Papers nav. Callout LibreSSL 4.3.2. libcrypto / libssl / libtls. External CSS unused (nav stacks). No script. Also 5120×1440. |
+| https://www.openbsdfoundation.org/ | Live HTML 2026-09-22 (`openbsdfoundation.org` 301 → `www.openbsdfoundation.org`). Title `The OpenBSD Foundation`. Funding for OpenBSD and related projects. Bylaws / Donations / Activities / Contributors / Membership nav. 2026 Fundraising Campaign. Bootstrap CSS unused (nav stacks). Footer jQuery/bootstrap scripts skipped. Also 5120×1440. |
 
 ## Target (open next)
 
-Twenty-one public claims are in. CSS leftovers `list-style` /
+Twenty-two public claims are in. CSS leftovers `list-style` /
 `white-space` are in. Next: claim another static document (not
 Wikipedia / GitHub / mail). Sensible candidates: another OPSEC-relevant
-static homepage (e.g. openbsdfoundation.org), or a similar docs
+static homepage (e.g. openbgpd.org), or a similar docs
 landing. Arch package builds; install is `sudo pacman -U` on the user's
 machine.
 
