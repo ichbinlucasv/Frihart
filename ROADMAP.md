@@ -612,6 +612,7 @@ A sustainable rhythm for a long project:
 - [x] RFC 7748 claimed (Curve25519 / X25519, Abstract, Elliptic Curves, pre pages)
 - [x] RFC 5869 claimed (HKDF, Abstract, Extract-and-Expand / HKDF-Extract, pre pages)
 - [x] openbsd.org claimed (About/Project Goals/Security, FREE, OpenSSH, remote holes / 7.9)
+- [x] openssh.com claimed (→ openssh.org; About/Project Goals/Security, OpenSSH 10.5, ssh/scp/sftp)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

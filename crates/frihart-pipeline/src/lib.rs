@@ -794,6 +794,24 @@ mod tests {
     }
 
     #[test]
+    fn openssh_com_is_readable() {
+        let html = include_str!("../testdata/openssh.com.html");
+        let f = layout_html_ex(html, "https://www.openssh.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenSSH"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("About OpenSSH") || blob.contains("Project Goals"));
+        assert!(blob.contains("OpenSSH 10.5") || blob.contains("premier connectivity"));
+        assert!(blob.contains("ssh") || blob.contains("SSH protocol"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("security.html") || h.contains("releasenotes.html"))
+        }));
+        let wide = layout_html_ex(html, "https://www.openssh.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("OpenSSH"));
+    }
+
+    #[test]
     fn rfc5869_is_readable() {
         let html = include_str!("../testdata/rfc5869.html");
         let f = layout_html_ex(html, "", 1000.0, 800.0);

@@ -52,7 +52,8 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **rfc-editor.org** (index), **w3.org** (landing), **w3.org/TR** (index),
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519), **RFC 7748** (Curve25519 / X25519),
-**RFC 5869** (HKDF), **openbsd.org**. Settings is
+**RFC 5869** (HKDF), **openbsd.org**, **openssh.com**
+(→ openssh.org). Settings is
 the LibreWolf-stance page (native prefs, black/yellow). CSS
 `font-family` is engine slots only; `list-style` / `white-space` are in.
 Letterboxing paint exists (pref off).
@@ -76,8 +77,8 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 ## Plan (do these, in this order)
 
 1. **This / next session — D.** Claim another static document (not
-   Wikipedia / GitHub / mail). Nineteen public claims; CSS leftovers
-   done. Candidates: openssh.com, libressl.org, or similar.
+   Wikipedia / GitHub / mail). Twenty public claims; CSS leftovers
+   done. Candidates: libressl.org, or similar.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -89,7 +90,7 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 5. **F — install on one Linux.** Build the Arch PKGBUILD locally on
    CachyOS/Arch. Fedora spec and Debian files exist; do not publish
    Tails/Qubes packages until a stranger can install from those files.
-6. **v0.2.0** when: named static list is claimed (19 already), worker
+6. **v0.2.0** when: named static list is claimed (20 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs (`pacman -U` the `.pkg.tar.zst`).
 7. **Then — and only then — discuss G.** Recommendation: stay refuse
@@ -123,13 +124,14 @@ example.com, RFC 1918 HTML, suckless.org, GNU philosophy, kernel.org,
 docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
 w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
 RFC 5280 HTML, RFC 8032 HTML (Ed25519), RFC 7748 HTML (Curve25519 /
-X25519), RFC 5869 HTML (HKDF), openbsd.org.
+X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
+(→ openssh.org).
 
 ## Next session — start here
 
 **D: claim another static document** (not Wikipedia / GitHub / mail).
-Nineteen public sites (openbsd.org claimed). Candidates: openssh.com,
-libressl.org, or similar. Arch package builds; install is `sudo pacman
+Twenty public sites (openssh.com claimed). Candidates: libressl.org,
+or similar. Arch package builds; install is `sudo pacman
 -U`. Do not start a JS engine. G stays refuse.
 
 ## Commands
