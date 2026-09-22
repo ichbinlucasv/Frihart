@@ -889,6 +889,25 @@ mod tests {
     }
 
     #[test]
+    fn openntpd_org_is_readable() {
+        let html = include_str!("../testdata/openntpd.org.html");
+        let f = layout_html_ex(html, "https://www.openntpd.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenNTPD"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("About OpenNTPD") || blob.contains("Project Goals"));
+        assert!(blob.contains("FREE") || blob.contains("Network Time Protocol"));
+        assert!(blob.contains("Manual Pages") || blob.contains("Presentations"));
+        assert!(blob.contains("NTP") || blob.contains("OpenBSD"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("goals.html") || h.contains("manual.html"))
+        }));
+        let wide = layout_html_ex(html, "https://www.openntpd.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("OpenNTPD"));
+    }
+
+    #[test]
     fn rfc5869_is_readable() {
         let html = include_str!("../testdata/rfc5869.html");
         let f = layout_html_ex(html, "", 1000.0, 800.0);
