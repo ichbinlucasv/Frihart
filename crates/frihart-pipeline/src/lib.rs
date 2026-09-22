@@ -978,6 +978,41 @@ mod tests {
     }
 
     #[test]
+    fn noiseprotocol_org_is_readable() {
+        let html = include_str!("../testdata/noiseprotocol.org.html");
+        let f = layout_html_ex(html, "https://noiseprotocol.org/", 1000.0, 800.0);
+        assert!(f.title.contains("Noise Protocol Framework") || f.title.contains("Noise"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Resources") || blob.contains("Specification"));
+        assert!(
+            blob.contains("Noise Protocol Framework")
+                || blob.contains("forward secrecy")
+                || blob.contains("crypto protocols")
+        );
+        assert!(
+            blob.contains("Specs")
+                || blob.contains("Code")
+                || blob.contains("Read Specification")
+        );
+        assert!(
+            blob.contains("WireGuard")
+                || blob.contains("WhatsApp")
+                || blob.contains("identity hiding")
+                || blob.contains("Noise")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("noise.html")
+                    || h.contains("#resources")
+                    || h.contains("index.html")
+                    || h.contains("wireguard")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://noiseprotocol.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("Noise Protocol Framework") || wide.title.contains("Noise"));
+    }
+
+    #[test]
     fn bearssl_org_is_readable() {
         let html = include_str!("../testdata/bearssl.org.html");
         let f = layout_html_ex(html, "https://www.bearssl.org/", 1000.0, 800.0);
