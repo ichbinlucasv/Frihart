@@ -46,14 +46,16 @@ These are our chrome. They do not prove the HTML engine.
 | https://gnupg.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `The GNU Privacy Guard`. Software / Download / Documentation / Donate nav. OpenPGP (RFC4880), GnuPG 2.5.22, Reconquer your privacy. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://noiseprotocol.org/ | Live HTML 2026-09-22 (apex; www TLS name mismatch). Title `Noise Protocol Framework`. Home / Resources nav. Specs / Code / Wiki / Adopters (WireGuard). External CSS unused (nav stacks). jQuery/bootstrap/Clicky scripts skipped. Also 5120×1440. |
 | https://curl.se/ | Live HTML 2026-09-22 (www 301 → apex; same bytes). Title `curl`. Download / Documentation / libcurl / Get Help / Development nav (`details`/`summary`). Lead “command line tool and library for transferring data with URLs”. Protocols table, version 8.22.0. External CSS unused (nav stacks). No script. Also 5120×1440. |
+| https://signal.org/ | Live HTML 2026-09-22 (www 301 → apex). Title `Signal >> Home`. Get Signal / Help / Blog / Developers / Careers / Donate nav. h1 “Speak Freely”, Signal Protocol, “No ads. No trackers.”, Free for Everyone (501c3). External CSS unused (nav stacks). jQuery / lottie / language-modal / burger scripts skipped. Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty-one public claims are in. CSS leftovers `list-style` /
-`white-space` are in. curl.se claimed this session. Named queue
-empty (complete). Pick another static OPSEC homepage when ready —
-not Wikipedia / GitHub / mail. Arch package builds; install is
-`sudo pacman -U` on the user's machine.
+Thirty-two public claims are in. CSS leftovers `list-style` /
+`white-space` are in. signal.org claimed this session. Next is
+**age-encryption.org**. Then libsodium.org, torproject.org,
+i2pd.website, mullvad.net, privacyguides.org. Not Wikipedia /
+GitHub / mail. Arch package builds; install is `sudo pacman -U`
+on the user's machine.
 
 ## Will not claim
 

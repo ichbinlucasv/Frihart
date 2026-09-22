@@ -915,9 +915,7 @@ mod tests {
         let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
         assert!(blob.contains("Installation") || blob.contains("Quick Start"));
         assert!(
-            blob.contains("VPN")
-                || blob.contains("cryptography")
-                || blob.contains("Cryptokey")
+            blob.contains("VPN") || blob.contains("cryptography") || blob.contains("Cryptokey")
         );
         assert!(
             blob.contains("Protocol")
@@ -950,9 +948,7 @@ mod tests {
         let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
         assert!(blob.contains("Download") || blob.contains("Software"));
         assert!(
-            blob.contains("OpenPGP")
-                || blob.contains("GnuPG")
-                || blob.contains("Privacy Guard")
+            blob.contains("OpenPGP") || blob.contains("GnuPG") || blob.contains("Privacy Guard")
         );
         assert!(
             blob.contains("Documentation")
@@ -990,9 +986,7 @@ mod tests {
                 || blob.contains("crypto protocols")
         );
         assert!(
-            blob.contains("Specs")
-                || blob.contains("Code")
-                || blob.contains("Read Specification")
+            blob.contains("Specs") || blob.contains("Code") || blob.contains("Read Specification")
         );
         assert!(
             blob.contains("WireGuard")
@@ -1024,7 +1018,11 @@ mod tests {
                 || blob.contains("TLS")
                 || blob.contains("implementation of the SSL")
         );
-        assert!(blob.contains("Download") || blob.contains("Documentation") || blob.contains("Features"));
+        assert!(
+            blob.contains("Download")
+                || blob.contains("Documentation")
+                || blob.contains("Features")
+        );
         assert!(
             blob.contains("constant-time")
                 || blob.contains("Constant-Time")
@@ -1141,9 +1139,7 @@ line2</pre>"#;
                 || blob.contains("twenty billion")
         );
         assert!(
-            blob.contains("libcurl")
-                || blob.contains("8.22")
-                || blob.contains("Documentation")
+            blob.contains("libcurl") || blob.contains("8.22") || blob.contains("Documentation")
         );
         assert!(f.boxes.iter().any(|b| {
             b.href.as_deref().is_some_and(|h| {
@@ -1157,5 +1153,39 @@ line2</pre>"#;
         assert!(wide.title.contains("curl"));
     }
 
-
+    #[test]
+    fn signal_org_is_readable() {
+        let html = include_str!("../testdata/signal.org.html");
+        let f = layout_html_ex(html, "https://signal.org/", 1000.0, 800.0);
+        assert!(f.title.contains("Signal"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(
+            blob.contains("Get Signal") || blob.contains("Developers") || blob.contains("Donate")
+        );
+        assert!(
+            blob.contains("Speak Freely")
+                || blob.contains("messaging experience")
+                || blob.contains("Signal Protocol")
+        );
+        assert!(
+            blob.contains("Why use Signal")
+                || blob.contains("end-to-end")
+                || blob.contains("No ads")
+        );
+        assert!(
+            blob.contains("nonprofit")
+                || blob.contains("Free for Everyone")
+                || blob.contains("Donate")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/download/")
+                    || h.contains("/docs/")
+                    || h.contains("/donate/")
+                    || h.contains("support.signal.org")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://signal.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("Signal"));
+    }
 }
