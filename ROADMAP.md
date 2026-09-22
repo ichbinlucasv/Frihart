@@ -28,8 +28,8 @@ A general-purpose engine that competes with Blink or Gecko is a
 | 12–18 months | Simple documents (blogs, docs, homepages) without JS |
 | 18–24 months | Process isolation, Linux sandbox, named daily-driver sites |
 | Year 2 | Packages for Arch, CachyOS, Fedora, Mint; Tails + Qubes notes that are honest |
-| Year 2–3 | Constrained scripting. Windows only after Linux is actually useful |
-| Year 3–4 | macOS, then Android |
+| Year 2–3 | Constrained scripting. Other OS only after Linux desktop is actually useful |
+| Year 3–4 | Other OS + Android; alt phones (GrapheneOS / Jolla / Volla) prioritized to work great |
 | Year 5+ | Compatibility, performance, engine completeness |
 
 If a phase slips, we slip the date. We do not skip isolation to paint
@@ -37,19 +37,26 @@ more CSS, and we do not skip policy to fetch more pages.
 
 ## Platform order (fixed)
 
-1. **Linux** — same binary everywhere
+1. **Linux desktop** — must be good, stable, and fast before any other OS
+   work. Same binary everywhere:
    1. Arch / CachyOS (reference)
    2. Fedora
    3. Linux Mint (Debian/Ubuntu family)
    4. Tails (amnesic, system Tor)
    5. Qubes OS (AppVM / DisposableVM)
    6. Every other Linux
-2. Windows
-3. macOS
-4. Android
+2. **Then other OS + Android**, with **special priority** that GrapheneOS,
+   Jolla (Sailfish), Volla Phone OS, and similar alternative /
+   Linux-leaning phones work great (stable + fast) — not as an
+   afterthought behind stock Google Android.
+3. **Windows / macOS / stock Android** remain parked paid ports until
+   Linux desktop clears the quality bar; when mobile work starts, the
+   alt-phone targets above share that priority track.
 
-A port starts only when the previous rung is a daily driver for the
-sites Frihart claims at that time.
+A port starts only when Linux desktop is a daily driver for the sites
+Frihart claims at that time. Desktop Linux is free; non-Linux builds
+(including packaged mobile ports) are **€100 lifetime** — see
+[docs/pricing.md](docs/pricing.md).
 
 ## Campaigns (the new plan)
 
@@ -62,7 +69,7 @@ sites Frihart claims at that time.
 | **E Isolation** | 6 | **Open** | Worker per site key; nnp + landlock + seccomp |
 | **F Linux homes** | packaging | **Open** | Arch, Cachy, Fedora, Mint, Tails, Qubes |
 | **G Script** | 7 | **Open** (refuse-only) | Last. Fingerprint APIs stay denied |
-| **H Other OS** | 8–10 | **Parked** | Windows, macOS, Android |
+| **H Other OS** | 8–10 | **Parked** | Windows, macOS, Android; alt phones (GrapheneOS / Jolla / Volla) priority when mobile starts |
 | **I Depth** | 11, 13–15 | **Parked** | Media, i18n, print, extension runtime |
 
 **Closed today:** A, B, C (crate phases 0–2). Leftovers (multi-window, HTTP/2) do not block close.
@@ -454,18 +461,22 @@ a generic exploit runtime.
 
 ---
 
-## Phase 10 — Android
+## Phase 10 — Android (and alt phones)
 
-**When:** after desktop is real
+**When:** after Linux desktop is real
 **Estimate:** 4–8 months for a first cut
+**Priority:** GrapheneOS, Jolla (Sailfish), Volla Phone OS, and similar
+Linux-leaning phones must work great (stable + fast) — not behind stock
+Google Android. Packaged mobile builds are €100 lifetime (see pricing).
 
 ### Technical tasks
 
 - Reuse engine crates; do not reuse desktop chrome
-- Thin Android chrome (Rust + a small JNI layer, or a Rust activity)
+- Thin Android / mobile chrome (Rust + a small JNI layer, or a Rust activity)
 - Profiles in app-private storage
 - No Play-services dependency
-- F-Droid packaging is the goal, not a Play-only listing
+- F-Droid / sideload packaging is the goal, not a Play-only listing
+- Target GrapheneOS and similar hardened / alt phone OS builds explicitly
 - Mobile navigation: one tab strip model that does not ape Chrome
 
 ### Success criteria

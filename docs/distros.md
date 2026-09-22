@@ -73,3 +73,11 @@ Frihart must not punch holes in it.
 Alpine, Gentoo, NixOS, openSUSE, Slackware, and the rest: build from
 source with the same `cargo build --release`. If you maintain a
 package, keep it offline-first: no extra repos that phone home.
+
+## Mobile (after Linux desktop)
+
+Desktop Linux homes above come first. Packaged phone ports — including
+GrapheneOS, Jolla (Sailfish), Volla Phone OS, and similar alternative /
+Linux-leaning phones — are next and must work great; see
+[ROADMAP.md](../ROADMAP.md) platform order and [pricing.md](pricing.md).
+They are not free desktop Linux; packaged mobile is €100 lifetime.

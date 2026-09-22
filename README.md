@@ -12,10 +12,13 @@ else.
 resisted, you are sovereign — implemented as native features, not
 add-ons. The look is **black chrome, yellow accents**.
 
-Linux is the product. Arch and CachyOS are the reference. Fedora, Mint,
-Tails, and Qubes are first-class homes. Other Linux uses the same
-binary. Windows, then macOS, then Android wait until Linux is actually
-useful.
+Linux desktop is the product — good, stable, and fast before other OS
+work. Arch and CachyOS are the reference. Fedora, Mint, Tails, and Qubes
+are first-class homes. Other Linux uses the same binary. After that:
+other OS and Android, with **special priority** that GrapheneOS, Jolla
+(Sailfish), Volla Phone OS, and similar alt phones work great. Windows,
+macOS, and stock Android stay parked paid ports until Linux desktop
+clears the bar.
 
 This is a long project. The chrome runs. The engine paints a growing
 HTML subset. JavaScript is off. That is intentional. Read
@@ -63,9 +66,11 @@ git push origin main   # GitHub mirror only after Codeberg
 - rustls fetch, first-party partitioned cookies, HTTPS-only
 - HTML → CSS → layout → display list (`about:engine`)
 
-Linux is free. Other OS: €100 lifetime, local key, no license server.
-Voluntary support never unlocks a privacy tier. See
-[docs/pricing.md](docs/pricing.md) and [docs/stance.md](docs/stance.md).
+Linux desktop is free. Non-Linux (including packaged mobile builds —
+GrapheneOS / Jolla / Volla / Android / Windows / macOS): **€100
+lifetime**, local key, no license server. Voluntary support never unlocks
+a privacy tier. See [docs/pricing.md](docs/pricing.md) and
+[docs/stance.md](docs/stance.md).
 
 ## Linux homes
 
