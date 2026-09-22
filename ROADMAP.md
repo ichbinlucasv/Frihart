@@ -628,6 +628,7 @@ A sustainable rhythm for a long project:
 - [x] c2sp.org/age claimed (/age→/age@v1.1.0 same host; age|C2SP, file encryption format, recipients)
 - [x] age-encryption.org Forbidden / NeedsJs (apex 302 → GitHub; left unclaimed)
 - [x] libsodium.org Forbidden / NeedsJs (apex→doc→libsodium.gitbook.io; left unclaimed)
+- [x] torproject.org claimed (Browse Privately/Explore Freely, Download Tor Browser, Anonymity Online; apex→www)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

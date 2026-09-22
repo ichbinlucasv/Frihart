@@ -242,6 +242,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title age|C2SP, h1 age, file encryption format / recipients; /age→/age@v1.1.0 same host; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://www.torproject.org/",
+            name: "torproject.org",
+            status: ClaimStatus::Claimed,
+            note: "title Anonymity Online, Browse Privately/Explore Freely, Download Tor Browser; apex 301→www; live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -295,7 +301,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 33);
+        assert_eq!(public_claimed(), 34);
         assert!(
             claims()
                 .iter()
@@ -463,6 +469,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("c2sp.org/age"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("torproject.org"))
         );
         assert!(
             claims().iter().any(|s| {

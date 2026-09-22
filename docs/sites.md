@@ -48,16 +48,17 @@ These are our chrome. They do not prove the HTML engine.
 | https://curl.se/ | Live HTML 2026-09-22 (www 301 → apex; same bytes). Title `curl`. Download / Documentation / libcurl / Get Help / Development nav (`details`/`summary`). Lead “command line tool and library for transferring data with URLs”. Protocols table, version 8.22.0. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://signal.org/ | Live HTML 2026-09-22 (www 301 → apex). Title `Signal >> Home`. Get Signal / Help / Blog / Developers / Careers / Donate nav. h1 “Speak Freely”, Signal Protocol, “No ads. No trackers.”, Free for Everyone (501c3). External CSS unused (nav stacks). jQuery / lottie / language-modal / burger scripts skipped. Also 5120×1440. |
 | https://c2sp.org/age | Live HTML 2026-09-22 (`/age` 302 → `/age@v1.1.0` same host; not GitHub). Title `age | C2SP`. Path `c2sp.org/age`, h1 age, modern file encryption format / pluggable recipients, Encrypted file format, Native recipient types, ASCII armor, Test vectors. External CSS unused. No script. Also 5120×1440. |
+| https://www.torproject.org/ | Live HTML 2026-09-22 (apex 301 → www; same host). Title `Tor Project | Anonymity Online`. About / Support / Community / Blog / Donate nav. h1 “Browse Privately.” / “Explore Freely.”, Download Tor Browser, BLOCK TRACKERS / MULTI-LAYERED ENCRYPTION, 501(c)(3). External CSS unused (nav stacks). jQuery/bootstrap/scrollspy/modernizr/download/fallback scripts skipped. Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty-three public claims are in. CSS leftovers `list-style` /
-`white-space` are in. **libsodium.org** is Forbidden (apex/www 307 →
-doc.libsodium.org 302 → libsodium.gitbook.io/doc) — left unclaimed.
-**age-encryption.org** Forbidden (apex → GitHub) remains unclaimed.
-Next is **torproject.org**. Then i2pd.website, mullvad.net,
-privacyguides.org. Not Wikipedia / GitHub / mail. Arch package
-builds; install is `sudo pacman -U` on the user's machine.
+Thirty-four public claims are in. CSS leftovers `list-style` /
+`white-space` are in. torproject.org claimed this session.
+**libsodium.org** Forbidden (apex/www → doc → gitbook.io) and
+**age-encryption.org** Forbidden (apex → GitHub) remain unclaimed.
+Next is **i2pd.website**. Then mullvad.net, privacyguides.org.
+Not Wikipedia / GitHub / mail. Arch package builds; install is
+`sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

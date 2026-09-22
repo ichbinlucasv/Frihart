@@ -1223,4 +1223,44 @@ line2</pre>"#;
         let wide = layout_html_ex(html, "https://c2sp.org/age", 5120.0, 1440.0);
         assert!(wide.title.contains("age") && wide.title.contains("C2SP"));
     }
+
+    #[test]
+    fn torproject_org_is_readable() {
+        let html = include_str!("../testdata/torproject.org.html");
+        let f = layout_html_ex(html, "https://www.torproject.org/", 1000.0, 800.0);
+        assert!(f.title.contains("Tor Project") || f.title.contains("Anonymity"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(
+            blob.contains("Browse Privately")
+                || blob.contains("Explore Freely")
+                || blob.contains("Download Tor Browser")
+        );
+        assert!(
+            blob.contains("Defend yourself")
+                || blob.contains("tracking and surveillance")
+                || blob.contains("Circumvent censorship")
+        );
+        assert!(
+            blob.contains("BLOCK TRACKERS")
+                || blob.contains("MULTI-LAYERED ENCRYPTION")
+                || blob.contains("RESIST FINGERPRINTING")
+        );
+        assert!(
+            blob.contains("501")
+                || blob.contains("nonprofit")
+                || blob.contains("human rights")
+                || blob.contains("About")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/download/")
+                    || h.contains("download.torproject.org")
+                    || h.contains("/about/")
+                    || h.contains("donate.torproject.org")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://www.torproject.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("Tor Project") || wide.title.contains("Anonymity"));
+    }
+
 }
