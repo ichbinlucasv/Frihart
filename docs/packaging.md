@@ -40,7 +40,18 @@ sudo apt install cargo rustc libfontconfig1-dev libfreetype-dev gcc pkg-config
 
 cargo build --release
 sudo install -Dm755 target/release/frihart /usr/local/bin/frihart
+sudo install -Dm644 packaging/linux/org.frihart.Frihart.desktop \
+  /usr/local/share/applications/org.frihart.Frihart.desktop
+for sz in 64x64 128x128 256x256 512x512; do
+  sudo install -Dm644 "branding/hicolor/$sz/apps/frihart.png" \
+    "/usr/local/share/icons/hicolor/$sz/apps/frihart.png"
+done
+# refresh icon cache if you have it
+# sudo gtk-update-icon-cache -f /usr/local/share/icons/hicolor 2>/dev/null || true
 ```
+
+Prefer the distro packages above when you can; they install under `/usr`
+and keep the same `Icon=frihart` name.
 
 ## Tor (optional, for `--tor` tabs)
 
