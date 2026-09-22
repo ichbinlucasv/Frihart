@@ -775,6 +775,28 @@ mod tests {
     }
 
     #[test]
+    fn rfc5869_is_readable() {
+        let html = include_str!("../testdata/rfc5869.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(
+            f.title.contains("HKDF")
+                || f.title.contains("HMAC-based")
+                || f.title.contains("Key Derivation")
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("HKDF") || blob.contains("HMAC-based"));
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("HKDF-Extract") || blob.contains("Extract-and-Expand"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert!(
+            wide.title.contains("HKDF")
+                || wide.title.contains("HMAC-based")
+                || wide.title.contains("Key Derivation")
+        );
+    }
+
+    #[test]
     fn list_style_none_drops_markers() {
         let html = r#"<style>ul{list-style:none} ol{list-style-type:square}</style>
 <ul><li>alpha</li><li>beta</li></ul>
