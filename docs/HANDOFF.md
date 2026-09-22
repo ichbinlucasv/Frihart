@@ -53,7 +53,7 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519), **RFC 7748** (Curve25519 / X25519),
 **RFC 5869** (HKDF), **openbsd.org**, **openssh.com**
-(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**, **torproject.org**, **i2pd.website**. Settings is
+(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**, **torproject.org**, **i2pd.website**, **mullvad.net**. Settings is
 the LibreWolf-stance page (native prefs, black/yellow). CSS
 `font-family` is engine slots only; `list-style` / `white-space` are in.
 Letterboxing paint exists (pref off).
@@ -76,12 +76,12 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D.** Claim mullvad.net (not Wikipedia /
-   GitHub / mail). Thirty-five public claims; CSS leftovers done.
-   **i2pd.website** claimed (GitHub Pages same host). **libsodium.org** Forbidden
+1. **This / next session — D.** Claim privacyguides.org (not Wikipedia /
+   GitHub / mail). Thirty-six public claims; CSS leftovers done.
+   **mullvad.net** claimed (apex→/en same host, SvelteKit SSR). **libsodium.org** Forbidden
    (apex→doc→gitbook.io) — unclaimed / NeedsJs. **age-encryption.org**
    Forbidden (apex → GitHub) — unclaimed / NeedsJs.
-   Named queue: mullvad.net next.
+   Named queue: privacyguides.org next.
 2. **Keep claiming static documents** one host/path per session until
    the named list feels like a daily driver for docs/RFCs/homepages.
    Do not claim Wikipedia, GitHub, mail, or any JS app.
@@ -128,16 +128,16 @@ docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
 w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
 RFC 5280 HTML, RFC 8032 HTML (Ed25519), RFC 7748 HTML (Curve25519 /
 X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
-(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org, c2sp.org/age, torproject.org, i2pd.website.
+(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org, c2sp.org/age, torproject.org, i2pd.website, mullvad.net.
 
 ## Next session — start here
 
-**D: claim mullvad.net** (not Wikipedia / GitHub / mail).
-Thirty-five public sites (i2pd.website last Claimed).
+**D: claim privacyguides.org** (not Wikipedia / GitHub / mail).
+Thirty-six public sites (mullvad.net last Claimed).
 **libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
 libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.
 **age-encryption.org** Forbidden (apex → GitHub) — NeedsJs, left
-unclaimed. Next named: mullvad.net, then privacyguides.org.
+unclaimed. Next named: privacyguides.org.
 Arch package builds; install is
 `sudo pacman -U`. Do not start a JS engine. G stays refuse.
 

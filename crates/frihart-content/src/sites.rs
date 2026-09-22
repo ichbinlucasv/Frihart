@@ -254,6 +254,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title Invisible Internet Protocol Daemon, Network without borders, full-featured C++ I2P; GitHub Pages same host; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://mullvad.net/",
+            name: "mullvad.net",
+            status: ClaimStatus::Claimed,
+            note: "title Privacy is for the people, Mullvad VPN/Browser, EUR5/month no logging; apex→/en same host (SvelteKit SSR); live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -307,7 +313,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 35);
+        assert_eq!(public_claimed(), 36);
         assert!(
             claims()
                 .iter()
@@ -485,6 +491,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("i2pd.website"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("mullvad.net"))
         );
         assert!(
             claims().iter().any(|s| {

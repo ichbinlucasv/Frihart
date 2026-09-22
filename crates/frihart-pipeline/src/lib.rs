@@ -1305,4 +1305,49 @@ line2</pre>"#;
         );
     }
 
+    #[test]
+    fn mullvad_net_is_readable() {
+        let html = include_str!("../testdata/mullvad.net.html");
+        let f = layout_html_ex(html, "https://mullvad.net/", 1000.0, 800.0);
+        assert!(
+            f.title.contains("Mullvad")
+                || f.title.contains("Privacy is for the people")
+        );
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(
+            blob.contains("Privacy is for the people")
+                || blob.contains("free and open society")
+        );
+        assert!(
+            blob.contains("Mullvad VPN")
+                || blob.contains("Mullvad Browser")
+                || blob.contains("mass surveillance")
+        );
+        assert!(
+            blob.contains("No logging")
+                || blob.contains("Anonymous accounts")
+                || blob.contains("€5/month")
+                || blob.contains("5/month")
+        );
+        assert!(
+            blob.contains("Why privacy matters")
+                || blob.contains("Downloads")
+                || blob.contains("Get started")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/vpn")
+                    || h.contains("/browser")
+                    || h.contains("/download")
+                    || h.contains("/why-privacy-matters")
+                    || h.contains("/account/create")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://mullvad.net/", 5120.0, 1440.0);
+        assert!(
+            wide.title.contains("Mullvad")
+                || wide.title.contains("Privacy is for the people")
+        );
+    }
+
 }
