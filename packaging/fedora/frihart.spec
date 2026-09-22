@@ -29,12 +29,17 @@ cargo build --release --locked --bin frihart
 install -D -m 0755 target/release/frihart %{buildroot}%{_bindir}/frihart
 install -D -m 0644 packaging/linux/org.frihart.Frihart.desktop \
     %{buildroot}%{_datadir}/applications/org.frihart.Frihart.desktop
+for sz in 64x64 128x128 256x256 512x512; do
+  install -D -m 0644 branding/hicolor/$sz/apps/frihart.png \
+      %{buildroot}%{_datadir}/icons/hicolor/$sz/apps/frihart.png
+done
 install -D -m 0644 LICENSE-MIT %{buildroot}%{_datadir}/licenses/%{name}/LICENSE-MIT
 install -D -m 0644 LICENSE-APACHE %{buildroot}%{_datadir}/licenses/%{name}/LICENSE-APACHE
 
 %files
 %{_bindir}/frihart
 %{_datadir}/applications/org.frihart.Frihart.desktop
+%{_datadir}/icons/hicolor/*/apps/frihart.png
 %license LICENSE-MIT LICENSE-APACHE
 
 %changelog

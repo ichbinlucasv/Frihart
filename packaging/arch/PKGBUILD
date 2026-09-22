@@ -51,4 +51,8 @@ package() {
   install -Dm644 LICENSE-APACHE "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
   install -Dm644 packaging/linux/org.frihart.Frihart.desktop \
     "$pkgdir/usr/share/applications/org.frihart.Frihart.desktop"
+  for sz in 64x64 128x128 256x256 512x512; do
+    install -Dm644 "branding/hicolor/$sz/apps/frihart.png" \
+      "$pkgdir/usr/share/icons/hicolor/$sz/apps/frihart.png"
+  done
 }

@@ -9,7 +9,7 @@ Categories=Network;WebBrowser;
 MimeType=text/html;x-scheme-handler/http;x-scheme-handler/https;
 StartupWMClass=frihart
 Keywords=browser;privacy;librewolf;container;
-Icon=web-browser
+Icon=frihart
 Actions=new-private-window;
 
 [Desktop Action new-private-window]

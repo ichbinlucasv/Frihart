@@ -13,8 +13,12 @@ homes with extra OPSEC rules — see [distros.md](distros.md).
 | Qubes OS | Fedora + Debian templates | AppVM / DisposableVM |
 
 All produce `/usr/bin/frihart` and a desktop file (including a
-**New Private Window** action: `frihart --private`). They do not phone
-home. Updates come from the distro or from git.
+**New Private Window** action: `frihart --private`). The desktop entry
+uses `Icon=frihart` and packages install the Templar cross from
+`branding/hicolor/{64,128,256,512}/apps/frihart.png` into
+`/usr/share/icons/hicolor/…`. Canonical lockup for docs/README is
+`branding/frihart-lockup.png` (not installed as a menu icon). They do
+not phone home. Updates come from the distro or from git.
 
 Tails/Qubes `.deb`/RPM **publication** is later. The files and the
 amnesic default already exist.
