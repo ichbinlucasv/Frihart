@@ -616,6 +616,7 @@ A sustainable rhythm for a long project:
 - [x] libressl.org claimed (→ www; About/Project Goals, LibreSSL 4.3.2, libcrypto/libssl/libtls)
 - [x] openbsdfoundation.org claimed (→ www; Funding for OpenBSD, Bylaws/Donations, 2026 Campaign)
 - [x] openbgpd.org claimed (About/Project Goals/Manual Pages, FREE BGP / Border Gateway Protocol)
+- [x] opensmtpd.org claimed (About/Project Goals/Manual Pages, FREE SMTP / RFC 5321, OpenSMTPD 7.8)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

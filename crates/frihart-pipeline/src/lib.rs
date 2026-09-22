@@ -870,6 +870,25 @@ mod tests {
     }
 
     #[test]
+    fn opensmtpd_org_is_readable() {
+        let html = include_str!("../testdata/opensmtpd.org.html");
+        let f = layout_html_ex(html, "https://www.opensmtpd.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenSMTPD"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("About OpenSMTPD") || blob.contains("Project Goals"));
+        assert!(blob.contains("FREE") || blob.contains("SMTP"));
+        assert!(blob.contains("Manual Pages") || blob.contains("Presentations"));
+        assert!(blob.contains("RFC 5321") || blob.contains("OpenBSD"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href
+                .as_deref()
+                .is_some_and(|h| h.contains("goals.html") || h.contains("manual.html"))
+        }));
+        let wide = layout_html_ex(html, "https://www.opensmtpd.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("OpenSMTPD"));
+    }
+
+    #[test]
     fn rfc5869_is_readable() {
         let html = include_str!("../testdata/rfc5869.html");
         let f = layout_html_ex(html, "", 1000.0, 800.0);
