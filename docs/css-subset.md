@@ -3,6 +3,16 @@
 Frihart implements a documented subset. Unimplemented properties are
 ignored. They are never guessed into a broken layout.
 
+Honest coverage for Campaign D: **thirty-two** public static documents
+are claimed (see [sites.md](sites.md) and `about:sites`). The first CSS
+subset needed for that named list is **in**. External stylesheets are
+still unused on most claims (nav stacks; that is honest, not a skip).
+Flex, grid, and SVG stay off.
+
+Site claims (live HTML → fixture → `sites.md`) are a separate queue
+from leftover property work. Do not race the claim agent on the same
+host files.
+
 ## Selectors (now)
 
 - type (`p`, `h1`)
@@ -43,8 +53,12 @@ not applied. That is honest: we do not fake a two-column table layout.
 ## Properties (next)
 
 - (first subset complete for the named list)
+- Leftover property families outside the claim queue may land as
+  `D: CSS <property> leftovers (non-claim-queue)` — never by editing
+  a host fixture the claim agent just touched.
 
 UA extras: `hr` is a 2px rule fill; `caption` is centered 14px.
+Letterboxing paint exists (pref off).
 
 ## Origins
 
@@ -52,4 +66,4 @@ UA extras: `hr` is a 2px rule fill; `caption` is centered 14px.
 2. User (`user.css` in the profile)
 3. Author (`<style>` in the document)
 
-See [engine.md](engine.md).
+See [engine.md](engine.md) and [testing.md](testing.md).

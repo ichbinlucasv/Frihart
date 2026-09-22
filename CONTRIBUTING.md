@@ -27,6 +27,9 @@ cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
+Narrower filters (pipeline fixtures, `frihart-content`, CSS crates):
+[docs/testing.md](docs/testing.md).
+
 Keep PRs to one idea. A parser fix and a chrome color change are two
 PRs.
 
@@ -66,6 +69,25 @@ second HTML dialect for chrome pages.
 Linux is the reference. Windows, macOS, and Android patches land in
 `frihart-platform` (and later, a mobile chrome crate). Do not sprinkle
 `#[cfg(windows)]` through the engine to "get ahead."
+
+## Remotes (Codeberg first)
+
+Codeberg is the **primary** forge. GitHub is a **mirror** only.
+
+```bash
+# Preferred push target
+git remote -v
+# expect something like:
+#   codeberg  ssh://git@codeberg.org/ichbinlucasv/Frihart.git
+#   origin    https://github.com/ichbinlucasv/Frihart.git   # mirror
+
+git push codeberg HEAD
+# After Codeberg accepts the commit, sync the mirror:
+git push origin HEAD
+```
+
+Open issues and pull requests on Codeberg. Do not open GitHub-only PRs
+as the source of truth.
 
 ## Community
 

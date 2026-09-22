@@ -40,8 +40,14 @@ is **harder to own**, for people who treat a leak as a failure.
 
 ## Repositories
 
-- **Primary:** [codeberg.org/ichbinlucasv/Frihart](https://codeberg.org/ichbinlucasv/Frihart)
-- **Mirror:** [github.com/ichbinlucasv/Frihart](https://github.com/ichbinlucasv/Frihart)
+- **Primary:** [codeberg.org/ichbinlucasv/Frihart](https://codeberg.org/ichbinlucasv/Frihart) — issues, PRs, and pushes land here first
+- **Mirror:** [github.com/ichbinlucasv/Frihart](https://github.com/ichbinlucasv/Frihart) — sync after Codeberg; do not treat as the source of truth
+
+```bash
+git remote add codeberg ssh://git@codeberg.org/ichbinlucasv/Frihart.git   # if missing
+git push codeberg main
+git push origin main   # GitHub mirror only after Codeberg
+```
 
 ## Product (Linux)
 
@@ -92,6 +98,12 @@ Content width follows the window up to 2400 CSS px (G9-class). JS is off
 on purpose. The engine is Frihart in Rust; we will not embed another
 browser's runtime. A script interpreter has not been started.
 
+**CSS claim coverage:** the first subset for the named static list is in
+(`list-style`, `white-space`, `font-family` slots, borders, sizes, …).
+External CSS on claimed pages is still mostly unused (nav stacks). Details:
+[docs/css-subset.md](docs/css-subset.md). How claims are tested:
+[docs/testing.md](docs/testing.md).
+
 Next session: [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ## Build
@@ -123,6 +135,9 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
+Pipeline / content / CSS crate filters and claim fixtures:
+[docs/testing.md](docs/testing.md).
+
 ## Profile
 
 ```
@@ -150,7 +165,10 @@ Private windows use memory only. Files are `0600` / dirs `0700`.
 | [docs/opsec.md](docs/opsec.md) | Standing OPSEC rules |
 | [docs/distros.md](docs/distros.md) | Arch, Cachy, Fedora, Mint, Tails, Qubes |
 | [docs/engine.md](docs/engine.md) | HTML → display list |
-| [docs/css-subset.md](docs/css-subset.md) | CSS we implement vs ignore |
+| [docs/css-subset.md](docs/css-subset.md) | CSS we implement vs ignore (honest claim coverage) |
+| [docs/testing.md](docs/testing.md) | Workspace, pipeline, content, and CSS tests |
+| [docs/sites.md](docs/sites.md) | Claimed static documents (`about:sites`) |
+| [branding/README.md](branding/README.md) | Canonical lockup + icon (`frihart-lockup.png`) |
 | [docs/defaults.md](docs/defaults.md) | Every shipped default and why |
 | [docs/packaging.md](docs/packaging.md) | How to package |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to work on the tree |
