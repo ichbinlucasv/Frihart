@@ -4,6 +4,12 @@ Arch / CachyOS is the reference. Fedora and Debian/Mint follow so the
 same binary lands on every major family. Tails and Qubes are later
 homes with extra OPSEC rules — see [distros.md](distros.md).
 
+**Linux-first:** these packages are the free **desktop Linux** product
+path. The quality bar is stable and fast on desktop Linux before any
+mobile or other-OS packaging — see [../packaging/linux/README.md](../packaging/linux/README.md)
+and the planned map in [mobile-targets.md](mobile-targets.md). No
+mobile builds ship from this tree yet.
+
 | Distro family | Path | Tool |
 | --- | --- | --- |
 | Arch, CachyOS, EndeavourOS, Manjaro | `packaging/arch/PKGBUILD` | `makepkg`, later AUR |
