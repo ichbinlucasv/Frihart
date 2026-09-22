@@ -45,14 +45,15 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.wireguard.com/ | Live HTML 2026-09-22 (apex and www same bytes). Title `WireGuard: fast, modern, secure VPN tunnel`. Installation / Quick Start / Protocol & Cryptography / Donate nav. Conceptual Overview, Cryptokey Routing, Simple Network Interface. External CSS unused (nav stacks). `scripts.min.js` skipped. Also 5120×1440. |
 | https://gnupg.org/ | Live HTML 2026-09-22 (apex and www same bytes). Title `The GNU Privacy Guard`. Software / Download / Documentation / Donate nav. OpenPGP (RFC4880), GnuPG 2.5.22, Reconquer your privacy. External CSS unused (nav stacks). No script. Also 5120×1440. |
 | https://noiseprotocol.org/ | Live HTML 2026-09-22 (apex; www TLS name mismatch). Title `Noise Protocol Framework`. Home / Resources nav. Specs / Code / Wiki / Adopters (WireGuard). External CSS unused (nav stacks). jQuery/bootstrap/Clicky scripts skipped. Also 5120×1440. |
+| https://curl.se/ | Live HTML 2026-09-22 (www 301 → apex; same bytes). Title `curl`. Download / Documentation / libcurl / Get Help / Development nav (`details`/`summary`). Lead “command line tool and library for transferring data with URLs”. Protocols table, version 8.22.0. External CSS unused (nav stacks). No script. Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty public claims are in. CSS leftovers `list-style` /
-`white-space` are in. noiseprotocol.org claimed this session. Named
-queue empty. Suggest next static OPSEC homepage: curl.se if still
-static/readable. Arch package builds; install is `sudo pacman -U` on
-the user's machine.
+Thirty-one public claims are in. CSS leftovers `list-style` /
+`white-space` are in. curl.se claimed this session. Named queue
+empty (complete). Pick another static OPSEC homepage when ready —
+not Wikipedia / GitHub / mail. Arch package builds; install is
+`sudo pacman -U` on the user's machine.
 
 ## Will not claim
 

@@ -1122,4 +1122,40 @@ line2</pre>"#;
         assert!(!pre.preserve, "pre-wrap soft-wraps");
         assert_eq!(pre.style.white_space, frihart_style::WhiteSpace::PreWrap);
     }
+
+    #[test]
+    fn curl_se_is_readable() {
+        let html = include_str!("../testdata/curl.se.html");
+        let f = layout_html_ex(html, "https://curl.se/", 1000.0, 800.0);
+        assert!(f.title.contains("curl"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Download") || blob.contains("Documentation"));
+        assert!(
+            blob.contains("command line tool")
+                || blob.contains("transferring data")
+                || blob.contains("libcurl")
+        );
+        assert!(
+            blob.contains("Protocols")
+                || blob.contains("What is curl used for")
+                || blob.contains("twenty billion")
+        );
+        assert!(
+            blob.contains("libcurl")
+                || blob.contains("8.22")
+                || blob.contains("Documentation")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("download.html")
+                    || h.contains("/docs/")
+                    || h.contains("libcurl")
+                    || h.contains("sponsors")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://curl.se/", 5120.0, 1440.0);
+        assert!(wide.title.contains("curl"));
+    }
+
+
 }

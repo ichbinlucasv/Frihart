@@ -224,6 +224,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title, Resources/Specs/Code, Noise Protocol Framework; live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://curl.se/",
+            name: "curl.se",
+            status: ClaimStatus::Claimed,
+            note: "title, Download/Documentation/libcurl, command line tool and library; live HTML 2026-09-22",
+        },
+        SiteClaim {
             url: "https://en.wikipedia.org/",
             name: "Wikipedia",
             status: ClaimStatus::NeedsJs,
@@ -265,7 +271,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 30);
+        assert_eq!(public_claimed(), 31);
         assert!(
             claims()
                 .iter()
@@ -418,6 +424,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("noiseprotocol.org"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("curl.se"))
         );
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")
