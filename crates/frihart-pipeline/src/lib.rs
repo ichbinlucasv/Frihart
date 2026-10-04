@@ -1350,4 +1350,45 @@ line2</pre>"#;
         );
     }
 
+    #[test]
+    fn privacyguides_org_is_readable() {
+        let html = include_str!("../testdata/privacyguides.org.html");
+        let f = layout_html_ex(html, "https://www.privacyguides.org/", 1000.0, 800.0);
+        assert!(f.title.contains("Privacy Guides"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(
+            blob.contains("Privacy Guides")
+                || blob.contains("human right")
+                || blob.contains("Knowledge Base")
+        );
+        assert!(
+            blob.contains("Knowledge Base")
+                || blob.contains("Articles")
+                || blob.contains("Videos")
+                || blob.contains("About")
+        );
+        assert!(
+            blob.contains("Trustworthy Reviews")
+                || blob.contains("Community-Built")
+                || blob.contains("This Week in Privacy")
+                || blob.contains("Activism")
+        );
+        assert!(
+            blob.contains("Become a member")
+                || blob.contains("Stay connected")
+                || blob.contains("recommendations")
+        );
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/en/")
+                    || h.contains("/videos/")
+                    || h.contains("/en/about")
+                    || h.contains("why-privacy-matters")
+                    || h.contains("discuss.privacyguides")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://www.privacyguides.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("Privacy Guides"));
+    }
+
 }

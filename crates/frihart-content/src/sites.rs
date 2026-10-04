@@ -260,6 +260,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title Privacy is for the people, Mullvad VPN/Browser, EUR5/month no logging; apex→/en same host (SvelteKit SSR); live HTML 2026-09-22",
         },
         SiteClaim {
+            url: "https://www.privacyguides.org/",
+            name: "privacyguides.org",
+            status: ClaimStatus::Claimed,
+            note: "title Privacy Guides, Knowledge Base / Articles / Videos / About; apex 302→www same host (MkDocs Material SSR); live HTML 2026-10-04",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -313,7 +319,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 36);
+        assert_eq!(public_claimed(), 37);
         assert!(
             claims()
                 .iter()
@@ -496,6 +502,11 @@ mod tests {
             claims()
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("mullvad.net"))
+        );
+        assert!(
+            claims()
+                .iter()
+                .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("privacyguides.org"))
         );
         assert!(
             claims().iter().any(|s| {

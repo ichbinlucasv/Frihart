@@ -51,14 +51,15 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.torproject.org/ | Live HTML 2026-09-22 (apex 301 → www; same host). Title `Tor Project | Anonymity Online`. About / Support / Community / Blog / Donate nav. h1 “Browse Privately.” / “Explore Freely.”, Download Tor Browser, BLOCK TRACKERS / MULTI-LAYERED ENCRYPTION, 501(c)(3). External CSS unused (nav stacks). jQuery/bootstrap/scrollspy/modernizr/download/fallback scripts skipped. Also 5120×1440. |
 | https://i2pd.website/ | Live HTML 2026-09-22 (apex 200; GitHub Pages same host, not a foreign redirect). Title `Invisible Internet Protocol Daemon`. h1 “Network without borders”, Invisible Internet Protocol, full-featured C++ I2P client, Free from censorship, Downloads / Documentation / Android / I2PdBrowser, donations. External CSS unused. l10n.js / app.js skipped (English text already in HTML). Also 5120×1440. |
 | https://mullvad.net/ | Live HTML 2026-09-22 (www 301 → apex; apex 302 → `/en` same host). Title `Mullvad VPN - Privacy is for the people`. h1 “Privacy is for the people”, Mullvad VPN / Mullvad Browser, €5/month no logging / anonymous accounts, Why privacy matters, Downloads. SvelteKit SSR (`x-sveltekit-page`); external CSS unused (nav stacks); hydration scripts skipped. Images from `media.mullvad.net`. Also 5120×1440. |
+| https://www.privacyguides.org/ | Live HTML 2026-10-04 (apex 302 → www same host). Title `Privacy Guides`. Nav Knowledge Base / Articles / Videos / Forum / About. h1 “Privacy Guides”, This Week in Privacy, Trustworthy Reviews / Community-Built / “Privacy: It's a human right”, Activism. External CSS unused (nav stacks); scripts skipped. Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty-six public claims are in. CSS leftovers `list-style` /
-`white-space` are in. mullvad.net claimed this session.
+Thirty-seven public claims are in. CSS leftovers `list-style` /
+`white-space` are in. privacyguides.org claimed this session.
 **libsodium.org** Forbidden (apex/www → doc → gitbook.io) and
 **age-encryption.org** Forbidden (apex → GitHub) remain unclaimed.
-Next is **privacyguides.org**.
+Next is **tails.net**.
 Not Wikipedia / GitHub / mail. Arch package builds; install is
 `sudo pacman -U` on the user's machine.
 

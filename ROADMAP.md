@@ -642,6 +642,7 @@ A sustainable rhythm for a long project:
 - [x] torproject.org claimed (Browse Privately/Explore Freely, Download Tor Browser, Anonymity Online; apex→www)
 - [x] i2pd.website claimed (Network without borders, Invisible Internet Protocol Daemon, full-featured C++ I2P; GitHub Pages same host)
 - [x] mullvad.net claimed (Privacy is for the people, Mullvad VPN/Browser, EUR5/month no logging; apex→/en same host SvelteKit SSR)
+- [x] privacyguides.org claimed (Privacy Guides, Knowledge Base/Articles/Videos/About; apex→www MkDocs Material SSR)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)
