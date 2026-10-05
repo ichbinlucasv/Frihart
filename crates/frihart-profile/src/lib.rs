@@ -266,6 +266,7 @@ impl Profile {
             "addons.toml",
             "cookies.json",
             "downloads.json",
+            "autofill.toml",
             "user.css",
             "lock",
         ];
@@ -273,8 +274,13 @@ impl Profile {
             let _ = shred_file(&root.join(name));
         }
         let _ = shred_tree(&root.join("extensions"));
-        for name in ["prefs.toml.tmp", "bookmarks.toml.tmp"] {
-            let _ = shred_file(&root.join(name));
+        // Leftovers from an interrupted atomic save.
+        if let Ok(entries) = std::fs::read_dir(&root) {
+            for entry in entries.flatten() {
+                if entry.path().extension().is_some_and(|e| e == "tmp") {
+                    let _ = shred_file(&entry.path());
+                }
+            }
         }
         ensure_private_dir(&root)?;
         self.prefs = Prefs::default();
@@ -409,6 +415,27 @@ mod tests {
             p.reset_like_new().unwrap();
             assert!(!p.prefs().privacy.javascript);
             assert!(p.bookmarks().items.iter().any(|b| b.title == "Keep"));
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn shred_removes_autofill_and_stale_temp_files() {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("frihart-shred-{stamp}"));
+        {
+            let mut p = Profile::open_dir(&root).unwrap();
+            fs::write(root.join("autofill.toml"), "name = \"x\"").unwrap();
+            fs::write(root.join("history.jsonl.tmp"), "x").unwrap();
+            fs::write(root.join("cookies.json"), "[{}]").unwrap();
+            p.shred().unwrap();
+            assert!(!root.join("autofill.toml").exists());
+            assert!(!root.join("history.jsonl.tmp").exists());
+            assert!(!root.join("cookies.json").exists());
+            assert!(root.join("prefs.toml").exists(), "profile is usable again");
         }
         let _ = fs::remove_dir_all(&root);
     }

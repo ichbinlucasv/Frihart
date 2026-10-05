@@ -58,8 +58,17 @@ pub fn safe_host(url: &url::Url) -> String {
     url.host_str().unwrap_or("-").to_string()
 }
 
+/// Overwrite a regular file, then unlink it. A symlink is unlinked without
+/// touching its target, so a link planted in a profile cannot redirect the wipe.
 pub fn shred_file(path: &Path) -> Result<()> {
-    if !path.is_file() {
+    let Ok(meta) = fs::symlink_metadata(path) else {
+        return Ok(());
+    };
+    if meta.file_type().is_symlink() {
+        fs::remove_file(path)?;
+        return Ok(());
+    }
+    if !meta.is_file() {
         return Ok(());
     }
     let len = fs::metadata(path)?.len();
@@ -90,17 +99,18 @@ pub fn shred_file(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Like [`shred_file`] for a directory tree. Symlinks are unlinked, never followed.
 pub fn shred_tree(path: &Path) -> Result<()> {
-    if path.is_file() {
-        return shred_file(path);
-    }
-    if !path.is_dir() {
+    let Ok(meta) = fs::symlink_metadata(path) else {
         return Ok(());
+    };
+    if !meta.is_dir() {
+        return shred_file(path);
     }
     for entry in fs::read_dir(path)? {
         let entry = entry?;
         let p = entry.path();
-        if p.is_dir() {
+        if entry.file_type()?.is_dir() {
             shred_tree(&p)?;
         } else {
             shred_file(&p)?;
@@ -127,4 +137,51 @@ pub fn sanitize_error(msg: &str) -> String {
         .chars()
         .take(120)
         .collect()
+}
+
+#[cfg(test)]
+mod shred_tests {
+    use super::*;
+
+    fn tmp(tag: &str) -> std::path::PathBuf {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("frihart-shred-{tag}-{stamp}"));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn shred_file_removes_a_regular_file() {
+        let dir = tmp("file");
+        let f = dir.join("a.txt");
+        fs::write(&f, b"secret").unwrap();
+        shred_file(&f).unwrap();
+        assert!(!f.exists());
+        // Missing path is fine.
+        shred_file(&f).unwrap();
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn shred_never_follows_symlinks() {
+        let dir = tmp("link");
+        let outside = tmp("outside");
+        let target_file = outside.join("keep.txt");
+        fs::write(&target_file, b"keep me").unwrap();
+        let tree = dir.join("tree");
+        fs::create_dir_all(&tree).unwrap();
+        std::os::unix::fs::symlink(&target_file, tree.join("file-link")).unwrap();
+        std::os::unix::fs::symlink(&outside, tree.join("dir-link")).unwrap();
+
+        shred_tree(&tree).unwrap();
+
+        assert!(!tree.exists(), "tree and its links are gone");
+        assert_eq!(fs::read(&target_file).unwrap(), b"keep me");
+        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::remove_dir_all(&outside);
+    }
 }
