@@ -551,6 +551,22 @@ Crate: `frihart-pipeline`. Tests exist. Chrome still paints its own way until la
 Chrome parity is not a destination on this map. A sovereign, understandable
 browser that renders an expanding, honest subset of the web is.
 
+## Planned features, in order
+
+These are the privacy and OPSEC features we intend to add alongside the engine work, in the order we expect to do them. They do not displace the engine and isolation campaigns above.
+
+1. **Duress passphrase and panic wipe.** A second profile passphrase, or a panic key, that shreds the profile instead of opening it. Builds on the existing wipe and shred.
+2. **Metadata minimisation.** Letterboxing and window-size buckets on by default, fewer and more uniform request headers, and DNS only through the chosen circuit.
+3. **Deniable storage.** An encrypted profile at rest first, then a hidden second profile in a padded container. The second step needs a written design before code.
+4. **Tor bridges and I2P.** Bridge and pluggable-transport configuration next to the existing Tor and I2P switches. Both stay fail-closed.
+5. **Self-hosted services.** Let search, update checks and any relay-style helper point at endpoints the user runs, with nothing contacted by default.
+6. **Offline mode.** Saved pages, a plain offline reader, and moving bundles by USB or QR with no network code active.
+7. **Reproducible, signed builds.** Bit-for-bit Linux packages, signed tags and artifacts, and a documented verification procedure.
+8. **Payments for non-Linux builds.** Monero and Lightning for the 100 EUR lifetime price, with no account and no licence server.
+9. **Community.** A way for users to propose and review site claims and filter lists in public.
+
+**No sales to governments.** Non-Linux builds are sold under purchase terms that exclude governments and government bodies. Frihart's source is MIT or Apache-2.0, which cannot restrict who uses it, so the exclusion covers our sales and support only. Governments can still build the source or use the free Linux build, and a buyer can misstate who they are.
+
 ## Suggested working cadence
 
 A sustainable rhythm for a long project:
