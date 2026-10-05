@@ -563,7 +563,7 @@ These are the privacy and OPSEC features we intend to add alongside the engine w
 6. **Self-hosted services.** Let search, update checks and any relay-style helper point at endpoints the user runs, with nothing contacted by default.
 7. **Offline mode.** Saved pages, a plain offline reader, and moving bundles by USB or QR with no network code active.
 8. **Payments for non-Linux builds.** Monero and Bitcoin by default, Lightning welcome, no account and no licence server. A fresh address per order and a one-time key that the build verifies offline and that is tied to nothing about the buyer. The flow records only what the chain shows. A donation page takes XMR, BTC and Lightning. Shared with HashChat.
-9. **Honest documents.** PRIVACY.md is in place. Still to write: a limits page in the app and the docs, a plain-language safe-use guide, and translations (Portuguese, French, German, Spanish).
+9. **Honest documents.** PRIVACY.md is in place. Still to write: a limits page in the app and the docs, a plain-language safe-use guide, a short founder statement shared with HashChat, and translations (Portuguese, French, German, Spanish).
 10. **Community.** A way for users to propose and review site claims and filter lists in public.
 
 **No sales to governments.** Non-Linux builds are sold under purchase terms that exclude governments and government bodies. Frihart's source is MIT or Apache-2.0, which cannot restrict who uses it, so the exclusion covers our sales and support only. Governments can still build the source or use the free Linux build, and a buyer can misstate who they are; we do not collect identity data to check.
