@@ -22,6 +22,9 @@ struct Args {
     i2p: bool,
     #[arg(long, value_name = "PATH")]
     install_addon: Option<PathBuf>,
+    /// Shred the profile and exit, without opening a window.
+    #[arg(long)]
+    wipe: bool,
     /// Hidden: chrome spawns this to layout HTML under the content sandbox.
     #[arg(long, hide = true)]
     content_worker: bool,
@@ -51,6 +54,15 @@ fn try_main() -> frihart_core::Result<()> {
         let installed = profile.install_addon(addon)?;
         println!("{}", installed.id);
         return Ok(());
+    }
+
+    if args.wipe {
+        let mut profile = if let Some(path) = &args.profile {
+            Profile::open_dir(path)?
+        } else {
+            Profile::open_default()?
+        };
+        return profile.shred();
     }
 
     let profile = if frihart_platform::should_open_ephemeral(args.private, args.profile.is_some()) {

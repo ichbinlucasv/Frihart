@@ -179,6 +179,13 @@ impl Handler {
         let alt = self.modifiers.alt_key();
         let shift = self.modifiers.shift_key();
 
+        // Panic chord: shred the profile and quit, no prompt.
+        if ctrl && shift && matches!(event.logical_key, Key::Named(NamedKey::Backspace)) {
+            self.browser.shred();
+            event_loop.exit();
+            return;
+        }
+
         if ctrl {
             if let Key::Character(ch) = &event.logical_key {
                 match ch.to_lowercase().as_str() {

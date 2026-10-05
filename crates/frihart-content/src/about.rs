@@ -488,6 +488,12 @@ fn shred_page(url: &Url) -> Document {
             Block::Paragraph(
                 "Shred: overwrite this profile on disk. Other named profiles stay.".into(),
             ),
+            Block::Paragraph(
+                "Panic: Ctrl+Shift+Backspace shreds this profile and quits at once, no prompt. \
+                 `frihart --wipe` does the same from a terminal or a script. Overwriting is \
+                 not reliable on SSDs or copy-on-write filesystems."
+                    .into(),
+            ),
             Block::Link {
                 label: "Wipe".into(),
                 href: "frihart:wipe".into(),
