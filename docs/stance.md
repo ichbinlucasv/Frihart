@@ -60,7 +60,7 @@ refuse clearnet; use Tor if you need anonymous public HTTP.
 Linux stays **free**. There is no ad tier, no BAT, no sponsored search.
 
 Other OS, when they exist: **€100 lifetime**, local key, no license
-server, no Frihart account. Pay with Monero, Bitcoin, or fiat.
+server, no Frihart account. Pay with Monero or Bitcoin; Lightning is welcome.
 
 Anyone may **voluntarily** send the same amount (or any amount) to
 support Linux work. Payment never unlocks a privacy feature. Privacy is

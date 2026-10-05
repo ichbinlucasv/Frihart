@@ -553,19 +553,20 @@ browser that renders an expanding, honest subset of the web is.
 
 ## Planned features, in order
 
-These are the privacy and OPSEC features we intend to add alongside the engine work, in the order we expect to do them. They do not displace the engine and isolation campaigns above.
+These are the privacy and OPSEC features we intend to add alongside the engine work. They do not displace the engine and isolation campaigns above. Standing rules: no phone number, email, real name or identity check anywhere, including the website and licence flow; no telemetry; Tor and I2P stay fail-closed with no silent fallback; the project holds no user data, which is how GDPR and LGPD are met (see PRIVACY.md); security comes before interface polish, and higher security value before lower effort. First release scope for the privacy side stays small: the wipe family, an encrypted profile, Tor with bridges, and reproducible signed builds.
 
-1. **Duress passphrase and panic wipe.** A second profile passphrase, or a panic key, that shreds the profile instead of opening it. Builds on the existing wipe and shred.
-2. **Metadata minimisation.** Letterboxing and window-size buckets on by default, fewer and more uniform request headers, and DNS only through the chosen circuit.
-3. **Deniable storage.** An encrypted profile at rest first, then a hidden second profile in a padded container. The second step needs a written design before code.
-4. **Tor bridges and I2P.** Bridge and pluggable-transport configuration next to the existing Tor and I2P switches. Both stay fail-closed.
-5. **Self-hosted services.** Let search, update checks and any relay-style helper point at endpoints the user runs, with nothing contacted by default.
-6. **Offline mode.** Saved pages, a plain offline reader, and moving bundles by USB or QR with no network code active.
-7. **Reproducible, signed builds.** Bit-for-bit Linux packages, signed tags and artifacts, and a documented verification procedure.
-8. **Payments for non-Linux builds.** Monero and Lightning for the 100 EUR lifetime price, with no account and no licence server.
-9. **Community.** A way for users to propose and review site claims and filter lists in public.
+1. **Wipe family.** Done: wipe, reset and shred of a profile, a panic chord (Ctrl+Shift+Backspace) that shreds and quits without a prompt, `frihart --wipe` for use from outside the browser, and a shred that no longer follows symlinks and now covers `autofill.toml` and leftover temp files. Still to do: a duress passphrase and a wipe passphrase, which only make sense once the profile is encrypted and has an unlock prompt (item 3); a dead-man switch matching HashChat's; a wipe after N failed unlocks. Same behaviour and wording as HashChat, including the SSD and copy-on-write caveat and the note that a wipe after an investigation has started can be read as destroying evidence.
+2. **Metadata minimisation.** Letterboxing and window-size buckets on by default, fewer and more uniform request headers, and DNS only through the chosen circuit. Safe link handling shared with HashChat: links opened from HashChat arrive here without scripts, over Tor, with tracking parameters stripped.
+3. **Encrypted profile, then deniable storage.** Profile encrypted at rest under a passphrase first; this is what makes the duress and wipe passphrases meaningful. A hidden second profile in a padded container only after a written design has been reviewed, with its limits stated and no claim of being undetectable.
+4. **Tor bridges and I2P.** Bridge and pluggable-transport configuration (obfs4, Snowflake) next to the existing Tor and I2P switches, with a clear state in the chrome when the circuit is down. Both stay fail-closed.
+5. **Reproducible, signed builds and updates.** Bit-for-bit Linux packages built by more than one independent builder, signed with an offline key, a documented verification procedure, and updates that are signed, verifiable offline and never silent. Shared with HashChat.
+6. **Self-hosted services.** Let search, update checks and any relay-style helper point at endpoints the user runs, with nothing contacted by default.
+7. **Offline mode.** Saved pages, a plain offline reader, and moving bundles by USB or QR with no network code active.
+8. **Payments for non-Linux builds.** Monero and Bitcoin by default, Lightning welcome, no account and no licence server. A fresh address per order and a one-time key that the build verifies offline and that is tied to nothing about the buyer. The flow records only what the chain shows. A donation page takes XMR, BTC and Lightning. Shared with HashChat.
+9. **Honest documents.** PRIVACY.md is in place. Still to write: a limits page in the app and the docs, a plain-language safe-use guide, and translations (Portuguese, French, German, Spanish).
+10. **Community.** A way for users to propose and review site claims and filter lists in public.
 
-**No sales to governments.** Non-Linux builds are sold under purchase terms that exclude governments and government bodies. Frihart's source is MIT or Apache-2.0, which cannot restrict who uses it, so the exclusion covers our sales and support only. Governments can still build the source or use the free Linux build, and a buyer can misstate who they are.
+**No sales to governments.** Non-Linux builds are sold under purchase terms that exclude governments and government bodies. Frihart's source is MIT or Apache-2.0, which cannot restrict who uses it, so the exclusion covers our sales and support only. Governments can still build the source or use the free Linux build, and a buyer can misstate who they are; we do not collect identity data to check.
 
 ## Suggested working cadence
 
