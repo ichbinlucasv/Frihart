@@ -25,6 +25,9 @@ struct Args {
     /// Shred the profile and exit, without opening a window.
     #[arg(long)]
     wipe: bool,
+    /// Shred the profile if it is not opened for DAYS days (1-365), or `off`.
+    #[arg(long, value_name = "DAYS|off")]
+    deadman: Option<String>,
     /// Hidden: chrome spawns this to layout HTML under the content sandbox.
     #[arg(long, hide = true)]
     content_worker: bool,
@@ -65,6 +68,15 @@ fn try_main() -> frihart_core::Result<()> {
         return profile.shred();
     }
 
+    if let Some(value) = &args.deadman {
+        let profile = if let Some(path) = &args.profile {
+            Profile::open_dir(path)?
+        } else {
+            Profile::open_default()?
+        };
+        return set_deadman(&profile, value);
+    }
+
     let profile = if frihart_platform::should_open_ephemeral(args.private, args.profile.is_some()) {
         Profile::ephemeral()?
     } else if let Some(path) = args.profile {
@@ -80,6 +92,20 @@ fn try_main() -> frihart_core::Result<()> {
     }
 
     frihart_chrome::run(profile, args.url, args.tor, args.i2p)
+}
+
+fn set_deadman(profile: &Profile, value: &str) -> frihart_core::Result<()> {
+    if value == "off" {
+        frihart_profile::clear_deadman(profile.root())?;
+        println!("dead-man switch off");
+        return Ok(());
+    }
+    let days: u32 = value.parse().map_err(|_| {
+        frihart_core::FrihartError::Message("--deadman takes a number of days or `off`".into())
+    })?;
+    frihart_profile::set_deadman(profile.root(), days, frihart_profile::unix_now())?;
+    println!("dead-man switch on: shred after {days} days without a start");
+    Ok(())
 }
 
 fn run_content_worker() -> frihart_core::Result<()> {

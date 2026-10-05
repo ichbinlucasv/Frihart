@@ -4,6 +4,7 @@
 
 mod bookmarks;
 mod containers;
+mod deadman;
 mod history;
 mod lock;
 
@@ -18,6 +19,10 @@ use frihart_platform::profiles_dir;
 
 pub use bookmarks::{Bookmark, BookmarkStore};
 pub use containers::{Container, ContainerStore};
+pub use deadman::{
+    DeadmanConfig, MAX_DEADMAN_DAYS, MIN_DEADMAN_DAYS, clear_deadman, deadman_config, set_deadman,
+    unix_now,
+};
 pub use frihart_extensions::{AddonStore, InstalledAddon};
 pub use history::{HistoryEntry, HistoryStore};
 
@@ -85,6 +90,9 @@ impl Profile {
         } else {
             Some(ProfileLock::acquire(root.join("lock"))?)
         };
+        if !ephemeral && deadman::check_on_open(&root, deadman::unix_now()) {
+            shred_files(&root);
+        }
         let prefs = if ephemeral {
             Prefs::default()
         } else {
@@ -258,30 +266,8 @@ impl Profile {
         }
         let root = self.root.clone();
         drop(self._lock.take());
-        let names = [
-            "prefs.toml",
-            "bookmarks.toml",
-            "history.jsonl",
-            "containers.toml",
-            "addons.toml",
-            "cookies.json",
-            "downloads.json",
-            "autofill.toml",
-            "user.css",
-            "lock",
-        ];
-        for name in names {
-            let _ = shred_file(&root.join(name));
-        }
-        let _ = shred_tree(&root.join("extensions"));
-        // Leftovers from an interrupted atomic save.
-        if let Ok(entries) = std::fs::read_dir(&root) {
-            for entry in entries.flatten() {
-                if entry.path().extension().is_some_and(|e| e == "tmp") {
-                    let _ = shred_file(&entry.path());
-                }
-            }
-        }
+        shred_files(&root);
+        let _ = shred_file(&root.join("lock"));
         ensure_private_dir(&root)?;
         self.prefs = Prefs::default();
         self.bookmarks = BookmarkStore::defaults();
@@ -292,6 +278,34 @@ impl Profile {
         self.save_prefs()?;
         self.save_bookmarks()?;
         Ok(())
+    }
+}
+
+/// Shred every profile file except the lock. The directory itself stays.
+fn shred_files(root: &Path) {
+    let names = [
+        "prefs.toml",
+        "bookmarks.toml",
+        "history.jsonl",
+        "containers.toml",
+        "addons.toml",
+        "cookies.json",
+        "downloads.json",
+        "autofill.toml",
+        "user.css",
+        deadman::DEADMAN_FILE,
+    ];
+    for name in names {
+        let _ = shred_file(&root.join(name));
+    }
+    let _ = shred_tree(&root.join("extensions"));
+    // Leftovers from an interrupted atomic save.
+    if let Ok(entries) = std::fs::read_dir(root) {
+        for entry in entries.flatten() {
+            if entry.path().extension().is_some_and(|e| e == "tmp") {
+                let _ = shred_file(&entry.path());
+            }
+        }
     }
 }
 
@@ -436,6 +450,58 @@ mod tests {
             assert!(!root.join("history.jsonl.tmp").exists());
             assert!(!root.join("cookies.json").exists());
             assert!(root.join("prefs.toml").exists(), "profile is usable again");
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn overdue_deadman_shreds_on_open() {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("frihart-deadman-open-{stamp}"));
+        {
+            let mut p = Profile::open_dir(&root).unwrap();
+            p.bookmarks_mut().add("Secret", "https://secret.test/");
+            p.save_bookmarks().unwrap();
+            p.record_visit("https://secret.test/", "Secret").unwrap();
+            fs::write(root.join("autofill.toml"), "name = \"x\"").unwrap();
+            set_deadman(&root, 1, 0).unwrap();
+        }
+        {
+            let p = Profile::open_dir(&root).unwrap();
+            assert!(p.history().is_empty());
+            assert!(!p.bookmarks().items.iter().any(|b| b.title == "Secret"));
+            assert!(!root.join("autofill.toml").exists());
+            assert!(
+                deadman_config(&root).is_none(),
+                "switch is off after firing"
+            );
+        }
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn deadman_not_due_keeps_profile_and_restarts_timer() {
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("time")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("frihart-deadman-keep-{stamp}"));
+        let before = unix_now().saturating_sub(3_600);
+        {
+            let mut p = Profile::open_dir(&root).unwrap();
+            p.bookmarks_mut().add("Keep", "https://keep.test/");
+            p.save_bookmarks().unwrap();
+            set_deadman(&root, 7, before).unwrap();
+        }
+        {
+            let p = Profile::open_dir(&root).unwrap();
+            assert!(p.bookmarks().items.iter().any(|b| b.title == "Keep"));
+            let cfg = deadman_config(&root).unwrap();
+            assert_eq!(cfg.days, 7);
+            assert!(cfg.last_open_unix > before);
         }
         let _ = fs::remove_dir_all(&root);
     }

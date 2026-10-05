@@ -61,7 +61,7 @@ git push origin main   # GitHub mirror only after Codeberg
 - Swisscows search, DuckDuckGo second (`about:search`)
 - Tor tabs (`--tor`, Ctrl+Shift+O) and I2P tabs (`--i2p`, Ctrl+Shift+I) via your system daemons. Fail closed.
 - ProtonVPN / Mullvad CLI hooks (`about:vpn`)
-- Wipe / reset / shred this profile only (`about:shred`), a panic chord (Ctrl+Shift+Backspace) and `frihart --wipe`
+- Wipe / reset / shred this profile only (`about:shred`), a panic chord (Ctrl+Shift+Backspace), `frihart --wipe`, and a dead-man switch (`frihart --deadman DAYS`)
 - Identity autofill; **never** a password store (`about:pass`)
 - rustls fetch, first-party partitioned cookies, HTTPS-only
 - HTML → CSS → layout → display list (`about:engine`)

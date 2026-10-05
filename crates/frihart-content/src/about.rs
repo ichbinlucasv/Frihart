@@ -494,6 +494,13 @@ fn shred_page(url: &Url) -> Document {
                  not reliable on SSDs or copy-on-write filesystems."
                     .into(),
             ),
+            Block::Paragraph(
+                "Dead-man switch: `frihart --deadman 14` shreds this profile the first time it \
+                 is opened after 14 days without a start; `--deadman off` turns it off. It only \
+                 runs when Frihart starts, and until the profile is encrypted any start resets \
+                 the timer."
+                    .into(),
+            ),
             Block::Link {
                 label: "Wipe".into(),
                 href: "frihart:wipe".into(),

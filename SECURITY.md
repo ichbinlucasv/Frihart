@@ -30,7 +30,7 @@ threats are:
 | User-assisted code exec | Downloads `0600`, never executed; no extension runtime |
 | Tor leak | SOCKS only. Empty/dead SOCKS refuses. No clearnet fallback |
 | Supply-chain crates | Minimal deps, no upload/telemetry SDKs |
-| Local shoulder-surfing | Private windows; wipe / shred this profile; panic chord and `frihart --wipe` shred without a prompt |
+| Local shoulder-surfing | Private windows; wipe / shred this profile; panic chord and `frihart --wipe` shred without a prompt; `--deadman DAYS` shreds on the first start after DAYS unused |
 
 ## Threat model (target)
 
