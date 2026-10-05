@@ -519,21 +519,17 @@ mod tests {
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("tails.net"))
         );
-        assert!(
-            claims().iter().any(|s| {
-                s.status == ClaimStatus::NeedsJs
-                    && s.url.contains("age-encryption.org")
-                    && s.note.contains("Forbidden")
-            })
-        );
-        assert!(
-            claims().iter().any(|s| {
-                s.status == ClaimStatus::NeedsJs
-                    && s.url.contains("libsodium.org")
-                    && s.note.contains("Forbidden")
-                    && s.note.contains("gitbook")
-            })
-        );
+        assert!(claims().iter().any(|s| {
+            s.status == ClaimStatus::NeedsJs
+                && s.url.contains("age-encryption.org")
+                && s.note.contains("Forbidden")
+        }));
+        assert!(claims().iter().any(|s| {
+            s.status == ClaimStatus::NeedsJs
+                && s.url.contains("libsodium.org")
+                && s.note.contains("Forbidden")
+                && s.note.contains("gitbook")
+        }));
         assert!(claims().iter().all(|s| s.status != ClaimStatus::NeedsJs
             || s.note.contains("not claim")
             || s.note.contains("JS")));

@@ -1267,10 +1267,7 @@ line2</pre>"#;
     fn i2pd_website_is_readable() {
         let html = include_str!("../testdata/i2pd.website.html");
         let f = layout_html_ex(html, "https://i2pd.website/", 1000.0, 800.0);
-        assert!(
-            f.title.contains("Invisible Internet Protocol Daemon")
-                || f.title.contains("i2pd")
-        );
+        assert!(f.title.contains("Invisible Internet Protocol Daemon") || f.title.contains("i2pd"));
         let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
         assert!(
             blob.contains("Network without borders")
@@ -1309,14 +1306,10 @@ line2</pre>"#;
     fn mullvad_net_is_readable() {
         let html = include_str!("../testdata/mullvad.net.html");
         let f = layout_html_ex(html, "https://mullvad.net/", 1000.0, 800.0);
-        assert!(
-            f.title.contains("Mullvad")
-                || f.title.contains("Privacy is for the people")
-        );
+        assert!(f.title.contains("Mullvad") || f.title.contains("Privacy is for the people"));
         let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
         assert!(
-            blob.contains("Privacy is for the people")
-                || blob.contains("free and open society")
+            blob.contains("Privacy is for the people") || blob.contains("free and open society")
         );
         assert!(
             blob.contains("Mullvad VPN")
@@ -1344,10 +1337,7 @@ line2</pre>"#;
             })
         }));
         let wide = layout_html_ex(html, "https://mullvad.net/", 5120.0, 1440.0);
-        assert!(
-            wide.title.contains("Mullvad")
-                || wide.title.contains("Privacy is for the people")
-        );
+        assert!(wide.title.contains("Mullvad") || wide.title.contains("Privacy is for the people"));
     }
 
     #[test]
@@ -1409,5 +1399,4 @@ line2</pre>"#;
         let wide = layout_html_ex(html, "https://tails.net/", 5120.0, 1440.0);
         assert!(wide.title.contains("Tails"));
     }
-
 }
