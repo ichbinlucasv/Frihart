@@ -52,14 +52,15 @@ These are our chrome. They do not prove the HTML engine.
 | https://i2pd.website/ | Live HTML 2026-09-22 (apex 200; GitHub Pages same host, not a foreign redirect). Title `Invisible Internet Protocol Daemon`. h1 “Network without borders”, Invisible Internet Protocol, full-featured C++ I2P client, Free from censorship, Downloads / Documentation / Android / I2PdBrowser, donations. External CSS unused. l10n.js / app.js skipped (English text already in HTML). Also 5120×1440. |
 | https://mullvad.net/ | Live HTML 2026-09-22 (www 301 → apex; apex 302 → `/en` same host). Title `Mullvad VPN - Privacy is for the people`. h1 “Privacy is for the people”, Mullvad VPN / Mullvad Browser, €5/month no logging / anonymous accounts, Why privacy matters, Downloads. SvelteKit SSR (`x-sveltekit-page`); external CSS unused (nav stacks); hydration scripts skipped. Images from `media.mullvad.net`. Also 5120×1440. |
 | https://www.privacyguides.org/ | Live HTML 2026-10-04 (apex 302 → www same host). Title `Privacy Guides`. Nav Knowledge Base / Articles / Videos / Forum / About. h1 “Privacy Guides”, This Week in Privacy, Trustworthy Reviews / Community-Built / “Privacy: It's a human right”, Activism. External CSS unused (nav stacks); scripts skipped. Also 5120×1440. |
+| https://tails.net/ | Live HTML 2026-10-05 (www 302 → apex same host). Title `Tails - Home`. Nav Home / How Tails works / Install Tails / Documentation / Support / News. “Tails is a portable operating system that protects against surveillance and censorship.”, four feature blocks, Who uses Tails, Recommended by, Supporters. External CSS unused (nav stacks); local.js skipped (only sets the title). Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty-seven public claims are in. CSS leftovers `list-style` /
-`white-space` are in. privacyguides.org claimed this session.
+Thirty-eight public claims are in. CSS leftovers `list-style` /
+`white-space` are in. tails.net claimed this session.
 **libsodium.org** Forbidden (apex/www → doc → gitbook.io) and
 **age-encryption.org** Forbidden (apex → GitHub) remain unclaimed.
-Next is **tails.net**.
+The named queue is empty; pick the next static document from live HTML.
 Not Wikipedia / GitHub / mail. Arch package builds; install is
 `sudo pacman -U` on the user's machine.
 

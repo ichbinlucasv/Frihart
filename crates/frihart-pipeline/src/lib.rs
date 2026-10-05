@@ -1391,4 +1391,23 @@ line2</pre>"#;
         assert!(wide.title.contains("Privacy Guides"));
     }
 
+    #[test]
+    fn tails_net_is_readable() {
+        let html = include_str!("../testdata/tails.net.html");
+        let f = layout_html_ex(html, "https://tails.net/", 1000.0, 800.0);
+        assert!(f.title.contains("Tails"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("portable operating system"));
+        assert!(blob.contains("surveillance and censorship"));
+        assert!(blob.contains("Who uses Tails"));
+        assert!(blob.contains("Install Tails") || blob.contains("How Tails works"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("install") || h.contains("doc") || h.contains("support")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://tails.net/", 5120.0, 1440.0);
+        assert!(wide.title.contains("Tails"));
+    }
+
 }
