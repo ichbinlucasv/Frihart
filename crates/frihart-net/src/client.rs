@@ -273,10 +273,6 @@ impl HttpClient for RustlsClient {
                         .join(&loc)
                         .map_err(|_| FrihartError::network("redirect"))?;
                     current = next;
-                    request.headers.retain(|(n, _)| {
-                        let l = n.to_ascii_lowercase();
-                        l != "cookie" && l != "user-agent" && l != "sec-gpc" && l != "dnt"
-                    });
                     continue;
                 }
             }
