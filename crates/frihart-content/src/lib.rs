@@ -260,6 +260,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn about_support_shows_plans_offline() {
+        let profile = Profile::ephemeral().unwrap();
+        let doc = load(&about_url("support"), &profile);
+        assert_eq!(doc.title(), "Support");
+        let Document::Internal(page) = doc else {
+            panic!("support must be internal")
+        };
+        let text = format!("{:?}", page.blocks);
+        assert!(text.contains("€149"));
+        assert!(text.contains("Pay what you want"));
+        assert!(text.contains("<XMR_ADDRESS_TBD>"));
+    }
+
+    #[test]
     fn about_home_loads() {
         let profile = Profile::ephemeral().unwrap();
         let doc = load(&about_url("home"), &profile);

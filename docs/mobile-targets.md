@@ -29,8 +29,8 @@ track once that work begins.
 
 ## Pricing
 
-Packaged mobile / non-Linux builds (when they exist) are **€100
-lifetime** — same model as HashChat Android: one-time, local key, no
+Packaged mobile / non-Linux builds (when they exist) need a **Supporter plan** (€4.99/month, €49/year or €149
+lifetime) — same model as HashChat: local key, no
 license server, no Frihart account. Desktop Linux stays free.
 
 Details: [pricing.md](pricing.md).

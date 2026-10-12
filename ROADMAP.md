@@ -55,7 +55,7 @@ more CSS, and we do not skip policy to fetch more pages.
 
 A port starts only when Linux desktop is a daily driver for the sites
 Frihart claims at that time. Desktop Linux is free; non-Linux builds
-(including packaged mobile ports) are **€100 lifetime** — see
+(including packaged mobile ports) need a **Supporter plan** (€4.99/month, €49/year, €149 lifetime) — see
 [docs/pricing.md](docs/pricing.md).
 
 ## Campaigns (the new plan)
@@ -467,7 +467,7 @@ a generic exploit runtime.
 **Estimate:** 4–8 months for a first cut
 **Priority:** GrapheneOS, Jolla (Sailfish), Volla Phone OS, and similar
 Linux-leaning phones must work great (stable + fast) — not behind stock
-Google Android. Packaged mobile builds are €100 lifetime (see pricing).
+Google Android. Packaged mobile builds need a Supporter plan (see pricing).
 
 ### Technical tasks
 
@@ -682,3 +682,25 @@ Implement [docs/DESIGN.md](docs/DESIGN.md) in the real chrome (`frihart-chrome`,
 4. Letterbox frame outline and status bar items.
 5. Restyle `about:newtab` and `about:settings` to match the concepts.
 6. Add real screenshots to the README and retire concepts as each piece lands.
+
+## Sustainability: free + paid model (approved by Lucas, 2026-10-12)
+
+Principle: **privacy and anonymity are always free; paying never unlocks
+privacy, only comfort features.** Free mode is the default.
+
+- Free: full browser on linux, tor and i2p tabs, blocker, all privacy defaults.
+- Supporter (paid): builds for other operating systems (see stance.md), themes, advanced profiles and containers, extra filter lists, priority support.
+- Draft prices: €4.99/month, €49/year, €149 lifetime. Bundle with
+  HashChat: €7.99/month or €229 lifetime. Launch offer: €99 lifetime for the
+  first 500 supporters. Pay-what-you-want, any amount.
+- Payments: crypto only. Monero preferred, plus Bitcoin and Lightning, via
+  self-hosted BTCPay Server (Monero plugin) or MoneroPay. Fresh address per
+  invoice, no account, no license server. Prepaid 3/6/12-month packs with a
+  local expiry reminder.
+- Done: offline Ed25519 license module (`crates/frihart-license`), `about:support` page,
+  [docs/SUPPORT.md](docs/SUPPORT.md), [docs/HOW_TO_PAY.md](docs/HOW_TO_PAY.md),
+  [docs/PAYMENTS_SETUP.md](docs/PAYMENTS_SETUP.md).
+- Next: Lucas provides receiving addresses (or an xpub / view-only wallet)
+  and a server for BTCPay; generate the offline signing key and set
+  `MAINTAINER_PUBKEY`; wire each comfort feature to `Entitlement::allows`
+  as it ships.

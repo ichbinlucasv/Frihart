@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/frihart",
     "crates/frihart-blocker",
+    "crates/frihart-license",
     "crates/frihart-chrome",
     "crates/frihart-config",
     "crates/frihart-content",
@@ -44,6 +45,7 @@ frihart-chrome = { path = "crates/frihart-chrome" }
 frihart-config = { path = "crates/frihart-config" }
 frihart-content = { path = "crates/frihart-content" }
 frihart-core = { path = "crates/frihart-core" }
+frihart-license = { path = "crates/frihart-license" }
 frihart-net = { path = "crates/frihart-net" }
 frihart-platform = { path = "crates/frihart-platform" }
 frihart-privacy = { path = "crates/frihart-privacy" }

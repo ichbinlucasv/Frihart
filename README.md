@@ -88,8 +88,8 @@ git push origin main   # GitHub mirror only after Codeberg
 - HTML → CSS → layout → display list (`about:engine`)
 
 Linux desktop is free. Non-Linux (including packaged mobile builds —
-GrapheneOS / Jolla / Volla / Android / Windows / macOS): **€100
-lifetime**, local key, no license server. Voluntary support never unlocks
+GrapheneOS / Jolla / Volla / Android / Windows / macOS): **Supporter plan
+(€4.99/month, €49/year or €149 lifetime)**, local key, no license server. Voluntary support never unlocks
 a privacy tier. See [docs/pricing.md](docs/pricing.md) and
 [docs/stance.md](docs/stance.md).
 
@@ -183,6 +183,8 @@ Private windows use memory only. Files are `0600` / dirs `0700`.
 | File | What it is |
 | --- | --- |
 | [PHILOSOPHY.md](PHILOSOPHY.md) | Constitution. Libertarian, LibreWolf stance |
+| [docs/SUPPORT.md](docs/SUPPORT.md) | Free vs Supporter, plans, pay-what-you-want |
+| [docs/HOW_TO_PAY.md](docs/HOW_TO_PAY.md) | Pay with Monero/Bitcoin/Lightning, step by step |
 | [docs/stance.md](docs/stance.md) | Compatibility floor, two modes, money, DNS, quantum |
 | [docs/community.md](docs/community.md) | Tor/I2P/Monero/GPG/SimpleX — launch, don't embed |
 | [ROADMAP.md](ROADMAP.md) | Campaigns A–I and crate phases 0–15 |

@@ -370,8 +370,8 @@ fn welcome(url: &Url, prefs: &Prefs) -> Document {
         },
         Block::Paragraph(frihart_core::price_label().into()),
         Block::Paragraph(
-            "Any OS that is not Linux: €100 lifetime. Pay with Monero, Bitcoin, \
-             or fiat. Local key only. Nothing phones home."
+            "Any OS that is not Linux: €4.99/month, €49/year or €149 lifetime. \
+             Pay with Monero, Bitcoin or Lightning. Local key only. Nothing phones home."
                 .into(),
         ),
         Block::Heading("Support".into()),
@@ -416,19 +416,36 @@ fn support(url: &Url, prefs: &Prefs) -> Document {
             title: "Support".into(),
             subtitle: frihart_core::price_label().into(),
         },
-        Block::List(vec![
-            "Linux: free. Privacy is not a paid tier.".into(),
-            "Android / Windows / macOS / other: €100 lifetime, local key".into(),
-            "Voluntary support (any OS): same €100 or any amount, XMR/BTC/fiat".into(),
-            "No ads. No BAT. No Frihart account. No license server.".into(),
-        ]),
-        Block::Note(
-            "A donation does not unlock features the free Linux build lacks. \
-             Paid ports will use a key you keep on disk."
-                .into(),
-        ),
-        Block::Heading("Donate".into()),
+        Block::Paragraph(frihart_license::PRINCIPLE.into()),
+        Block::Heading("Plans".into()),
     ];
+    for (plan, price) in frihart_license::PLANS {
+        blocks.push(Block::KeyValue {
+            key: (*plan).into(),
+            value: (*price).into(),
+        });
+    }
+    blocks.extend([
+        Block::List(vec![
+            "Free: the full browser on Linux, Tor and I2P tabs, blocker, all privacy defaults."
+                .into(),
+            "Supporter: builds for other OSes, themes, advanced profiles/containers, extra \
+             lists, priority support."
+                .into(),
+            "Crypto only: Monero preferred, Bitcoin and Lightning welcome.".into(),
+            "No ads. No account. No license server. The key is checked offline.".into(),
+        ]),
+        Block::Note(frihart_license::PAY_WHAT_YOU_WANT.into()),
+        Block::KeyValue {
+            key: "XMR".into(),
+            value: frihart_license::XMR_ADDRESS.into(),
+        },
+        Block::KeyValue {
+            key: "BTC".into(),
+            value: frihart_license::BTC_ADDRESS.into(),
+        },
+        Block::Heading("Your addresses (prefs.toml)".into()),
+    ]);
     blocks.extend(support_blocks(prefs));
     blocks.push(Block::Link {
         label: "Home".into(),

@@ -13,7 +13,7 @@ engine.
 - **Libertarian:** user owns the machine and the binary (`MIT OR
   Apache-2.0`). No telemetry, no account, no password vault.
 - **Linux first:** Arch/CachyOS reference, then Fedora, Mint, Tails,
-  Qubes. Same binary. Linux free; other OS €100 later, no license server.
+  Qubes. Same binary. Linux free; other OS via Supporter plan later, no license server.
 - **The engine is Frihart, in Rust** (locked). Never embed V8,
   SpiderMonkey, JavaScriptCore, QuickJS, Gecko, Blink, WebKit, Servo,
   or CEF. Campaign G, if it ever starts, is a small interpreter we write

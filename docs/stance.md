@@ -59,12 +59,16 @@ refuse clearnet; use Tor if you need anonymous public HTTP.
 
 Linux stays **free**. There is no ad tier, no BAT, no sponsored search.
 
-Other OS, when they exist: **€100 lifetime**, local key, no license
-server, no Frihart account. Pay with Monero or Bitcoin; Lightning is welcome.
+Supporter plan (draft): **€4.99/month, €49/year or €149 lifetime**
+(launch: €99 lifetime for the first 500 supporters). Bundle with HashChat:
+€7.99/month or €229 lifetime. Supporter adds builds for other OSes, themes,
+advanced profiles/containers, extra lists and priority support. Local
+Ed25519 key, checked offline, no license server, no Frihart account. Crypto
+only: Monero preferred, Bitcoin and Lightning welcome.
 
-Anyone may **voluntarily** send the same amount (or any amount) to
+Anyone may **voluntarily** send any amount (pay-what-you-want) to
 support Linux work. Payment never unlocks a privacy feature. Privacy is
-not a product tier. See [pricing.md](pricing.md).
+not a product tier. See [pricing.md](pricing.md) and [SUPPORT.md](SUPPORT.md).
 
 ## DNS and malware
 

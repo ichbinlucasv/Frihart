@@ -5,7 +5,7 @@ pub fn list_price_eur() -> Option<u32> {
     if std::env::consts::OS == "linux" {
         None
     } else {
-        Some(100)
+        Some(149)
     }
 }
 
@@ -13,7 +13,7 @@ pub fn price_label() -> &'static str {
     if list_price_eur().is_none() {
         "Linux: free"
     } else {
-        "€100 lifetime (any non-Linux OS)"
+        "Other OS: €4.99/month, €49/year or €149 lifetime"
     }
 }
 
@@ -33,7 +33,7 @@ mod tests {
         if cfg!(target_os = "linux") {
             assert_eq!(super::list_price_eur(), None);
         } else {
-            assert_eq!(super::list_price_eur(), Some(100));
+            assert_eq!(super::list_price_eur(), Some(149));
         }
     }
 }

@@ -77,7 +77,7 @@ package, keep it offline-first: no extra repos that phone home.
 ## Mobile (after Linux desktop)
 
 Desktop Linux homes above come first. Planned phone targets
-(GrapheneOS, Jolla/Sailfish, Volla, and similar) and €100 lifetime
+(GrapheneOS, Jolla/Sailfish, Volla, and similar) and Supporter-plan
 pricing for packaged mobile / non-Linux are documented in
 [mobile-targets.md](mobile-targets.md) — **planned**, not shipping.
 No mobile packages live under `packaging/` yet.
