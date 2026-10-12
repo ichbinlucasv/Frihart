@@ -208,3 +208,7 @@ MIT OR Apache-2.0. You own what you run.
 
 Frihart is the name of the browser. It is not a reskin and it does not
 stand for an acronym.
+
+## Why Frihart
+
+<img src="docs/screenshots/marketing/01_zero.png" width="32%"/> <img src="docs/screenshots/marketing/02_on_your_terms.png" width="32%"/> <img src="docs/screenshots/marketing/03_monero.png" width="32%"/> 
