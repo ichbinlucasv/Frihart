@@ -39,6 +39,39 @@ pub enum PrefToggle {
 }
 
 impl PrefToggle {
+    /// The pref key this toggle flips (shown in mono on settings rows).
+    pub fn pref_key(self) -> &'static str {
+        match self {
+            Self::HttpsOnly => "privacy.https_only",
+            Self::ResistFingerprinting => "privacy.resist_fingerprinting",
+            Self::PersistHistory => "privacy.persist_history",
+            Self::PersistCookies => "privacy.persist_cookies",
+            Self::SendGpc => "privacy.send_gpc",
+            Self::Javascript => "privacy.javascript",
+            Self::WebRtc => "privacy.webrtc",
+            Self::RestoreSession => "general.restore_session",
+            Self::ThirdPartyCookies => "privacy.third_party_cookies",
+            Self::Blocker => "privacy.blocker",
+            Self::Containers => "privacy.containers",
+            Self::DarkMode => "content.dark_mode",
+            Self::Translate => "translate.enabled",
+            Self::DismissWelcome => "general.welcome_seen",
+            Self::Autofill => "autofill.enabled",
+            Self::StripTracking => "privacy.strip_tracking",
+            Self::SearchSuggestions => "privacy.search_suggestions",
+            Self::Prefetch => "privacy.prefetch",
+            Self::SpeculativeConnect => "privacy.speculative_connect",
+            Self::SendPings => "privacy.send_pings",
+            Self::Geolocation => "privacy.geolocation",
+            Self::Wasm => "privacy.wasm",
+            Self::WebGl => "content.webgl",
+            Self::Canvas => "content.canvas",
+            Self::ClearOnShutdown => "privacy.clear_on_shutdown",
+            Self::Autoplay => "content.autoplay",
+            Self::PunycodeHosts => "privacy.punycode_hosts",
+        }
+    }
+
     pub fn apply(self, prefs: &mut Prefs) {
         match self {
             Self::HttpsOnly => prefs.privacy.https_only = !prefs.privacy.https_only,
