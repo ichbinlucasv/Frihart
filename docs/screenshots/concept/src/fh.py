@@ -31,7 +31,7 @@ STATUS='<div class="status mono"><span class="y">● JS off</span><span>HTTPS-on
 # 1 new tab
 nt=f'''<div class="content" style="flex-direction:column;align-items:center;justify-content:center">
 <div style="font-size:64px;font-weight:800;letter-spacing:.02em">Fri<span class="y">hart</span></div>
-<div style="color:#A09040;margin:8px 0 30px">Your browser. Your rules. Nothing phones home.</div>
+<div style="color:#A09040;margin:8px 0 30px">Your browser. Your rules. Home for Linux users.</div>
 <div style="width:680px;display:flex;align-items:center;gap:12px;background:#000;border:1px solid #3a3000;border-radius:14px;padding:16px 20px;color:#777;box-shadow:0 0 40px rgba(245,196,0,.08)">🔍 Search privately or enter address<span style="flex:1"></span><span class="mono" style="font-size:12px">no suggestions sent</span></div>
 <div style="display:flex;gap:16px;margin-top:36px">'''+''.join(f'<div style="width:200px;background:#121212;border:1px solid #242424;border-radius:14px;padding:18px"><div class="y" style="font-size:22px">{a}</div><div style="font-weight:600;margin-top:10px">{b}</div><div style="color:#888;font-size:12px;margin-top:4px" class="mono">{c}</div></div>' for a,b,c in [('◎','New Tor tab','fail-closed'),('◇','New I2P tab','about:i2p'),('▣','Containers','about:containers'),('⌫','Shred site data','about:shred')])+'''</div>
 <div class="mono" style="margin-top:40px;font-size:12px;color:#6f6a50">0 trackers followed you here · no sponsored tiles</div></div>'''
