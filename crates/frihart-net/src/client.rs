@@ -1,4 +1,5 @@
-use std::io::Read;
+use std::io::{self, Read};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::time::Duration;
 
 use frihart_blocker::FilterEngine;
@@ -108,6 +109,39 @@ impl RustlsClient {
     }
 }
 
+/// Parse the SOCKS address without DNS. `localhost` maps to 127.0.0.1;
+/// any other host must be an IP literal, so looking up the proxy itself
+/// never asks a resolver.
+fn socks_addr(socks: &str) -> Option<SocketAddr> {
+    let (host, port) = socks.rsplit_once(':')?;
+    let port: u16 = port.parse().ok().filter(|p| *p != 0)?;
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    let ip = if host.eq_ignore_ascii_case("localhost") {
+        IpAddr::V4(Ipv4Addr::LOCALHOST)
+    } else {
+        host.parse::<IpAddr>().ok()?
+    };
+    Some(SocketAddr::new(ip, port))
+}
+
+/// Resolver for Tor and I2P agents. With a SOCKS5 proxy ureq sends host
+/// names to the proxy, so the only lookups it should ask for are IP
+/// literals (the proxy address, or a URL that already holds an IP). A
+/// name reaching this resolver would be a DNS query outside the circuit;
+/// it is refused instead of being passed to the system resolver.
+struct NoDnsResolver;
+
+impl ureq::Resolver for NoDnsResolver {
+    fn resolve(&self, netloc: &str) -> io::Result<Vec<SocketAddr>> {
+        netloc.parse::<SocketAddr>().map(|a| vec![a]).map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "no local DNS on a hidden circuit",
+            )
+        })
+    }
+}
+
 fn socks5_agent(socks: &str, kind: &str) -> Result<ureq::Agent> {
     let socks = socks.trim();
     if socks.is_empty() {
@@ -118,12 +152,16 @@ fn socks5_agent(socks: &str, kind: &str) -> Result<ureq::Agent> {
             "{kind} refused: socks host:port"
         )));
     }
-    let proxy = ureq::Proxy::new(format!("socks5://{socks}"))
+    let addr = socks_addr(socks).ok_or_else(|| {
+        FrihartError::network(format!("{kind} refused: socks host must be an IP address"))
+    })?;
+    let proxy = ureq::Proxy::new(format!("socks5://{addr}"))
         .map_err(|_| FrihartError::network(format!("{kind} refused: socks invalid")))?;
     Ok(ureq::AgentBuilder::new()
         .timeout(Duration::from_secs(TIMEOUT_SECS))
         .redirects(0)
         .user_agent("Frihart")
+        .resolver(NoDnsResolver)
         .proxy(proxy)
         .build())
 }
@@ -418,6 +456,101 @@ mod tests {
             classify_error(&FrihartError::network("i2p refused: no socks")),
             NetFail::I2p
         );
+    }
+
+    #[test]
+    fn socks_address_needs_no_dns() {
+        assert_eq!(
+            socks_addr("127.0.0.1:9050"),
+            Some("127.0.0.1:9050".parse().unwrap())
+        );
+        assert_eq!(
+            socks_addr("localhost:4447"),
+            Some("127.0.0.1:4447".parse().unwrap())
+        );
+        assert_eq!(
+            socks_addr("[::1]:9050"),
+            Some("[::1]:9050".parse().unwrap())
+        );
+        assert_eq!(socks_addr("tor.example:9050"), None);
+        assert_eq!(socks_addr("127.0.0.1:0"), None);
+        assert_eq!(socks_addr("127.0.0.1:x"), None);
+        let err = socks5_agent("tor.example:9050", "tor").unwrap_err();
+        assert!(err.to_string().contains("IP address"));
+    }
+
+    #[test]
+    fn hidden_resolver_refuses_names() {
+        use ureq::Resolver;
+        assert!(NoDnsResolver.resolve("example.com:443").is_err());
+        assert!(NoDnsResolver.resolve("www.example.onion:80").is_err());
+        assert_eq!(
+            NoDnsResolver.resolve("127.0.0.1:9050").unwrap(),
+            vec!["127.0.0.1:9050".parse().unwrap()]
+        );
+        assert!(NoDnsResolver.resolve("[2001:db8::1]:443").is_ok());
+    }
+
+    /// Fake SOCKS5 proxy: records the CONNECT address type and host, then
+    /// refuses the connection.
+    fn fake_socks() -> (String, std::thread::JoinHandle<(u8, Vec<u8>)>) {
+        use std::io::Write;
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap().to_string();
+        let h = std::thread::spawn(move || {
+            let (mut s, _) = listener.accept().unwrap();
+            s.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+            let mut greet = [0u8; 2];
+            s.read_exact(&mut greet).unwrap();
+            let mut methods = vec![0u8; greet[1] as usize];
+            s.read_exact(&mut methods).unwrap();
+            s.write_all(&[5, 0]).unwrap();
+            let mut head = [0u8; 4];
+            s.read_exact(&mut head).unwrap();
+            let host = match head[3] {
+                3 => {
+                    let mut len = [0u8; 1];
+                    s.read_exact(&mut len).unwrap();
+                    let mut name = vec![0u8; len[0] as usize];
+                    s.read_exact(&mut name).unwrap();
+                    name
+                }
+                1 => {
+                    let mut ip = vec![0u8; 4];
+                    s.read_exact(&mut ip).unwrap();
+                    ip
+                }
+                _ => Vec::new(),
+            };
+            // 0x05 = connection refused.
+            let _ = s.write_all(&[5, 5, 0, 1, 0, 0, 0, 0, 0, 0]);
+            (head[3], host)
+        });
+        (addr, h)
+    }
+
+    #[test]
+    fn tor_tab_sends_host_name_to_the_proxy() {
+        let (socks, h) = fake_socks();
+        let client = RustlsClient::new();
+        let policy = Policy::new(Prefs::default());
+        let mut jar = CookieJar::default();
+        let blocker = FilterEngine::new(true);
+        let req = Request::get(Url::parse("https://dns-leak-check.example/").unwrap());
+        let err = client
+            .send(
+                req,
+                &policy,
+                &mut jar,
+                &blocker,
+                FetchMode::Tor { socks },
+                ContainerId::PERSONAL,
+            )
+            .unwrap_err();
+        let (atyp, host) = h.join().unwrap();
+        assert_eq!(atyp, 3, "CONNECT must carry the domain, not a local lookup");
+        assert_eq!(host, b"dns-leak-check.example");
+        assert!(!err.to_string().is_empty());
     }
 
     #[test]
