@@ -48,7 +48,7 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.safe_browsing` | `false` | Forced. No Google list. |
 | `privacy.clear_on_shutdown` | `false` | Optional session-only jar. |
 | `privacy.punycode_hosts` | `true` | IDN shown as xn--. |
-| `privacy.letterboxing` | `false` | Opt-in. Content pane rounds down to 200×100 buckets (Tor-style). Chrome chrome is full-width. |
+| `privacy.letterboxing` | `true` | On by default. Content pane rounds down to 200×100 buckets (Tor-style), so the page sees one of a few sizes whatever the window is. Chrome is full-width. New windows open at a fixed 1600×900 logical size. |
 | `content.autoplay` | `false` | Nothing plays until asked. |
 | `network.captive_portal` | `false` | No connectivity probe. |
 | `network.connectivity_check` | `false` | Same. |

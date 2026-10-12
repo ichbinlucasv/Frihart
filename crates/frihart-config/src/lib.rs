@@ -145,7 +145,7 @@ impl Default for PrivacyPrefs {
             safe_browsing: false,
             clear_on_shutdown: false,
             punycode_hosts: true,
-            letterboxing: false,
+            letterboxing: true,
         }
     }
 }
@@ -430,6 +430,7 @@ mod tests {
         assert!(p.extensions.enabled);
         assert!(!p.privacy.store_logins);
         assert!(!p.general.welcome_seen);
+        assert!(p.privacy.letterboxing);
         assert!(p.privacy.strip_tracking);
         assert!(!p.privacy.search_suggestions);
         assert!(!p.privacy.prefetch);
