@@ -1,0 +1,35 @@
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+body{background:radial-gradient(1200px 700px at 80% 0%,#1d1700 0%,#07070a 55%,#000 100%)}
+.y{color:#F5C400}
+.br{width:1480px;height:880px;display:flex;flex-direction:column}
+.tabs{display:flex;gap:4px;padding:10px 12px 0;background:#000}
+.t{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px 10px 0 0;font-size:13px;color:#A09040;width:230px}
+.t.a{background:#161616;color:#F2F2F2}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#161616;border-bottom:1px solid #2A2A2A}
+.nb{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:#A09040;font-size:16px}
+.url{flex:1;display:flex;align-items:center;gap:10px;background:#000;border:1px solid #2A2A2A;border-radius:10px;padding:9px 14px;font-size:14px}
+.content{flex:1;background:#0A0A0A;position:relative;display:flex}
+.status{display:flex;gap:18px;padding:6px 14px;font-size:12px;color:#A09040;background:#000;border-top:1px solid #2A2A2A}
+.sw{width:36px;height:20px;border-radius:999px;background:#F5C400;position:relative;flex:none}.sw:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#111}
+.sw.off{background:#333}.sw.off:after{left:3px;right:auto;background:#777}
+.row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #1c1c1c;font-size:14px}
+.row .k{font-size:12px;color:#6f6a50}
+</style></head><body><div class="win br"><div class="tabs"><div class="t a"><span class="pill" style="padding:2px 7px;font-size:10px;border:1px solid #333;color:#aaa">DIRECT</span><span style="overflow:hidden;white-space:nowrap">Why Frihart</span></div><div class="t "><span class="pill tor" style="padding:2px 7px;font-size:10px">TOR</span><span style="overflow:hidden;white-space:nowrap">Onion library</span></div><div class="t "><span class="pill i2p" style="padding:2px 7px;font-size:10px">I2P</span><span style="overflow:hidden;white-space:nowrap">eepsite forum</span></div><div class="t" style="width:auto">＋</div></div><div class="bar"><div class="nb">←</div><div class="nb">→</div><div class="nb">↻</div><div class="url"><span class="pill" style="padding:2px 7px;font-size:10px;border:1px solid #333;color:#aaa">DIRECT</span><span class="mono">about:frihart</span><span class="sp" style="flex:1"></span><span class="y">🛡 12</span></div><div class="nb y">☰</div></div><div class="content" style="justify-content:center;overflow:hidden"><div style="width:1100px;padding:34px 0"><div style="font-size:30px;font-weight:800">Two modes. <span class="y">Zero servers.</span></div><div style="color:#888;margin:6px 0 22px">Home for Linux users who already live private: Tor, I2P, Monero, Tails, Qubes.</div><div style="display:flex;gap:16px">
+<div style="flex:1;background:#121212;border:1px solid #242424;border-radius:16px;padding:22px"><div style="color:#F5C400;font-size:12px;letter-spacing:.12em" class="mono">MODE · DEFAULT</div><div style="font-size:20px;font-weight:700;margin:8px 0 14px">Sovereign</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ HTTPS-only</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ Partitioned cookies</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ Native blocker, local lists</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ Frozen UA · no Client Hints</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ No telemetry · no account</div></div>
+<div style="flex:1;background:#121212;border:1px solid #242424;border-radius:16px;padding:22px"><div style="color:#b48cff;font-size:12px;letter-spacing:.12em" class="mono">MODE · OPT-IN</div><div style="font-size:20px;font-weight:700;margin:8px 0 14px">Anonymous circuit</div><div style="font-size:13px;color:#bbb;padding:5px 0"><span class="pill tor" style="padding:2px 7px;font-size:10px">TOR</span> &nbsp;Ctrl+Shift+O</div><div style="font-size:13px;color:#bbb;padding:5px 0"><span class="pill i2p" style="padding:2px 7px;font-size:10px">I2P</span> &nbsp;Ctrl+Shift+I</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ SOCKS only, system daemon</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ Fail-closed · no clearnet fallback</div><div style="font-size:13px;color:#bbb;padding:5px 0">✓ No local DNS on circuit tabs</div></div>
+</div><div style="background:#0c0c0c;border:1px solid #242424;border-radius:16px;padding:22px;margin-top:16px">
+<div class="mono y" style="font-size:12px;letter-spacing:.12em">ARCHITECTURE · NO FRIHART SERVERS</div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-size:14px">
+<div style="padding:14px 18px;border:1px solid #F5C400;border-radius:12px;color:#F5C400;font-weight:700">Your machine</div>
+<div style="flex:1;text-align:center;color:#555">────────▶</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="padding:8px 14px;border:1px solid #333;border-radius:10px">Website (direct, HTTPS)</div>
+<div style="padding:8px 14px;border:1px solid #4a3a7a;border-radius:10px;color:#b48cff">Tor network → .onion</div>
+<div style="padding:8px 14px;border:1px solid #1f5a52;border-radius:10px;color:#4fd1c5">I2P network → eepsite</div></div>
+<div style="flex:1;text-align:center;color:#555">┆</div>
+<div style="padding:14px 18px;border:1px dashed #5a2a2a;border-radius:12px;color:#ff8a8a;text-align:center">Frihart cloud<br><span class="mono" style="font-size:11px">does not exist</span></div>
+</div>
+<div class="mono" style="font-size:12px;color:#777;margin-top:14px">No account · no sync server · no license server · no crash ping · nothing to seize, nothing to decrypt later</div></div><div style="background:#0c0c0c;border:1px solid #242424;border-radius:16px;padding:22px;margin-top:16px;display:flex;gap:24px;align-items:center">
+<div style="flex:1"><div class="mono y" style="font-size:12px;letter-spacing:.12em">QUANTUM · HONEST ROADMAP</div>
+<div style="font-size:14px;color:#bbb;margin-top:10px">Collect nothing, so a future quantum decrypt finds nothing. Post-quantum TLS (hybrid ML-KEM key exchange) arrives via <span class="mono">rustls</span> when it is stable — no home-made crypto.</div></div>
+<div style="display:flex;gap:8px;flex:none"><span class="pill" style="border:1px solid #F5C400;color:#F5C400;padding:4px 10px">Zero data collected · today</span><span class="pill" style="border:1px solid #444;color:#aaa;padding:4px 10px">PQ hybrid TLS · planned</span></div></div></div></div><div class="status mono"><span class="y">● JS off</span><span>HTTPS-only</span><span>letterbox 1400×700</span><span>blocker on</span><span style="flex:1"></span><span>no telemetry · no account</span></div></div><div class="tag">Design concept · in progress</div></body></html>
