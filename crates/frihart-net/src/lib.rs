@@ -3,6 +3,8 @@
 #![forbid(unsafe_code)]
 
 mod addr;
+/// Tor bridge lines: validation, torrc snippet, and the fail-closed "bridges took effect" check (shared design with HashChat).
+pub mod bridges;
 mod clean;
 mod client;
 mod cookie;
