@@ -26,6 +26,13 @@ HTML subset. JavaScript is off. That is intentional. Read
 
 ## Screenshots
 
+### Today (real)
+The real Frihart chrome with the design theme: rounded tabs, a DIRECT / TOR / I2P network pill on every tab and in the URL field, and a fail-closed note in the status bar on Tor/I2P tabs. Rendered headlessly from the real `paint()` code (`FRIHART_SNAPSHOT_DIR=/tmp/fh cargo test -p frihart-chrome design_tests`, then PPM to PNG).
+
+| <img src="docs/screenshots/real/frihart-tor-tab.png" alt="Frihart: Tor tab with network pills"/> | <img src="docs/screenshots/real/frihart-new-tab.png" alt="Frihart: new tab page"/> |
+|---|---|
+| Tor tab, fail-closed status | New tab: "Your browser. Your rules. Home for Linux users." |
+
 ### Design concept (in progress)
 **These are design concepts, not the current browser.** They show where the chrome is going; every setting and shield shown exists in the code today. See [docs/DESIGN.md](docs/DESIGN.md).
 
