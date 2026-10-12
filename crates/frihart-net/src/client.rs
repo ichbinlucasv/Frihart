@@ -209,7 +209,7 @@ impl HttpClient for RustlsClient {
             }
 
             request.url = current.clone();
-            apply_identity_headers(&mut request, policy);
+            apply_identity_headers(&mut request, policy, circuit);
             if let Some(cookie) =
                 jar.header_for(&current, &first_party, container, circuit, policy, false)
             {

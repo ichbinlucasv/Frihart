@@ -32,7 +32,7 @@ The implementing type is `frihart_config::Prefs`.
 | `privacy.webrtc` | `false` | IP-leak surface. Stays off until implemented and reviewed. |
 | `privacy.javascript` | `false` | No engine yet. Remains a permission after an engine exists. |
 | `privacy.timezone` | `utc` | System timezone is identifying. |
-| `privacy.language` | `en` | A single language; not the full system list. |
+| `privacy.language` | `en` | A single language; not the full system list. Direct tabs only: Tor and I2P tabs always send `en`, the frozen User-Agent, Sec-GPC and no DNT, so nobody stands out on a hidden circuit. |
 | `privacy.containers` | `true` | Identity isolation is a default, not an add-on. |
 | `privacy.blocker` | `true` | uBlock-class host blocking is on at install. |
 | `privacy.store_logins` | `false` | Forced. Frihart does not collect passwords or logins. |
