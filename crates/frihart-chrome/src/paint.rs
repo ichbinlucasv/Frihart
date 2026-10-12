@@ -14,7 +14,8 @@ use crate::text::{DrawText, TextEngine};
 use crate::theme::{
     ACCENT, ACCENT_DIM, BAD, BG_CHROME, BG_CONTENT, BG_FIND, BG_NOTE, BG_STATUS, BG_TAB_ACTIVE,
     BG_TAB_HOVER, BG_TOGGLE_OFF, BG_TOGGLE_ON, BG_TOOLBAR, BG_URL, BG_URL_FOCUS, GOOD, HAIRLINE,
-    Metrics, NET_DIRECT, NET_I2P, NET_TOR, PRIVATE, TEXT_CHROME, TEXT_CONTENT, TEXT_CONTENT_MUTED, TEXT_LINK, TEXT_MUTED, WARN,
+    Metrics, NET_DIRECT, NET_I2P, NET_TOR, PRIVATE, TEXT_CHROME, TEXT_CONTENT, TEXT_CONTENT_MUTED,
+    TEXT_LINK, TEXT_MUTED, WARN,
 };
 
 pub struct HitRegion {
@@ -54,6 +55,57 @@ pub fn paint(
     };
     let find_h = if browser.find_open { m.find_h() } else { 0 };
 
+    let content = Rect::new(
+        0,
+        tab_h + toolbar_h,
+        w,
+        (h - tab_h - toolbar_h - status_h - find_h).max(0),
+    );
+    let outer = content;
+    let mut letterbox = None;
+    let content = if browser.profile.prefs().privacy.letterboxing {
+        let (iw, ih) = letterbox_size(content.w, content.h);
+        let x = content.x + (content.w - iw) / 2;
+        let y = content.y + (content.h - ih) / 2;
+        fb.fill_rect(content, BG_CHROME);
+        letterbox = Some((iw, ih));
+        Rect::new(x, y, iw, ih)
+    } else {
+        content
+    };
+    paint_content(fb, text, browser, &m, content, &mut hits);
+    if letterbox.is_some() && (content.w < outer.w || content.h < outer.h) {
+        // Clip page overflow into the letterbox margin, then draw the frame.
+        fb.fill_rect(
+            Rect::new(outer.x, outer.y, outer.w, content.y - outer.y),
+            BG_CHROME,
+        );
+        fb.fill_rect(
+            Rect::new(
+                outer.x,
+                content.bottom(),
+                outer.w,
+                outer.bottom() - content.bottom(),
+            ),
+            BG_CHROME,
+        );
+        fb.fill_rect(
+            Rect::new(outer.x, content.y, content.x - outer.x, content.h),
+            BG_CHROME,
+        );
+        fb.fill_rect(
+            Rect::new(
+                content.right(),
+                content.y,
+                outer.right() - content.right(),
+                content.h,
+            ),
+            BG_CHROME,
+        );
+        paint_letterbox_outline(fb, text, &m, content);
+    }
+    paint_fail_closed_card(fb, text, &m, browser.active_tab().circuit, content);
+    // Chrome after content: page overflow can never paint over the tab strip / toolbar.
     paint_tabs(fb, text, browser, &m, w, tab_h, &mut hits);
     paint_toolbar(
         fb,
@@ -63,23 +115,9 @@ pub fn paint(
         Rect::new(0, tab_h, w, toolbar_h),
         &mut hits,
     );
-
-    let content = Rect::new(
-        0,
-        tab_h + toolbar_h,
-        w,
-        (h - tab_h - toolbar_h - status_h - find_h).max(0),
-    );
-    let content = if browser.profile.prefs().privacy.letterboxing {
-        let (iw, ih) = letterbox_size(content.w, content.h);
-        let x = content.x + (content.w - iw) / 2;
-        let y = content.y + (content.h - ih) / 2;
-        fb.fill_rect(content, BG_CHROME);
-        Rect::new(x, y, iw, ih)
-    } else {
-        content
-    };
-    paint_content(fb, text, browser, &m, content, &mut hits);
+    if browser.shields_open {
+        paint_shields_panel(fb, text, browser, &m, outer, letterbox, &mut hits);
+    }
 
     if find_h > 0 {
         paint_find(
@@ -140,9 +178,15 @@ fn paint_tabs(
         };
         fb.fill_round_rect(rect, m.s(8.0), bg);
         // Square off the bottom so the active tab joins the toolbar.
-        fb.fill_rect(Rect::new(rect.x, rect.bottom() - m.s(8.0), rect.w, m.s(8.0)), bg);
+        fb.fill_rect(
+            Rect::new(rect.x, rect.bottom() - m.s(8.0), rect.w, m.s(8.0)),
+            bg,
+        );
         if active {
-            fb.fill_rect(Rect::new(rect.x + 6, rect.bottom() - 2, rect.w - 12, 2), ACCENT);
+            fb.fill_rect(
+                Rect::new(rect.x + 6, rect.bottom() - 2, rect.w - 12, 2),
+                ACCENT,
+            );
         }
         let stripe = browser
             .profile
@@ -332,7 +376,12 @@ fn paint_toolbar(
         url_rect.x + 8,
         url_rect.y + url_rect.h / 2,
     );
-    let url_rect = Rect::new(url_rect.x + url_pill + 6, url_rect.y, url_rect.w - url_pill - 6, url_rect.h);
+    let url_rect = Rect::new(
+        url_rect.x + url_pill + 6,
+        url_rect.y,
+        url_rect.w - url_pill - 6,
+        url_rect.h,
+    );
 
     let prefix = &browser.url_text[..browser.url_cursor.min(browser.url_text.len())];
     let caret_x = text.measure_width(prefix, m.font_ui(), m.line_ui(), Weight::NORMAL);
@@ -792,14 +841,23 @@ fn paint_internal_blocks(
     blocks: &[Block],
     hits: &mut Vec<HitRegion>,
 ) {
+    let here = browser.active_tab().url_display();
+    if matches!(here.as_str(), "about:home" | "about:newtab") {
+        paint_home(fb, text, browser, m, viewport, blocks, hits);
+        return;
+    }
     let pad = m.content_pad();
     let max_w = m.content_max_w().min(viewport.w - pad * 2);
+    let mut locked_off = false;
     let x = viewport.x + ((viewport.w - max_w) / 2).max(pad);
     let mut y = viewport.y + pad - browser.active_tab().scroll_y as i32;
 
     for block in blocks {
         if y > viewport.bottom() {
             break;
+        }
+        if !matches!(block, Block::KeyValue { .. }) {
+            locked_off = matches!(block, Block::Heading(h) if h == "Locked off");
         }
         match block {
             Block::Hero { title, subtitle } => {
@@ -847,7 +905,7 @@ fn paint_internal_blocks(
                         max_width: max_w as f32,
                         font_size: m.font_heading(),
                         line_height: m.font_heading() + 6.0,
-                        color: TEXT_CONTENT,
+                        color: if locked_off { BAD } else { TEXT_CONTENT },
                         weight: Weight::SEMIBOLD,
                         ellipsis: false,
                         wrap: false,
@@ -875,10 +933,19 @@ fn paint_internal_blocks(
                 y += box_h + m.s(14.0);
             }
             Block::Divider => {
-                fb.fill_rect(Rect::new(x, y + 6, max_w, 1), 0x00D9D0C4);
+                fb.fill_rect(Rect::new(x, y + 6, max_w, 1), HAIRLINE);
                 y += m.s(18.0);
             }
             Block::KeyValue { key, value } => {
+                if locked_off {
+                    // Red "forced off — not a setting" rows (DESIGN.md).
+                    let rh = m.line_content() as i32 + m.s(6.0);
+                    fb.fill_rect(
+                        Rect::new(x - m.s(10.0), y - m.s(3.0), max_w + m.s(20.0), rh),
+                        0x001A0C0C,
+                    );
+                    fb.fill_rect(Rect::new(x - m.s(10.0), y - m.s(3.0), m.s(3.0), rh), BAD);
+                }
                 text.draw(
                     fb,
                     key,
@@ -888,7 +955,7 @@ fn paint_internal_blocks(
                         max_width: (max_w / 3) as f32,
                         font_size: m.font_ui(),
                         line_height: m.line_content(),
-                        color: TEXT_CONTENT_MUTED,
+                        color: if locked_off { BAD } else { TEXT_CONTENT_MUTED },
                         weight: Weight::MEDIUM,
                         ellipsis: true,
                         wrap: false,
@@ -919,7 +986,7 @@ fn paint_internal_blocks(
             } => {
                 let row_h = m.s(64.0);
                 let row = Rect::new(x, y, max_w, row_h);
-                fb.fill_rect(Rect::new(x, y + row_h - 1, max_w, 1), 0x00E4DBCE);
+                fb.fill_rect(Rect::new(x, y + row_h - 1, max_w, 1), HAIRLINE);
                 text.draw(
                     fb,
                     label,
@@ -935,9 +1002,10 @@ fn paint_internal_blocks(
                         wrap: false,
                     },
                 );
+                let desc = format!("{}  ·  {description}", id.pref_key());
                 text.draw(
                     fb,
-                    description,
+                    &desc,
                     DrawText {
                         x,
                         y: y + m.s(30.0),
@@ -951,15 +1019,24 @@ fn paint_internal_blocks(
                     },
                 );
                 let sw = Rect::new(x + max_w - m.s(52.0), y + m.s(18.0), m.s(44.0), m.s(24.0));
-                fb.fill_rect(sw, if *value { BG_TOGGLE_ON } else { BG_TOGGLE_OFF });
+                fb.fill_round_rect(
+                    sw,
+                    sw.h / 2,
+                    if *value { BG_TOGGLE_ON } else { BG_TOGGLE_OFF },
+                );
                 let knob_x = if *value {
                     sw.right() - m.s(20.0)
                 } else {
                     sw.x + m.s(4.0)
                 };
-                fb.fill_rect(
+                fb.fill_round_rect(
                     Rect::new(knob_x, sw.y + m.s(4.0), m.s(16.0), m.s(16.0)),
-                    BG_CONTENT,
+                    m.s(8.0),
+                    if *value {
+                        BG_CONTENT
+                    } else {
+                        TEXT_CONTENT_MUTED
+                    },
                 );
                 hits.push(HitRegion {
                     rect: row,
@@ -1276,6 +1353,568 @@ pub fn hit_test(hits: &[HitRegion], x: i32, y: i32) -> Option<Hit> {
         .map(|h| h.hit.clone())
 }
 
+/// about:home / about:newtab — centered wordmark, search box, tiles (DESIGN.md concept).
+fn paint_home(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    browser: &Browser,
+    m: &Metrics,
+    vp: Rect,
+    blocks: &[Block],
+    hits: &mut Vec<HitRegion>,
+) {
+    let cx = vp.x + vp.w / 2;
+    let mut y = vp.y + m.s(70.0).min(vp.h / 6) - browser.active_tab().scroll_y as i32;
+    let (title, tagline) = match blocks.first() {
+        Some(Block::Hero { title, subtitle }) => (title.as_str(), subtitle.as_str()),
+        _ => ("Frihart", ""),
+    };
+    // Wordmark: first half white, second half accent ("Fri" + "hart").
+    let fs = 56.0 * m.scale;
+    let split = title.char_indices().nth(3).map_or(title.len(), |(i, _)| i);
+    let (a, b) = title.split_at(split);
+    let wa = text.measure_width(a, fs, fs + 8.0, Weight::BOLD) as i32;
+    let wb = text.measure_width(b, fs, fs + 8.0, Weight::BOLD) as i32;
+    let x0 = cx - (wa + wb) / 2;
+    label(fb, text, a, x0, y, wa + 8, fs, TEXT_CONTENT, Weight::BOLD);
+    label(fb, text, b, x0 + wa, y, wb + 8, fs, ACCENT, Weight::BOLD);
+    y += m.s(76.0);
+    let tw = text.measure_width(tagline, m.font_ui() + 1.0, m.line_ui(), Weight::NORMAL) as i32;
+    label(
+        fb,
+        text,
+        tagline,
+        cx - tw / 2,
+        y,
+        tw + 8,
+        m.font_ui() + 1.0,
+        ACCENT,
+        Weight::NORMAL,
+    );
+    y += m.s(36.0);
+
+    // Search box: focuses the URL bar (no suggestions are sent unless enabled).
+    let sw = m.s(440.0).min(vp.w - m.s(40.0));
+    let sr = Rect::new(cx - sw / 2, y, sw, m.s(36.0));
+    fb.fill_round_rect(sr, m.s(10.0), HAIRLINE);
+    fb.fill_round_rect(sr.inset(1), m.s(9.0), BG_CHROME);
+    label(
+        fb,
+        text,
+        "Search privately or enter address",
+        sr.x + m.s(14.0),
+        sr.y + m.s(9.0),
+        sw - m.s(160.0),
+        m.font_ui(),
+        TEXT_CONTENT_MUTED,
+        Weight::NORMAL,
+    );
+    let hint = if browser.profile.prefs().privacy.search_suggestions {
+        "suggestions on"
+    } else {
+        "no suggestions sent"
+    };
+    let hw = text.measure_width(hint, 10.5 * m.scale, 16.0, Weight::NORMAL) as i32;
+    label(
+        fb,
+        text,
+        hint,
+        sr.right() - hw - m.s(14.0),
+        sr.y + m.s(11.0),
+        hw + 6,
+        10.5 * m.scale,
+        TEXT_MUTED,
+        Weight::NORMAL,
+    );
+    hits.push(HitRegion {
+        rect: sr,
+        hit: Hit::UrlBar,
+    });
+    y += m.s(60.0);
+
+    // Featured tiles (real about: pages).
+    let tiles = [
+        ("◎", "Tor", "about:tor", "fail-closed"),
+        ("◇", "I2P", "about:i2p", "no clearnet"),
+        ("▣", "Containers", "about:containers", "isolated"),
+        ("⌫", "Shred site data", "about:shred", "wipe this profile"),
+    ];
+    let gap = m.s(12.0);
+    let tile_w = ((sw + m.s(260.0)).min(vp.w - m.s(40.0)) - gap * 3) / 4;
+    let row_w = tile_w * 4 + gap * 3;
+    let mut tx = cx - row_w / 2;
+    let tile_h = m.s(76.0);
+    for (glyph, name, href, sub) in tiles {
+        let r = Rect::new(tx, y, tile_w, tile_h);
+        let hovered = matches!(&browser.hover, Some(Hit::ContentLink(h)) if h == href);
+        fb.fill_round_rect(r, m.s(12.0), if hovered { ACCENT_DIM } else { HAIRLINE });
+        fb.fill_round_rect(r.inset(1), m.s(11.0), BG_TAB_ACTIVE);
+        label(
+            fb,
+            text,
+            glyph,
+            r.x + m.s(14.0),
+            r.y + m.s(10.0),
+            m.s(24.0),
+            m.font_ui() + 2.0,
+            ACCENT,
+            Weight::BOLD,
+        );
+        label(
+            fb,
+            text,
+            name,
+            r.x + m.s(14.0),
+            r.y + m.s(32.0),
+            tile_w - m.s(20.0),
+            m.font_ui(),
+            TEXT_CONTENT,
+            Weight::BOLD,
+        );
+        label(
+            fb,
+            text,
+            &format!("{href} · {sub}"),
+            r.x + m.s(14.0),
+            r.y + m.s(52.0),
+            tile_w - m.s(20.0),
+            10.0 * m.scale,
+            TEXT_MUTED,
+            Weight::NORMAL,
+        );
+        hits.push(HitRegion {
+            rect: r,
+            hit: Hit::ContentLink(href.into()),
+        });
+        tx += tile_w + gap;
+    }
+    y += tile_h + m.s(28.0);
+
+    // All other pages as compact chips.
+    let links: Vec<(&str, &str)> = blocks
+        .iter()
+        .filter_map(|b| match b {
+            Block::Link { label, href } => Some((label.as_str(), href.as_str())),
+            _ => None,
+        })
+        .filter(|(_, h)| !tiles.iter().any(|t| t.2 == *h) && !h.ends_with("home"))
+        .collect();
+    let mut seen = std::collections::HashSet::new();
+    let links: Vec<(&str, &str)> = links.into_iter().filter(|(_, h)| seen.insert(*h)).collect();
+    let lx0 = cx - row_w / 2;
+    label(
+        fb,
+        text,
+        "All pages",
+        lx0,
+        y,
+        row_w,
+        m.font_ui_sm(),
+        TEXT_MUTED,
+        Weight::BOLD,
+    );
+    y += m.s(22.0);
+    let chip_h = m.s(26.0);
+    let mut lx = lx0;
+    for (name, href) in links {
+        let cw = text.measure_width(name, m.font_ui_sm(), m.line_ui(), Weight::MEDIUM) as i32
+            + m.s(20.0);
+        if lx + cw > lx0 + row_w {
+            lx = lx0;
+            y += chip_h + m.s(8.0);
+        }
+        if y > vp.bottom() {
+            break;
+        }
+        let r = Rect::new(lx, y, cw, chip_h);
+        let hovered = matches!(&browser.hover, Some(Hit::ContentLink(h)) if h == href);
+        fb.fill_round_rect(r, chip_h / 2, if hovered { ACCENT_DIM } else { HAIRLINE });
+        fb.fill_round_rect(r.inset(1), chip_h / 2 - 1, BG_CONTENT);
+        label(
+            fb,
+            text,
+            name,
+            r.x + m.s(10.0),
+            r.y + m.s(4.0),
+            cw,
+            m.font_ui_sm(),
+            TEXT_LINK,
+            Weight::MEDIUM,
+        );
+        hits.push(HitRegion {
+            rect: r,
+            hit: Hit::ContentLink(href.into()),
+        });
+        lx += cw + m.s(8.0);
+    }
+    y += chip_h + m.s(26.0);
+    if let Some(Block::Paragraph(p)) = blocks.get(1) {
+        let pw = text.measure_width(p, 10.5 * m.scale, 16.0, Weight::NORMAL) as i32;
+        label(
+            fb,
+            text,
+            p,
+            cx - pw.min(row_w) / 2,
+            y,
+            row_w,
+            10.5 * m.scale,
+            TEXT_MUTED,
+            Weight::NORMAL,
+        );
+        y += m.s(20.0);
+    }
+    let foot = "no sponsored tiles · no telemetry · no account";
+    let fw = text.measure_width(foot, 10.5 * m.scale, 16.0, Weight::NORMAL) as i32;
+    label(
+        fb,
+        text,
+        foot,
+        cx - fw / 2,
+        y,
+        fw + 6,
+        10.5 * m.scale,
+        TEXT_MUTED,
+        Weight::NORMAL,
+    );
+}
+
+/// Small single-line text helper for chrome overlays (presentation only).
+#[allow(clippy::too_many_arguments)]
+fn label(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    s: &str,
+    x: i32,
+    y: i32,
+    max_w: i32,
+    size: f32,
+    color: u32,
+    weight: Weight,
+) -> (i32, i32) {
+    text.draw(
+        fb,
+        s,
+        DrawText {
+            x,
+            y,
+            max_width: max_w.max(2) as f32,
+            font_size: size,
+            line_height: size + 6.0,
+            color,
+            weight,
+            ellipsis: true,
+            wrap: false,
+        },
+    )
+}
+
+/// Dashed outline (letterbox frame).
+fn dashed_rect(fb: &mut Framebuffer, r: Rect, dash: i32, color: u32) {
+    let mut x = r.x;
+    while x < r.right() {
+        let w = dash.min(r.right() - x);
+        fb.fill_rect(Rect::new(x, r.y, w, 1), color);
+        fb.fill_rect(Rect::new(x, r.bottom() - 1, w, 1), color);
+        x += dash * 2;
+    }
+    let mut y = r.y;
+    while y < r.bottom() {
+        let h = dash.min(r.bottom() - y);
+        fb.fill_rect(Rect::new(r.x, y, 1, h), color);
+        fb.fill_rect(Rect::new(r.right() - 1, y, 1, h), color);
+        y += dash * 2;
+    }
+}
+
+/// Letterbox frame: dashed outline + the bucket size the page sees.
+fn paint_letterbox_outline(fb: &mut Framebuffer, text: &mut TextEngine, m: &Metrics, inner: Rect) {
+    let o = Rect::new(inner.x - 1, inner.y - 1, inner.w + 2, inner.h + 2);
+    dashed_rect(fb, o, m.s(6.0), ACCENT_DIM);
+    let tag = format!("letterbox {}×{}", inner.w, inner.h);
+    label(
+        fb,
+        text,
+        &tag,
+        inner.right() - m.s(110.0),
+        inner.y - m.s(16.0),
+        m.s(150.0),
+        10.0 * m.scale,
+        ACCENT_DIM,
+        Weight::NORMAL,
+    );
+}
+
+/// Fail-closed card on Tor / I2P tabs (DESIGN.md). Display only.
+fn paint_fail_closed_card(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    m: &Metrics,
+    circuit: Circuit,
+    content: Rect,
+) {
+    let (net, col, dns) = match circuit {
+        Circuit::Tor => ("Tor", NET_TOR, "DNS inside Tor."),
+        Circuit::I2p => ("I2P", NET_I2P, "Names resolve inside I2P."),
+        _ => return,
+    };
+    let w = m.s(420.0).min(content.w - m.s(24.0));
+    let h = m.s(58.0);
+    let r = Rect::new(
+        content.x + m.s(12.0),
+        content.bottom() - h - m.s(12.0),
+        w,
+        h,
+    );
+    if w < m.s(120.0) || r.y < content.y {
+        return;
+    }
+    fb.fill_round_rect(r, m.s(12.0), col);
+    fb.fill_round_rect(r.inset(1), m.s(11.0), 0x00101014);
+    fb.fill_round_rect(
+        Rect::new(r.x + m.s(12.0), r.y + m.s(14.0), m.s(8.0), m.s(8.0)),
+        m.s(4.0),
+        col,
+    );
+    label(
+        fb,
+        text,
+        &format!("Fail-closed · {net}"),
+        r.x + m.s(28.0),
+        r.y + m.s(8.0),
+        w - m.s(40.0),
+        m.font_ui(),
+        col,
+        Weight::BOLD,
+    );
+    label(
+        fb,
+        text,
+        &format!("If {net} drops, this tab stops. No clearnet fallback. {dns}"),
+        r.x + m.s(12.0),
+        r.y + m.s(32.0),
+        w - m.s(24.0),
+        m.font_ui_sm(),
+        TEXT_CONTENT_MUTED,
+        Weight::NORMAL,
+    );
+}
+
+/// Shields side panel, opened by the privacy dot. Reads prefs only.
+fn paint_shields_panel(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    browser: &Browser,
+    m: &Metrics,
+    area: Rect,
+    letterbox: Option<(i32, i32)>,
+    hits: &mut Vec<HitRegion>,
+) {
+    let w = m.s(330.0).min(area.w);
+    let r = Rect::new(area.right() - w, area.y, w, area.h);
+    fb.fill_rect(r, BG_TAB_ACTIVE);
+    fb.fill_rect(Rect::new(r.x, r.y, 1, r.h), HAIRLINE);
+    hits.push(HitRegion {
+        rect: r,
+        hit: Hit::ShieldsPanel,
+    });
+    let p = &browser.profile.prefs().privacy;
+    let circuit = browser.active_tab().circuit;
+    let pad = m.s(18.0);
+    let x = r.x + pad;
+    let iw = w - pad * 2;
+    let mut y = r.y + pad;
+    let (dot, verdict) = privacy_dot(browser);
+    label(
+        fb,
+        text,
+        "Shields",
+        x,
+        y,
+        iw,
+        m.font_heading() - 4.0,
+        TEXT_CONTENT,
+        Weight::BOLD,
+    );
+    let close = Rect::new(r.right() - pad - m.s(16.0), y, m.s(20.0), m.s(22.0));
+    label(
+        fb,
+        text,
+        "×",
+        close.x,
+        close.y,
+        close.w,
+        m.font_ui() + 3.0,
+        TEXT_MUTED,
+        Weight::NORMAL,
+    );
+    hits.push(HitRegion {
+        rect: close,
+        hit: Hit::PrivacyBadge,
+    });
+    y += m.s(30.0);
+    fb.fill_round_rect(
+        Rect::new(x, y + m.s(5.0), m.s(8.0), m.s(8.0)),
+        m.s(4.0),
+        dot,
+    );
+    label(
+        fb,
+        text,
+        verdict,
+        x + m.s(14.0),
+        y,
+        iw,
+        m.font_ui(),
+        dot,
+        Weight::MEDIUM,
+    );
+    y += m.s(30.0);
+
+    let uniform = matches!(circuit, Circuit::Tor | Circuit::I2p);
+    let lb = match (p.letterboxing, letterbox) {
+        (true, Some((lw, lh))) => format!("on · {lw}×{lh}"),
+        (true, None) => "on".to_string(),
+        (false, _) => "off".to_string(),
+    };
+    let rows: [(&str, &str, String, bool); 7] = [
+        (
+            "Native blocker",
+            "privacy.blocker",
+            on_off(p.blocker),
+            p.blocker,
+        ),
+        (
+            "Uniform identity headers",
+            "Tor / I2P tabs",
+            if uniform {
+                "on".into()
+            } else {
+                "DIRECT tab".into()
+            },
+            uniform,
+        ),
+        ("Letterboxing", "privacy.letterboxing", lb, p.letterboxing),
+        (
+            "JavaScript",
+            "privacy.javascript",
+            if p.javascript {
+                "on (no engine)".into()
+            } else {
+                "off · no engine".into()
+            },
+            !p.javascript,
+        ),
+        (
+            "Third-party cookies",
+            "privacy.third_party_cookies",
+            if p.third_party_cookies {
+                "allowed".into()
+            } else {
+                "blocked".into()
+            },
+            !p.third_party_cookies,
+        ),
+        (
+            "Strip tracking params",
+            "privacy.strip_tracking",
+            on_off(p.strip_tracking),
+            p.strip_tracking,
+        ),
+        (
+            "HTTPS-only",
+            "privacy.https_only",
+            on_off(p.https_only),
+            p.https_only,
+        ),
+    ];
+    for (name, key, state, good) in rows {
+        let row_h = m.s(46.0);
+        label(
+            fb,
+            text,
+            name,
+            x,
+            y + m.s(4.0),
+            iw - m.s(110.0),
+            m.font_ui(),
+            TEXT_CONTENT,
+            Weight::MEDIUM,
+        );
+        label(
+            fb,
+            text,
+            key,
+            x,
+            y + m.s(23.0),
+            iw - m.s(110.0),
+            10.5 * m.scale,
+            TEXT_MUTED,
+            Weight::NORMAL,
+        );
+        let fs = 10.5 * m.scale;
+        let tw = text.measure_width(&state, fs, 14.0 * m.scale, Weight::BOLD) as i32;
+        let pw = tw + m.s(14.0);
+        let pr = Rect::new(r.right() - pad - pw, y + m.s(10.0), pw, m.s(18.0));
+        let (bg, fg) = if good {
+            (ACCENT, BG_CHROME)
+        } else {
+            (BAD, TEXT_CONTENT)
+        };
+        fb.fill_round_rect(pr, pr.h / 2, bg);
+        label(
+            fb,
+            text,
+            &state,
+            pr.x + m.s(7.0),
+            pr.y + 1,
+            tw + 4,
+            fs,
+            fg,
+            Weight::BOLD,
+        );
+        fb.fill_rect(Rect::new(x, y + row_h - 1, iw, 1), HAIRLINE);
+        y += row_h;
+    }
+    y += m.s(14.0);
+    for (txt, href) in [
+        ("Blocker details", "about:blocker"),
+        ("All privacy defaults", "about:privacy"),
+    ] {
+        let h = label(
+            fb,
+            text,
+            &format!("{txt}  ›"),
+            x,
+            y,
+            iw,
+            m.font_ui(),
+            TEXT_LINK,
+            Weight::MEDIUM,
+        );
+        hits.push(HitRegion {
+            rect: Rect::new(x, y, iw, h.1),
+            hit: Hit::ContentLink(href.into()),
+        });
+        y += h.1 + m.s(8.0);
+    }
+    let _ = y;
+    label(
+        fb,
+        text,
+        "no telemetry · no account",
+        x,
+        r.bottom() - pad - m.s(14.0),
+        iw,
+        m.font_ui_sm(),
+        TEXT_MUTED,
+        Weight::NORMAL,
+    );
+}
+
+fn on_off(b: bool) -> String {
+    if b { "on".into() } else { "off".into() }
+}
+
 #[cfg(test)]
 mod design_tests {
     use super::*;
@@ -1333,5 +1972,43 @@ mod design_tests {
         let mut b = browser();
         b.active = 0;
         render(&b, "frihart-new-tab");
+    }
+    #[test]
+    fn shields_panel_opens_from_privacy_dot() {
+        let mut b = browser();
+        b.shields_open = true;
+        let mut fb = Framebuffer::new(1280, 800);
+        let mut text = TextEngine::new();
+        let hits = paint(&mut fb, &mut text, &b, 1.0);
+        dump(&fb, "frihart-shields");
+        assert!(hits.iter().any(|h| matches!(h.hit, Hit::ShieldsPanel)));
+        assert!(
+            hits.iter()
+                .any(|h| matches!(&h.hit, Hit::ContentLink(u) if u == "about:blocker"))
+        );
+    }
+
+    #[test]
+    fn tor_tab_has_fail_closed_card_and_letterbox_outline() {
+        let b = browser();
+        let fb = render(&b, "frihart-tor-tab");
+        assert!(fb.pixels.contains(&0x00101014), "fail-closed card");
+        assert!(fb.pixels.contains(&ACCENT_DIM), "letterbox outline");
+    }
+
+    #[test]
+    fn settings_page_renders_pref_keys_and_forced_off() {
+        let profile = Profile::ephemeral().expect("ephemeral profile");
+        let b = Browser::new(profile, Some("about:settings".into()), false, false);
+        let fb = render(&b, "frihart-settings");
+        assert!(fb.pixels.contains(&BG_TOGGLE_ON));
+        assert_eq!(
+            frihart_content::PrefToggle::HttpsOnly.pref_key(),
+            "privacy.https_only"
+        );
+        let mut b = b;
+        b.active_tab_mut().scroll_y = 2400.0;
+        let fb = render(&b, "frihart-settings-forced-off");
+        assert!(fb.pixels.contains(&BAD), "forced-off rows are red");
     }
 }

@@ -146,11 +146,8 @@ impl Handler {
             Hit::Forward => self.browser.go_forward(),
             Hit::Reload => self.browser.reload(),
             Hit::UrlBar => self.browser.focus_url(),
-            Hit::PrivacyBadge => {
-                if let Ok(url) = frihart_core::parse_user_input("about:blocker") {
-                    self.browser.navigate(url);
-                }
-            }
+            Hit::PrivacyBadge => self.browser.shields_open = !self.browser.shields_open,
+            Hit::ShieldsPanel => {}
             Hit::ContainerBadge => self.browser.cycle_container(),
             Hit::FindBar => {
                 self.browser.find_open = true;
@@ -484,6 +481,7 @@ fn hits_eq(a: &Hit, b: &Hit) -> bool {
         | (Hit::Reload, Hit::Reload)
         | (Hit::UrlBar, Hit::UrlBar)
         | (Hit::PrivacyBadge, Hit::PrivacyBadge)
+        | (Hit::ShieldsPanel, Hit::ShieldsPanel)
         | (Hit::ContainerBadge, Hit::ContainerBadge)
         | (Hit::FindBar, Hit::FindBar)
         | (Hit::Autofill, Hit::Autofill)

@@ -53,6 +53,8 @@ pub enum Hit {
     Reload,
     UrlBar,
     PrivacyBadge,
+    /// Background of the open shields panel (swallows clicks; no action).
+    ShieldsPanel,
     ContainerBadge,
     FindBar,
     ContentLink(String),
@@ -109,6 +111,8 @@ pub struct Browser {
     pub cursor: (f64, f64),
     pub status: String,
     pub find_open: bool,
+    /// Shields side panel, toggled by the privacy dot (display only).
+    pub shields_open: bool,
     pub find_focused: bool,
     pub find_text: String,
     pub find_status: String,
@@ -158,6 +162,7 @@ impl Browser {
             cursor: (0.0, 0.0),
             status: String::new(),
             find_open: false,
+            shields_open: false,
             find_focused: false,
             find_text: String::new(),
             find_status: String::new(),
