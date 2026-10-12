@@ -33,7 +33,7 @@ HTML subset. JavaScript is off. That is intentional. Read
 |---|---|
 | <img src="docs/screenshots/concept/frihart-new-tab.png" alt="Design concept: new tab"/> | <img src="docs/screenshots/concept/frihart-tor-shields.png" alt="Design concept: Tor tab and shields"/> |
 | New tab *(design concept)* | Tor tab + privacy shields *(design concept)* |
-| <img src="docs/screenshots/concept/frihart-settings.png" alt="Design concept: settings"/> | |
+| <img src="docs/screenshots/concept/frihart-settings.png" alt="Design concept: settings"/> | <img src="docs/screenshots/concept/frihart-modes-architecture.png" alt="Design concept: two modes, no Frihart servers, honest quantum roadmap"/> |
 | Privacy settings *(design concept)* | |
 
 A real screenshot of the current chrome will be added here.
