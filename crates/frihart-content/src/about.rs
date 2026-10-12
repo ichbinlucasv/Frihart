@@ -191,7 +191,7 @@ fn home(url: &Url, prefs: &Prefs, profile: &Profile) -> Document {
     let mut blocks = vec![
         Block::Hero {
             title: APP_NAME.into(),
-            subtitle: "Libertarian. Inspired by LibreWolf. Original Rust. Black and yellow.".into(),
+            subtitle: "Your browser. Your rules. Home for Linux users.".into(),
         },
         Block::Paragraph(format!(
             "Linux first — Arch, CachyOS, Fedora, Mint, then Tails and Qubes. \
