@@ -671,3 +671,14 @@ A sustainable rhythm for a long project:
 - [x] Content-worker rlimits (as / nofile / nproc / core)
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages published (spec/debian exist)
+
+## Front end: elegant chrome (approved by Lucas, 2026-10-12)
+
+Implement [docs/DESIGN.md](docs/DESIGN.md) in the real chrome (`frihart-chrome`, winit + softbuffer), in Rust, step by step:
+
+1. Add Tor / I2P pill colors to `theme.rs`; draw a network pill on each tab and in the URL field.
+2. Fail-closed banner on Tor/I2P tabs when the circuit is down.
+3. Shields panel (blocked count + existing prefs as toggles).
+4. Letterbox frame outline and status bar items.
+5. Restyle `about:newtab` and `about:settings` to match the concepts.
+6. Add real screenshots to the README and retire concepts as each piece lands.

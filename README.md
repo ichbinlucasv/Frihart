@@ -24,6 +24,20 @@ This is a long project. The chrome runs. The engine paints a growing
 HTML subset. JavaScript is off. That is intentional. Read
 [PHILOSOPHY.md](PHILOSOPHY.md) and [ROADMAP.md](ROADMAP.md).
 
+## Screenshots
+
+### Design concept (in progress)
+**These are design concepts, not the current browser.** They show where the chrome is going; every setting and shield shown exists in the code today. See [docs/DESIGN.md](docs/DESIGN.md).
+
+| | |
+|---|---|
+| <img src="docs/screenshots/concept/frihart-new-tab.png" alt="Design concept: new tab"/> | <img src="docs/screenshots/concept/frihart-tor-shields.png" alt="Design concept: Tor tab and shields"/> |
+| New tab *(design concept)* | Tor tab + privacy shields *(design concept)* |
+| <img src="docs/screenshots/concept/frihart-settings.png" alt="Design concept: settings"/> | |
+| Privacy settings *(design concept)* | |
+
+A real screenshot of the current chrome will be added here.
+
 ## Why this exists
 
 Firefox and Chrome are attack surfaces the size of an OS: C/C++ memory
