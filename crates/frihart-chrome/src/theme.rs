@@ -29,6 +29,11 @@ pub const WARN: Rgb = 0x00E6B800;
 pub const BAD: Rgb = 0x00C04040;
 pub const PRIVATE: Rgb = 0x00F5C400;
 
+// Network pills (docs/DESIGN.md). Text on a pill is drawn in BG_CHROME.
+pub const NET_TOR: Rgb = 0x00C4A8FF;
+pub const NET_I2P: Rgb = 0x007EE0C6;
+pub const NET_DIRECT: Rgb = 0x003A3A3A;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Metrics {
     pub scale: f32,

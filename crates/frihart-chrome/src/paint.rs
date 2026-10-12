@@ -9,12 +9,12 @@ use frihart_pipeline::layout_html;
 use frihart_privacy::letterbox_size;
 
 use crate::raster::{Framebuffer, Rect};
-use crate::state::{Browser, Hit};
+use crate::state::{Browser, Circuit, Hit};
 use crate::text::{DrawText, TextEngine};
 use crate::theme::{
     ACCENT, ACCENT_DIM, BAD, BG_CHROME, BG_CONTENT, BG_FIND, BG_NOTE, BG_STATUS, BG_TAB_ACTIVE,
     BG_TAB_HOVER, BG_TOGGLE_OFF, BG_TOGGLE_ON, BG_TOOLBAR, BG_URL, BG_URL_FOCUS, GOOD, HAIRLINE,
-    Metrics, PRIVATE, TEXT_CHROME, TEXT_CONTENT, TEXT_CONTENT_MUTED, TEXT_LINK, TEXT_MUTED, WARN,
+    Metrics, NET_DIRECT, NET_I2P, NET_TOR, PRIVATE, TEXT_CHROME, TEXT_CONTENT, TEXT_CONTENT_MUTED, TEXT_LINK, TEXT_MUTED, WARN,
 };
 
 pub struct HitRegion {
@@ -138,24 +138,28 @@ fn paint_tabs(
         } else {
             BG_CHROME
         };
-        fb.fill_rect(rect, bg);
+        fb.fill_round_rect(rect, m.s(8.0), bg);
+        // Square off the bottom so the active tab joins the toolbar.
+        fb.fill_rect(Rect::new(rect.x, rect.bottom() - m.s(8.0), rect.w, m.s(8.0)), bg);
         if active {
-            fb.fill_rect(Rect::new(rect.x, rect.bottom() - 2, rect.w, 2), ACCENT);
+            fb.fill_rect(Rect::new(rect.x + 6, rect.bottom() - 2, rect.w - 12, 2), ACCENT);
         }
         let stripe = browser
             .profile
             .container(tab.container)
             .map(|c| c.color)
             .unwrap_or(ACCENT);
-        fb.fill_rect(Rect::new(rect.x, rect.y, m.s(4.0), rect.h), stripe);
+        fb.fill_rect(Rect::new(rect.x, rect.y + 8, m.s(3.0), rect.h - 16), stripe);
 
+        let pill_w = paint_net_pill(fb, text, m, tab.circuit, rect.x + 10, rect.y + rect.h / 2);
         let close_w = m.s(18.0);
-        let label_w = (rect.w - close_w - 16).max(8) as f32;
+        let label_x = rect.x + 10 + pill_w + 6;
+        let label_w = (rect.right() - close_w - 10 - label_x).max(8) as f32;
         text.draw(
             fb,
             &tab.title(),
             DrawText {
-                x: rect.x + 10,
+                x: label_x,
                 y: rect.y + (rect.h - m.line_ui() as i32) / 2,
                 max_width: label_w,
                 font_size: m.font_ui(),
@@ -300,7 +304,8 @@ fn paint_toolbar(
 
     let badge = Rect::new(rect.right() - pad - btn, y, btn, btn);
     let (dot, _) = privacy_dot(browser);
-    fb.fill_rect(badge.inset(8), dot);
+    let d = badge.inset(8);
+    fb.fill_round_rect(d, d.w / 2, dot);
     hits.push(HitRegion {
         rect: badge,
         hit: Hit::PrivacyBadge,
@@ -312,8 +317,22 @@ fn paint_toolbar(
     let url_y = rect.y + (rect.h - url_h) / 2;
     let url_rect = Rect::new(url_x, url_y, url_w, url_h);
     let focused = browser.url_focused;
-    fb.fill_rect(url_rect, if focused { BG_URL_FOCUS } else { BG_URL });
-    fb.stroke_rect(url_rect, if focused { ACCENT } else { HAIRLINE });
+    let radius = m.s(8.0);
+    fb.fill_round_rect(url_rect, radius, if focused { ACCENT } else { HAIRLINE });
+    fb.fill_round_rect(
+        url_rect.inset(1),
+        radius - 1,
+        if focused { BG_URL_FOCUS } else { BG_URL },
+    );
+    let url_pill = paint_net_pill(
+        fb,
+        text,
+        m,
+        tab.circuit,
+        url_rect.x + 8,
+        url_rect.y + url_rect.h / 2,
+    );
+    let url_rect = Rect::new(url_rect.x + url_pill + 6, url_rect.y, url_rect.w - url_pill - 6, url_rect.h);
 
     let prefix = &browser.url_text[..browser.url_cursor.min(browser.url_text.len())];
     let caret_x = text.measure_width(prefix, m.font_ui(), m.line_ui(), Weight::NORMAL);
@@ -1072,8 +1091,11 @@ fn paint_status(
     if let Some(c) = browser.profile.container(browser.active_tab().container) {
         label = format!("{}  ·  {label}", c.name);
     }
-    if browser.active_tab().circuit != crate::state::Circuit::Direct {
-        label = format!("{}  ·  {label}", browser.active_tab().circuit.label());
+    match browser.active_tab().circuit {
+        Circuit::Tor => label = format!("Tor · fail-closed · DNS inside Tor  ·  {label}"),
+        Circuit::I2p => label = format!("I2P · fail-closed · no clearnet  ·  {label}"),
+        Circuit::Private => label = format!("{}  ·  {label}", Circuit::Private.label()),
+        Circuit::Direct => {}
     }
     text.draw(
         fb,
@@ -1106,6 +1128,50 @@ fn paint_status(
             wrap: false,
         },
     );
+}
+
+/// Network pill text and colour (DESIGN.md: DIRECT / TOR / I2P on every tab and the URL field).
+pub(crate) fn net_pill(circuit: Circuit) -> (&'static str, u32, u32) {
+    match circuit {
+        Circuit::Tor => ("TOR", NET_TOR, BG_CHROME),
+        Circuit::I2p => ("I2P", NET_I2P, BG_CHROME),
+        Circuit::Private => ("PRIVATE", ACCENT, BG_CHROME),
+        Circuit::Direct => ("DIRECT", NET_DIRECT, TEXT_CONTENT_MUTED),
+    }
+}
+
+/// Draw a pill vertically centred on `cy`; returns its width.
+fn paint_net_pill(
+    fb: &mut Framebuffer,
+    text: &mut TextEngine,
+    m: &Metrics,
+    circuit: Circuit,
+    x: i32,
+    cy: i32,
+) -> i32 {
+    let (label, bg, fg) = net_pill(circuit);
+    let fs = 10.0 * m.scale;
+    let lh = 14.0 * m.scale;
+    let tw = text.measure_width(label, fs, lh, Weight::BOLD) as i32;
+    let h = m.s(16.0);
+    let w = tw + m.s(12.0);
+    fb.fill_round_rect(Rect::new(x, cy - h / 2, w, h), h / 2, bg);
+    text.draw(
+        fb,
+        label,
+        DrawText {
+            x: x + m.s(6.0),
+            y: cy - lh as i32 / 2,
+            max_width: (tw + 4) as f32,
+            font_size: fs,
+            line_height: lh,
+            color: fg,
+            weight: Weight::BOLD,
+            ellipsis: false,
+            wrap: false,
+        },
+    );
+    w
 }
 
 fn container_glyph(browser: &Browser) -> &'static str {
@@ -1208,4 +1274,64 @@ pub fn hit_test(hits: &[HitRegion], x: i32, y: i32) -> Option<Hit> {
         .rev()
         .find(|h| h.rect.contains(x, y))
         .map(|h| h.hit.clone())
+}
+
+#[cfg(test)]
+mod design_tests {
+    use super::*;
+    use crate::state::Browser;
+    use frihart_profile::Profile;
+
+    fn browser() -> Browser {
+        let profile = Profile::ephemeral().expect("ephemeral profile");
+        let mut b = Browser::new(profile, Some("about:home".into()), false, false);
+        b.active_tab_mut().circuit = Circuit::Direct;
+        b.new_tor_tab();
+        b.new_i2p_tab();
+        b.active = 1;
+        b
+    }
+
+    /// Writes a PPM when FRIHART_SNAPSHOT_DIR is set (docs/screenshots/real).
+    fn dump(fb: &Framebuffer, name: &str) {
+        let Ok(dir) = std::env::var("FRIHART_SNAPSHOT_DIR") else {
+            return;
+        };
+        let mut out = format!("P6\n{} {}\n255\n", fb.width, fb.height).into_bytes();
+        for p in &fb.pixels {
+            out.extend_from_slice(&[(p >> 16) as u8, (p >> 8) as u8, *p as u8]);
+        }
+        std::fs::write(format!("{dir}/{name}.ppm"), out).expect("write snapshot");
+    }
+
+    fn render(b: &Browser, name: &str) -> Framebuffer {
+        let mut fb = Framebuffer::new(1280, 800);
+        let mut text = TextEngine::new();
+        let hits = paint(&mut fb, &mut text, b, 1.0);
+        assert!(!hits.is_empty());
+        dump(&fb, name);
+        fb
+    }
+
+    #[test]
+    fn net_pills_match_design_tokens() {
+        assert_eq!(net_pill(Circuit::Tor).1, NET_TOR);
+        assert_eq!(net_pill(Circuit::I2p).1, NET_I2P);
+        assert_eq!(net_pill(Circuit::Direct).0, "DIRECT");
+    }
+
+    #[test]
+    fn tor_tab_paints_tor_pill() {
+        let b = browser();
+        let fb = render(&b, "frihart-tor-tab");
+        assert!(fb.pixels.contains(&NET_TOR));
+        assert!(fb.pixels.contains(&NET_I2P));
+    }
+
+    #[test]
+    fn new_tab_page_renders() {
+        let mut b = browser();
+        b.active = 0;
+        render(&b, "frihart-new-tab");
+    }
 }

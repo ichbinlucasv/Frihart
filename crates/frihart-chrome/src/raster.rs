@@ -76,6 +76,28 @@ impl Framebuffer {
         }
     }
 
+    /// Fill with rounded corners (radius in px). Used for pills and tabs.
+    pub fn fill_round_rect(&mut self, rect: Rect, radius: i32, color: Rgb) {
+        let r = radius.clamp(0, rect.w.min(rect.h) / 2);
+        if r == 0 {
+            self.fill_rect(rect, color);
+            return;
+        }
+        for dy in 0..rect.h {
+            let inset = if dy < r {
+                corner_inset(r, r - dy)
+            } else if dy >= rect.h - r {
+                corner_inset(r, dy - (rect.h - r) + 1)
+            } else {
+                0
+            };
+            self.fill_rect(
+                Rect::new(rect.x + inset, rect.y + dy, rect.w - 2 * inset, 1),
+                color,
+            );
+        }
+    }
+
     pub fn stroke_rect(&mut self, rect: Rect, color: Rgb) {
         if rect.w <= 0 || rect.h <= 0 {
             return;
@@ -128,4 +150,11 @@ fn blend(dst: Rgb, src: Rgb, alpha: u8) -> Rgb {
     let g = (sg * a + dg * ia) / 255;
     let b = (sb * a + db * ia) / 255;
     (r << 16) | (g << 8) | b
+}
+
+/// Horizontal inset for a row `d` px into a corner of radius `r`.
+fn corner_inset(r: i32, d: i32) -> i32 {
+    let y = d as f32 - 0.5;
+    let x = ((r * r) as f32 - y * y).max(0.0).sqrt();
+    (r as f32 - x).round() as i32
 }
