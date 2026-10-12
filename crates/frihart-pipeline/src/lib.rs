@@ -1093,8 +1093,8 @@ mod tests {
 <ol><li>one</li></ol>"#;
         let f = layout_html(html, "", 640.0);
         let texts: Vec<&str> = f.boxes.iter().map(|b| b.text.as_str()).collect();
-        assert!(texts.iter().any(|t| *t == "alpha"), "{texts:?}");
-        assert!(texts.iter().any(|t| *t == "beta"), "{texts:?}");
+        assert!(texts.contains(&"alpha"), "{texts:?}");
+        assert!(texts.contains(&"beta"), "{texts:?}");
         assert!(!texts.iter().any(|t| t.starts_with("•")), "{texts:?}");
         assert!(
             texts
