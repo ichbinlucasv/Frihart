@@ -1,3 +1,4 @@
+H='<html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>{}</style></head><body>{}<div class="tag">Design concept · in progress</div></body></html>'
 CSS='''
 body{background:radial-gradient(1200px 700px at 80% 0%,#1d1700 0%,#07070a 55%,#000 100%)}
 .y{color:#F5C400}
