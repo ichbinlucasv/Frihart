@@ -27,11 +27,15 @@ HTML subset. JavaScript is off. That is intentional. Read
 ## Screenshots
 
 ### Today (real)
-The real Frihart chrome with the design theme: rounded tabs, a DIRECT / TOR / I2P network pill on every tab and in the URL field, and a fail-closed note in the status bar on Tor/I2P tabs. Rendered headlessly from the real `paint()` code (`FRIHART_SNAPSHOT_DIR=/tmp/fh cargo test -p frihart-chrome design_tests`, then PPM to PNG).
+The real Frihart chrome with the design theme: rounded tabs, a DIRECT / TOR / I2P network pill on every tab and in the URL field, a fail-closed card on Tor/I2P tabs, the dashed letterbox frame with the size the page sees, the shields panel (click the privacy dot), and the restyled home and settings pages. Rendered headlessly from the real `paint()` code (`FRIHART_SNAPSHOT_DIR=/tmp/fh cargo test -p frihart-chrome design_tests`, then PPM to PNG).
 
 | <img src="docs/screenshots/real/frihart-tor-tab.png" alt="Frihart: Tor tab with network pills"/> | <img src="docs/screenshots/real/frihart-new-tab.png" alt="Frihart: new tab page"/> |
 |---|---|
-| Tor tab, fail-closed status | New tab: "Your browser. Your rules. Home for Linux users." |
+| Tor tab: fail-closed card + letterbox frame | New tab: "Your browser. Your rules. Home for Linux users." |
+| <img src="docs/screenshots/real/frihart-shields.png" alt="Frihart: shields panel"/> | <img src="docs/screenshots/real/frihart-settings.png" alt="Frihart: settings"/> |
+| Shields panel, opened by the privacy dot | Settings: pref key on every row, round toggles |
+| <img src="docs/screenshots/real/frihart-settings-forced-off.png" alt="Frihart: locked-off prefs"/> | |
+| Locked off: not a setting (telemetry, Safe Browsing, DRM, stored logins…) | |
 
 ### Design concept (in progress)
 **These are design concepts, not the current browser.** They show where the chrome is going; every setting and shield shown exists in the code today. See [docs/DESIGN.md](docs/DESIGN.md).
