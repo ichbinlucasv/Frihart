@@ -270,7 +270,9 @@ mod tests {
         let text = format!("{:?}", page.blocks);
         assert!(text.contains("€149"));
         assert!(text.contains("Pay what you want"));
-        assert!(text.contains("<XMR_ADDRESS_TBD>"));
+        assert!(text.contains("42i5CYsjGALfD8GgCiL3Wv1WPKtWbeUKEYe4ovjVSbbB8jfDdMcLK77dum9ff3iFUaVXCrpUnTd5DUeUQwNXWz9L1F3bwJn"));
+        assert!(text.contains("treulicht@cake.cash"));
+        assert!(text.contains("BTCPay"));
     }
 
     #[test]

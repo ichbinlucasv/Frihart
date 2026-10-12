@@ -474,8 +474,13 @@ fn support(url: &Url, prefs: &Prefs) -> Document {
             value: frihart_license::XMR_ADDRESS.into(),
         },
         Block::KeyValue {
-            key: "BTC".into(),
-            value: frihart_license::BTC_ADDRESS.into(),
+            key: "Lightning".into(),
+            value: frihart_license::LIGHTNING.into(),
+        },
+        Block::KeyValue {
+            key: "BTC on-chain".into(),
+            value: "BTCPay invoice (fresh address per payment; no static address published)"
+                .into(),
         },
         Block::Heading("Your addresses (prefs.toml)".into()),
     ]);
