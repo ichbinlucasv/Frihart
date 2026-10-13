@@ -7,11 +7,13 @@ then years of engine depth. Dates move. The philosophy does not.
 Read with [PHILOSOPHY.md](PHILOSOPHY.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 [docs/opsec.md](docs/opsec.md), and [docs/distros.md](docs/distros.md).
 
-Crate numbers (0–15) stay. Humans use **campaigns A–I** (plus **S**, Servo Compat).
+Crate numbers (0–15) stay. Humans use **campaigns A–I** (plus **S** Servo Compat, **B-JS** Boa light JS, and **J** own JS engine).
 
 > **Update 2026-10-13:** Frihart is now **hybrid**. Servo is embedded as the
 > clearnet *Compat* engine; Frihart's own engine keeps Tor, I2P and reader
-> tabs. See [docs/ENGINE_HYBRID.md](docs/ENGINE_HYBRID.md).
+> tabs. Same day: **Campaign B-JS** (Boa, opt-in per site on the own engine)
+> and **Campaign J** (10-year own Rust JS engine) were approved. See
+> [docs/ENGINE_HYBRID.md](docs/ENGINE_HYBRID.md).
 
 ## Why we do not fork Firefox
 
@@ -72,9 +74,12 @@ Frihart claims at that time. Desktop Linux is free; non-Linux builds
 | **D Engine** | 3–5, 12 | **Open** | HTML/CSS/layout/forms. Documents, not webapps |
 | **E Isolation** | 6 | **Open** | Worker per site key; nnp + landlock + seccomp |
 | **F Linux homes** | packaging | **Open** | Arch, Cachy, Fedora, Mint, Tails, Qubes |
-| **G Script** | 7 | **Open** (refuse-only) | Last. Fingerprint APIs stay denied |
+| **G Script** | 7 | **Open** (refuse-only) | Host-API refuse layer; superseded in practice by B-JS + J |
 | **H Other OS** | 8–10 | **Parked** | Windows, macOS, Android; alt phones (GrapheneOS / Jolla / Volla) priority when mobile starts |
 | **I Depth** | 11, 13–15 | **Parked** | Media, i18n, print, extension runtime |
+| **S Servo Compat** | frihart-engine-servo | **Open** | Clearnet Compat tabs via Servo (see Campaign S) |
+| **B-JS Boa light JS** | frihart-js + boa | **Open** | Opt-in per-site Boa on the *own* engine |
+| **J Own JS engine** | frihart-js | **Open** (10-year) | 100% Rust JS engine; gradually replaces Boa, then Servo |
 
 **Closed today:** A, B, C (crate phases 0–2). Leftovers (multi-window, HTTP/2) do not block close.
 
@@ -362,9 +367,12 @@ a generic exploit runtime.
 
 ### Technical tasks
 
-- **Own engine:** no embedded JS runtime. If G starts, it is a small
-  Frihart interpreter in Rust. Real-site JS now comes from the Servo
-  Compat engine (Campaign S, clearnet only).
+- **Own engine JS path:** Campaign **B-JS** embeds Boa (Rust) behind a
+  feature flag, off by default, enabled per site in the shields panel.
+  Campaign **J** is the 10-year goal: Frihart's own 100% Rust JS engine
+  in `crates/frihart-js`, which gradually replaces Boa and then Servo.
+  Real-site JS on clearnet Compat tabs still comes from Servo
+  (Campaign S) until J catches up.
 - WebExtensions host: execute sideloaded Firefox add-ons against the
   subset of `browser.*` we have implemented (see docs/extensions.md)
 - No JIT in the first interpreter. JIT is an opt-in later, still ours.
@@ -724,3 +732,121 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   (blocker, frozen UA, no telemetry, DNS policy).
 - [ ] **M4 — Per-site JS toggle** in the protections panel.
 - [ ] **M5 — Compat is the default for clearnet tabs.**
+
+## Campaign B-JS — Boa light JS (opt-in, per site)
+
+**Approved by Lucas, 2026-10-13.**
+
+Integrate the **Boa** JavaScript engine (Rust, MIT/Apache) into Frihart's
+**own** engine as a light, opt-in runtime. Off by default. Enabled per
+site from the protections / shields panel. Never the default on Tor or
+I2P tabs. Cargo feature `boa` (or equivalent), off in the default build
+until M1 is green.
+
+Boa is the bridge while Campaign J matures: 100% Rust today, good enough
+for progressive-enhancement sites, not a Chrome-speed engine. Fingerprint
+APIs stay denied (same refuse list as `frihart-js::HostApi`). Network from
+script goes only through `frihart-net`.
+
+### Milestones
+
+- [ ] **M1 — Sandboxed inline scripts, no network.** Boa runs
+  `<script>` bodies (and maybe `javascript:` URLs if policy allows) in a
+  sandbox with no `fetch`, no WebSocket, no timers that touch the
+  network. Feature-gated; all HostApi still refuse.
+- [ ] **M2 — Minimal DOM bindings.** `document.querySelector`,
+  `textContent`, basic events (`click`, `DOMContentLoaded`, `submit`).
+  Enough for progressive enhancement on claimed sites.
+- [ ] **M3 — Timers and fetch through Frihart's net.** `setTimeout` /
+  `setInterval`, and `fetch` / XHR routed exclusively through
+  `frihart-net` + policy (blocker, circuit checks, frozen UA). No raw
+  sockets from Boa.
+- [ ] **M4 — Enable on claimed sites.** Shields panel per-site toggle;
+  turn Boa on for sites on the `about:sites` claim list that need light
+  JS. Document which sites gain what.
+
+### Success criteria
+
+- Default build still refuses all untrusted JS (Campaign G refuse layer).
+- Enabling Boa for one origin never opens fingerprint, storage, or
+  WebRTC surfaces.
+- Tor / I2P tabs cannot enable Boa until a dedicated leak audit (same bar
+  as Servo).
+- Replaced over time by Campaign J; Boa is deleted from the tree when J
+  covers the same milestones.
+
+## Campaign J — Frihart's own JS engine (10-year goal, 100% Rust)
+
+**Approved by Lucas, 2026-10-13.**
+
+Lucas's long-term goal: Frihart's **own** engine (HTML, CSS **and** JS),
+written in Rust from this tree, fast enough for modern and old sites
+within about **10 years**. No SpiderMonkey, no V8, no Boa in the end
+state. Crate home: [`crates/frihart-js`](crates/frihart-js) (types and
+refuse layer today; the real engine grows here — no separate
+`frihart-js-engine` crate).
+
+Runs **in parallel** with Campaign S (Servo Compat) and Campaign B-JS
+(Boa). Per-tab selection evolves as J matures:
+
+| Stage | Clearnet Compat | Own engine (Tor / I2P / reader / opted-in clearnet) |
+| --- | --- | --- |
+| Now | Servo (SpiderMonkey) | no JS / refuse |
+| After B-JS | Servo | Boa (opt-in per site) |
+| Mid J | Servo | Frihart JS replaces Boa on claimed sites |
+| Late J | Frihart JS where it wins | Frihart JS everywhere own engine runs |
+| End state | Frihart JS | Frihart JS; Servo and Boa removed |
+
+### Phased plan
+
+1. **Parser / AST + test262 harness** — lexer, parser, AST; CI runs a
+   growing slice of [test262](https://github.com/tc39/test262).
+2. **Bytecode interpreter + GC** — stack or register VM, precise GC,
+   no JIT yet.
+3. **Full ES2015+ conformance** — modules, promises, async/await,
+   proxies, classes; climb test262 %.
+4. **JIT / baseline compiler** — baseline tier first; optimizing tier
+   only when metrics justify it.
+5. **Web APIs / DOM** — bindings to Frihart's DOM, events, timers,
+   `fetch` through `frihart-net`; fingerprint APIs stay denied or farbled.
+6. **Performance parity targets** — match or beat Boa, then approach
+   SpiderMonkey/V8 on a published bench set for the sites Frihart claims.
+
+### Yearly checkpoints (years 1–10)
+
+| Year | Checkpoint |
+| --- | --- |
+| 1 | Parser + AST; test262 harness in CI; ≥5% of core language tests green |
+| 2 | Bytecode interpreter + GC; ≥25% test262 core; runs trivial scripts in the own engine behind a flag |
+| 3 | ES2015 subset solid; ≥40% test262; replaces Boa M1/M2 for claimed sites |
+| 4 | Promises / async; ≥55% test262; fetch + timers through frihart-net |
+| 5 | Modules + most ES2020; ≥70% test262; Boa removed from default path |
+| 6 | Baseline JIT; DOM bindings cover claimed-site needs; first modern news sites without Servo |
+| 7 | ≥85% test262; Reddit / HN / major news usable on own JS for clearnet opted-in tabs |
+| 8 | Optimizing tier or proven baseline; social / gov progressive sites on own engine |
+| 9 | Performance within 2× of SpiderMonkey on Frihart's bench suite; Servo optional |
+| 10 | Own HTML + CSS + JS daily-driver for claimed modern and old sites; Servo and Boa retired |
+
+Dates move. Checkpoints do not: each year publishes the three metrics
+below. If a year slips, we slip the date, not the bar.
+
+### Measurable metrics (published each year)
+
+1. **test262 %** — percentage of the tracked test262 subset that passes
+   (core language first; annex B and optional features called out).
+2. **Sites rendering correctly** — growing list on `about:sites` (and
+   `docs/sites.md`) that load and work with Frihart JS on the own
+   engine (no Servo, no Boa). Start with docs/blogs; add news, HN,
+   Reddit, gov portals as J advances.
+3. **Benchmark speed** — wall time and peak RSS on a fixed suite
+   (e.g. Richards, Crypto, RayTrace, a small DOM mutation loop, and
+   one real claimed page). Compare to Boa and to Servo/SpiderMonkey
+   on the same machine.
+
+### Relation to other campaigns
+
+- **Campaign G** stays the refuse-first host-API policy layer.
+- **Campaign B-JS** is the short bridge; J deletes Boa when it covers
+  B-JS M1–M4.
+- **Campaign S** stays for heavy clearnet until J's yearly metrics say
+  Frihart JS wins per tab; Tor / I2P never leave the own engine.

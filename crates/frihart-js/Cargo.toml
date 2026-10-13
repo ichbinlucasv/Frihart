@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "JS value/ops types (Phase 7). No untrusted exec yet."
+description = "JS refuse layer + future own Rust JS engine (Campaigns G, B-JS, J)."
 publish.workspace = true
 
 [dependencies]

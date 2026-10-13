@@ -114,3 +114,21 @@ feature `servo`, off by default.
 - **M4 — Per-site JS toggle** in the protections panel.
 - **M5 — Compat becomes the default for clearnet tabs** (own engine stays
   for Tor/I2P/reader).
+
+## Parallel JS tracks (approved by Lucas, 2026-10-13)
+
+Two campaigns run beside Servo Compat; details live in
+[ROADMAP.md](../ROADMAP.md):
+
+- **Campaign B-JS — Boa light JS.** Embed Boa (Rust) into Frihart's *own*
+  engine behind a feature flag, off by default, enabled per site in the
+  shields panel. Bridge for progressive-enhancement sites until the own
+  engine can run JS. Tor/I2P stay refuse until a leak audit.
+- **Campaign J — Frihart's own JS engine (10-year, 100% Rust).** Grow a
+  real JS engine in `crates/frihart-js` (parser → interpreter →
+  conformance → JIT → Web APIs → performance). Yearly metrics: test262 %,
+  claimed sites, bench speed. Gradually replaces Boa per tab, then Servo
+  on clearnet when metrics win. End state: no SpiderMonkey, no Boa.
+
+Per-tab selection stays the table above until B-JS/J change it. Servo
+never handles Tor/I2P; Boa and Frihart JS inherit that rule until audited.

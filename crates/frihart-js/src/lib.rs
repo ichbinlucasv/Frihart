@@ -1,5 +1,12 @@
-//! JS types. Execution stays off. Campaign G is refuse-first.
-//! If G starts, it is a Frihart interpreter in Rust — not an embed.
+//! JS types and host-API refuse layer for Frihart's own engine.
+//!
+//! Campaign G is refuse-first: untrusted script never runs today.
+//! Campaign B-JS (Boa, opt-in per site) and Campaign J (10-year own
+//! Rust JS engine) grow through this crate — see the crate README and
+//! ROADMAP. End state is 100% Rust; Boa and Servo/SpiderMonkey go away.
+//!
+//! Module plan (J): `parser` → `bytecode` (+ GC) → `builtins` → `jit`
+//! → DOM/Web API bindings via [`HostApi`]. Modules appear as milestones land.
 
 #![forbid(unsafe_code)]
 
@@ -195,5 +202,14 @@ mod tests {
                 .iter()
                 .any(|a| matches!(a, HostApi::ServiceWorker))
         );
+    }
+
+    #[test]
+    fn module_plan_is_documented() {
+        // Campaign J grows in this crate (no separate frihart-js-engine).
+        // Planned modules: parser, bytecode, builtins, jit, test262 harness.
+        let plan = ["parser", "bytecode", "builtins", "jit", "test262"];
+        assert_eq!(plan.len(), 5);
+        assert!(!untrusted_eval_allowed());
     }
 }
