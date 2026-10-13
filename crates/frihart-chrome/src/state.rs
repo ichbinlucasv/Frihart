@@ -2,7 +2,9 @@
 
 use frihart_autofill::Identity;
 use frihart_blocker::FilterEngine;
-use frihart_content::{Document, FetchRequest, PageItem, PrefToggle, SessionHistory, fetch, load};
+use frihart_content::{
+    Block, Document, FetchRequest, InternalPage, PageItem, PrefToggle, SessionHistory, fetch, load,
+};
 use frihart_core::{
     CircuitKind, ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
     parse_user_input,
@@ -626,6 +628,29 @@ impl Browser {
         let mode = match self.active_tab().circuit {
             Circuit::Tor => {
                 let tor = &self.profile.prefs().tor;
+                // Fail-closed: when require_bridges is on, refuse until a live
+                // ControlPort check reports Active. Status is not queried yet
+                // in this build, so require=on holds every Tor tab closed.
+                if let Err(why) = frihart_net::bridges::allow_tor_fetch(tor.require_bridges, None) {
+                    return Document::internal(InternalPage {
+                        title: "Bridges required".into(),
+                        url: target.clone(),
+                        blocks: vec![
+                            Block::Hero {
+                                title: "Tor tab held".into(),
+                                subtitle: why.into(),
+                            },
+                            Block::Paragraph(
+                                "tor.require_bridges is on. Frihart will not fetch over Tor until bridges are confirmed active. Turn the switch off on about:bridges, or wait for the ControlPort check in a later build."
+                                    .into(),
+                            ),
+                            Block::Link {
+                                label: "about:bridges".into(),
+                                href: "about:bridges".into(),
+                            },
+                        ],
+                    });
+                }
                 FetchMode::Tor {
                     socks: format!("{}:{}", tor.socks_host, tor.socks_port),
                 }

@@ -36,6 +36,7 @@ pub enum PrefToggle {
     ClearOnShutdown,
     Autoplay,
     PunycodeHosts,
+    RequireBridges,
 }
 
 impl PrefToggle {
@@ -69,6 +70,7 @@ impl PrefToggle {
             Self::ClearOnShutdown => "privacy.clear_on_shutdown",
             Self::Autoplay => "content.autoplay",
             Self::PunycodeHosts => "privacy.punycode_hosts",
+            Self::RequireBridges => "tor.require_bridges",
         }
     }
 
@@ -111,6 +113,7 @@ impl PrefToggle {
             }
             Self::Autoplay => prefs.content.autoplay = !prefs.content.autoplay,
             Self::PunycodeHosts => prefs.privacy.punycode_hosts = !prefs.privacy.punycode_hosts,
+            Self::RequireBridges => prefs.tor.require_bridges = !prefs.tor.require_bridges,
         }
     }
 }
@@ -162,6 +165,7 @@ pub fn is_known(name: &str) -> bool {
             | "script"
             | "js"
             | "sites"
+            | "bridges"
     )
 }
 
@@ -203,6 +207,7 @@ pub fn page(name: &str, url: &Url, prefs: &Prefs, profile: &Profile) -> Document
         "campaigns" => campaigns_page(url),
         "script" | "js" => script_page(url, prefs),
         "sites" => sites_page(url),
+        "bridges" => bridges_page(url, prefs),
         other => Document::internal(InternalPage {
             title: "Unknown page".into(),
             url: url.clone(),
@@ -479,8 +484,7 @@ fn support(url: &Url, prefs: &Prefs) -> Document {
         },
         Block::KeyValue {
             key: "BTC on-chain".into(),
-            value: "BTCPay invoice (fresh address per payment; no static address published)"
-                .into(),
+            value: "BTCPay invoice (fresh address per payment; no static address published)".into(),
         },
         Block::Heading("Your addresses (prefs.toml)".into()),
     ]);
@@ -1430,6 +1434,7 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
         kv("enabled", bool_str(prefs.tor.enabled)),
         kv("socks_host", &prefs.tor.socks_host),
         kv("socks_port", &socks_port),
+        kv("require_bridges", bool_str(prefs.tor.require_bridges)),
         Block::Heading("i2p".into()),
         kv("enabled", bool_str(prefs.i2p.enabled)),
         kv("socks_host", &prefs.i2p.socks_host),
@@ -1938,6 +1943,55 @@ fn search(url: &Url, prefs: &Prefs) -> Document {
         title: "Search".into(),
         url: url.clone(),
         blocks,
+    })
+}
+
+fn bridges_page(url: &Url, prefs: &Prefs) -> Document {
+    Document::internal(InternalPage {
+        title: "Bridges".into(),
+        url: url.clone(),
+        blocks: vec![
+            Block::Hero {
+                title: "Tor bridges".into(),
+                subtitle: "Pluggable transports. Fail-closed when required.".into(),
+            },
+            Block::Paragraph(
+                "Frihart does not rewrite torrc and does not start pluggable-transport binaries. Paste bridge lines into your system Tor config, reload Tor, then use the require switch if you want Tor tabs held until Tor itself reports that bridges took effect (same design as HashChat)."
+                    .into(),
+            ),
+            Block::Heading("Preference".into()),
+            toggle(
+                PrefToggle::RequireBridges,
+                "Require bridges for Tor tabs",
+                "Off by default. When on, Tor tabs stay closed until Tor reports bridges active. No clearnet fallback.",
+                prefs.tor.require_bridges,
+            ),
+            Block::KeyValue {
+                key: "tor.require_bridges".into(),
+                value: if prefs.tor.require_bridges {
+                    "on".into()
+                } else {
+                    "off".into()
+                },
+            },
+            Block::Heading("torrc".into()),
+            Block::Paragraph(
+                "Supported line kinds: obfs4, snowflake, webtunnel, and plain bridges. Validation and torrc snippets live in frihart_net::bridges. Example:"
+                    .into(),
+            ),
+            Block::Note(
+                "UseBridges 1\nClientTransportPlugin obfs4 exec /usr/bin/lyrebird\nBridge obfs4 IP:PORT FINGERPRINT cert=... iat-mode=0"
+                    .into(),
+            ),
+            Block::Link {
+                label: "Tor tab".into(),
+                href: "about:tor".into(),
+            },
+            Block::Link {
+                label: "Privacy".into(),
+                href: "about:privacy".into(),
+            },
+        ],
     })
 }
 
