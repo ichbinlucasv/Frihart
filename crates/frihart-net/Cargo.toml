@@ -16,6 +16,12 @@ serde.workspace = true
 serde_json.workspace = true
 ureq.workspace = true
 url.workspace = true
+# Tor ControlPort SAFECOOKIE (read-only bridge query); already in Cargo.lock via rustls.
+ring = "0.17"
+subtle = "2.6"
+getrandom = "0.2"
+zeroize = "1"
+libc.workspace = true
 
 [dev-dependencies]
 frihart-config.workspace = true

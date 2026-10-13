@@ -10,6 +10,7 @@ mod client;
 mod cookie;
 mod download;
 mod headers;
+pub mod tor_control;
 
 pub use addr::{HostClass, classify_host, classify_ip, is_sensitive, private_redirect};
 pub use clean::{is_tracking_key, strip_tracking};

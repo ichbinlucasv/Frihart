@@ -939,10 +939,15 @@ dependencies = [
  "frihart-config",
  "frihart-core",
  "frihart-privacy",
+ "getrandom 0.2.17",
+ "libc",
+ "ring",
  "serde",
  "serde_json",
+ "subtle",
  "ureq",
  "url",
+ "zeroize",
 ]
 
 [[package]]
