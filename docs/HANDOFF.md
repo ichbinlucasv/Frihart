@@ -76,7 +76,8 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 
 ## Plan (do these, in this order)
 
-1. **This / next session — D.** The named queue is empty. Pick one more
+1. **Bridges (OPSEC).** `about:bridges` + `tor.require_bridges` + `allow_tor_fetch` are in. Next OPSEC slice: ControlPort bridge-status query so require=on can pass when Tor reports Active.
+2. **This / next session — D.** The named queue is empty. Pick one more
    static document (not Wikipedia / GitHub / mail) and claim it from live
    HTML. Thirty-eight public claims; CSS leftovers done. **tails.net**
    claimed (apex 200, www 302 to apex). **libsodium.org** Forbidden
