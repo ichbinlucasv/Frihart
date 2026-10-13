@@ -15,7 +15,8 @@ pub mod tor_control;
 pub use addr::{HostClass, classify_host, classify_ip, is_sensitive, private_redirect};
 pub use clean::{is_tracking_key, strip_tracking};
 pub use client::{
-    FetchMode, NetFail, RustlsClient, classify_error, content_type, decode_body, refuse_wrong_net,
+    FetchMode, NetFail, RustlsClient, classify_error, content_type, decode_body, redirect_target,
+    refuse_wrong_net,
 };
 pub use cookie::{CookieJar, StoredCookie};
 pub use download::{DownloadLog, DownloadRecord, filename_for, save_download, should_save};

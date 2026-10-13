@@ -190,6 +190,20 @@ pub fn refuse_wrong_net(mode: &FetchMode, url: &url::Url) -> Result<()> {
     }
 }
 
+/// Resolve a redirect `Location` and keep it on the tab's circuit.
+///
+/// Every hop goes through [`refuse_wrong_net`], not only the first URL: a
+/// clearnet page must not bounce a Direct tab to a `.onion` (that name would
+/// reach the system resolver), and an `.i2p` site must not bounce an I2P tab
+/// to clearnet through an outproxy.
+pub fn redirect_target(mode: &FetchMode, current: &url::Url, location: &str) -> Result<url::Url> {
+    let next = current
+        .join(location)
+        .map_err(|_| FrihartError::network("redirect"))?;
+    refuse_wrong_net(mode, &next)?;
+    Ok(next)
+}
+
 impl HttpClient for RustlsClient {
     fn send(
         &self,
@@ -307,10 +321,7 @@ impl HttpClient for RustlsClient {
                     .find(|(n, _)| n.eq_ignore_ascii_case("location"))
                     .map(|(_, v)| v.clone())
                 {
-                    let next = current
-                        .join(&loc)
-                        .map_err(|_| FrihartError::network("redirect"))?;
-                    current = next;
+                    current = redirect_target(&mode, &current, &loc)?;
                     continue;
                 }
             }
@@ -599,6 +610,33 @@ mod tests {
             )
             .unwrap_err();
         assert!(on_tor.to_string().contains(".i2p"));
+    }
+
+    #[test]
+    fn redirect_hops_stay_on_the_circuit() {
+        let tor = FetchMode::Tor {
+            socks: "127.0.0.1:9050".into(),
+        };
+        let i2p = FetchMode::I2p {
+            socks: "127.0.0.1:4447".into(),
+        };
+        let clear = Url::parse("https://example.org/a").unwrap();
+        let eepsite = Url::parse("http://zzz.i2p/").unwrap();
+        // Direct tab: clearnet hop fine, .onion / .i2p hops refused (no DNS).
+        assert!(redirect_target(&FetchMode::Direct, &clear, "/b").is_ok());
+        for loc in ["http://www.example.onion/", "http://zzz.i2p/x"] {
+            let e = redirect_target(&FetchMode::Direct, &clear, loc).unwrap_err();
+            assert!(e.to_string().contains("wrong net"), "{loc}");
+        }
+        // I2P tab: stays on .i2p; a bounce to clearnet or .onion is refused.
+        assert!(redirect_target(&i2p, &eepsite, "/forum").is_ok());
+        assert!(redirect_target(&i2p, &eepsite, "https://example.org/").is_err());
+        assert!(redirect_target(&i2p, &eepsite, "http://www.example.onion/").is_err());
+        // Tor tab: clearnet and .onion fine, .i2p refused.
+        assert!(redirect_target(&tor, &clear, "http://www.example.onion/").is_ok());
+        assert!(redirect_target(&tor, &clear, "http://zzz.i2p/").is_err());
+        // Protocol-relative bounce keeps the check.
+        assert!(redirect_target(&FetchMode::Direct, &clear, "//evil.onion/").is_err());
     }
 
     #[test]
