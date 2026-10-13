@@ -7,7 +7,11 @@ then years of engine depth. Dates move. The philosophy does not.
 Read with [PHILOSOPHY.md](PHILOSOPHY.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 [docs/opsec.md](docs/opsec.md), and [docs/distros.md](docs/distros.md).
 
-Crate numbers (0–15) stay. Humans use **campaigns A–I**.
+Crate numbers (0–15) stay. Humans use **campaigns A–I** (plus **S**, Servo Compat).
+
+> **Update 2026-10-13:** Frihart is now **hybrid**. Servo is embedded as the
+> clearnet *Compat* engine; Frihart's own engine keeps Tor, I2P and reader
+> tabs. See [docs/ENGINE_HYBRID.md](docs/ENGINE_HYBRID.md).
 
 ## Why we do not fork Firefox
 
@@ -358,9 +362,9 @@ a generic exploit runtime.
 
 ### Technical tasks
 
-- **Locked:** no embed. If G starts, it is a small Frihart interpreter
-  in Rust — not V8, SpiderMonkey, JavaScriptCore, or QuickJS. Decision
-  document is closed.
+- **Own engine:** no embedded JS runtime. If G starts, it is a small
+  Frihart interpreter in Rust. Real-site JS now comes from the Servo
+  Compat engine (Campaign S, clearnet only).
 - WebExtensions host: execute sideloaded Firefox add-ons against the
   subset of `browser.*` we have implemented (see docs/extensions.md)
 - No JIT in the first interpreter. JIT is an opt-in later, still ours.
@@ -704,3 +708,19 @@ privacy, only comfort features.** Free mode is the default.
   and a server for BTCPay; generate the offline signing key and set
   `MAINTAINER_PUBKEY`; wire each comfort feature to `Entitlement::allows`
   as it ships.
+
+## Campaign S — Servo Compat engine (approved by Lucas, 2026-10-13)
+
+Hybrid engine. Decision record: [docs/ENGINE_HYBRID.md](docs/ENGINE_HYBRID.md).
+Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
+*Compat* tabs. Servo never handles Tor/I2P until a leak audit passes.
+
+- [ ] **M1 — Feasibility spike:** `servo` (crates.io 0.7.0) builds on
+  Linux behind cargo feature `servo`, off by default; record build time
+  and size. *Done so far:* `Engine` trait (`frihart-engine`), empty
+  `frihart-engine-servo` crate with the feature.
+- [ ] **M2 — Render a clearnet tab via Servo** in the Frihart chrome.
+- [ ] **M3 — Route all Servo networking through Frihart's proxy / net**
+  (blocker, frozen UA, no telemetry, DNS policy).
+- [ ] **M4 — Per-site JS toggle** in the protections panel.
+- [ ] **M5 — Compat is the default for clearnet tabs.**

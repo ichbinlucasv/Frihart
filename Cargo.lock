@@ -856,6 +856,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "frihart-engine"
+version = "0.1.0"
+dependencies = [
+ "frihart-gfx",
+ "frihart-pipeline",
+]
+
+[[package]]
+name = "frihart-engine-servo"
+version = "0.1.0"
+dependencies = [
+ "frihart-engine",
+]
+
+[[package]]
 name = "frihart-extensions"
 version = "0.1.0"
 dependencies = [

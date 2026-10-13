@@ -125,8 +125,10 @@ suckless.org, GNU philosophy, kernel.org, docs.kernel.org, ietf.org,
 the RFC Editor index, w3.org, the W3C TR index, webarch, RFC 9110, WCAG 2.2, RFC 8446 (TLS 1.3), RFC 5280 (X.509), RFC 8032 (Ed25519), RFC 7748 (Curve25519 / X25519), RFC 5869 (HKDF), openbsd.org, openssh.com, libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, and signal.org. `about:settings` is the LibreWolf-stance page.
 Tracking query keys are stripped. Private-IP redirects are refused.
 Content width follows the window up to 2400 CSS px (G9-class). JS is off
-on purpose. The engine is Frihart in Rust; we will not embed another
-browser's runtime. A script interpreter has not been started.
+on purpose in the own engine. **Hybrid engine (decided 2026-10-13):** Frihart's
+own Rust engine handles Tor, I2P and reader tabs; Servo (Rust, Linux
+Foundation) is being added as the opt-in *Compat* engine for modern
+clearnet sites. See [docs/ENGINE_HYBRID.md](docs/ENGINE_HYBRID.md).
 
 **CSS claim coverage:** the first subset for the named static list is in
 (`list-style`, `white-space`, `font-family` slots, borders, sizes, …).

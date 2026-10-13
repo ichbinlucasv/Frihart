@@ -1,0 +1,18 @@
+[package]
+name = "frihart-engine-servo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "Servo Compat engine adapter (feature `servo`, off by default). See docs/ENGINE_HYBRID.md"
+publish.workspace = true
+
+[features]
+default = []
+# M1: will pull in `servo` (crates.io, MPL-2.0). Kept empty until the
+# feasibility spike builds on Linux; it must never join the default build.
+servo = []
+
+[dependencies]
+frihart-engine = { path = "../frihart-engine" }

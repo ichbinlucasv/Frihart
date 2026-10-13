@@ -158,13 +158,16 @@ its own process model, chrome, preferences, privacy policy engine, and
 
 It does **not** mean reimplementing TLS, Unicode, or font rasterization.
 Those are solved problems. Using `rustls`, system fonts, and similar
-libraries is correct engineering. Using Gecko, Blink, WebKit, or Servo as
-the product is not.
+libraries is correct engineering. Forking Gecko, Blink or WebKit as the
+product is not. Since 2026-10-13, Servo is embedded as the clearnet
+*Compat* engine only (docs/ENGINE_HYBRID.md); Frihart's own engine stays
+the product core and the only engine for Tor and I2P.
 
 **The engine is Frihart, in Rust.** HTML, CSS, layout, and — if Campaign
 G ever starts — script are written in this tree. We will not embed V8,
-SpiderMonkey, JavaScriptCore, QuickJS, or another browser's engine to
-look finished. A missing site is better than someone else's runtime.
+SpiderMonkey, JavaScriptCore or QuickJS into the own engine. The one
+exception is the feature-gated Servo Compat engine for clearnet tabs,
+which never touches Tor or I2P tabs.
 
 Every third-party crate must be justified. A crate that phones home, pulls
 in a telemetry SDK, or makes the supply chain absurd is rejected.

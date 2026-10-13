@@ -5,6 +5,10 @@ Chrome, and without pretending I2P is the whole web.
 
 Read with [PHILOSOPHY.md](../PHILOSOPHY.md) and [docs/opsec.md](opsec.md).
 
+> **Update 2026-10-13:** Frihart is now **hybrid**. Servo is embedded as the
+> clearnet *Compat* engine; Frihart's own engine keeps Tor, I2P and reader
+> tabs. See [docs/ENGINE_HYBRID.md](ENGINE_HYBRID.md).
+
 ## Compatibility floor (not CERN, not Blink)
 
 We do **not** rebuild the web from the 1990 CERN line-mode client.
@@ -22,7 +26,8 @@ company. Frihart’s bet is **harder to own**.
 | We do | We do not |
 | --- | --- |
 | Grow the subset until docs, RFCs, blogs, and homepages are a daily driver | Reimplement Mosaic, Netscape 4, Flash, Java applets, ActiveX |
-| Fail clearly when a page needs JS | Embed V8 / SpiderMonkey / QuickJS to look finished |
+| Fail clearly when a page needs JS (own engine) | Embed V8 / SpiderMonkey / QuickJS into the own engine |
+| Offer Servo as a clearnet Compat engine (see ENGINE_HYBRID.md) | Let Servo handle Tor or I2P tabs |
 | Add CSS the claimed documents actually use | Fake flex/grid so a page “kind of” works |
 | Keep JS off until a tiny Frihart interpreter (Campaign G, later) | Chase Gmail, maps, banks, or social |
 
