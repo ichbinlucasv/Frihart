@@ -125,6 +125,8 @@ pub struct Browser {
     identity: Identity,
     pub supervisor: Supervisor,
     workers: crate::worker::WorkerPool,
+    /// Cached read-only ControlPort bridge check for `tor.require_bridges`.
+    bridge_gate: frihart_net::tor_control::BridgeGate,
 }
 
 impl Browser {
@@ -175,6 +177,7 @@ impl Browser {
             identity,
             supervisor: Supervisor::default(),
             workers: crate::worker::WorkerPool::default(),
+            bridge_gate: frihart_net::tor_control::BridgeGate::new(),
         }
     }
 
@@ -629,21 +632,24 @@ impl Browser {
             Circuit::Tor => {
                 let tor = &self.profile.prefs().tor;
                 // Fail-closed: when require_bridges is on, refuse until a live
-                // ControlPort check reports Active. Status is not queried yet
-                // in this build, so require=on holds every Tor tab closed.
-                if let Err(why) = frihart_net::bridges::allow_tor_fetch(tor.require_bridges, None) {
+                // read-only ControlPort check reports Active (cached briefly).
+                // Unreachable ControlPort or failed SAFECOOKIE proof refuses.
+                if let Err(why) =
+                    self.bridge_gate
+                        .check(tor.require_bridges, &tor.socks_host, tor.control_port)
+                {
                     return Document::internal(InternalPage {
                         title: "Bridges required".into(),
                         url: target.clone(),
                         blocks: vec![
                             Block::Hero {
                                 title: "Tor tab held".into(),
-                                subtitle: why.into(),
+                                subtitle: why,
                             },
-                            Block::Paragraph(
-                                "tor.require_bridges is on. Frihart will not fetch over Tor until bridges are confirmed active. Turn the switch off on about:bridges, or wait for the ControlPort check in a later build."
-                                    .into(),
-                            ),
+                            Block::Paragraph(format!(
+                                "tor.require_bridges is on. Frihart will not fetch over Tor until Tor's ControlPort ({}:{}) reports bridges active. Reload once Tor has bootstrapped over your bridges, or turn the switch off on about:bridges.",
+                                tor.socks_host, tor.control_port
+                            )),
                             Block::Link {
                                 label: "about:bridges".into(),
                                 href: "about:bridges".into(),

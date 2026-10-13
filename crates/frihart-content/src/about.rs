@@ -1946,6 +1946,21 @@ fn search(url: &Url, prefs: &Prefs) -> Document {
     })
 }
 
+/// Live read-only ControlPort answer, only when the require switch is on, so
+/// opening the page contacts nothing by default.
+fn bridge_status_line(prefs: &Prefs) -> String {
+    if !prefs.tor.require_bridges {
+        return "not checked (require is off)".into();
+    }
+    match frihart_net::tor_control::query_bridge_status(
+        &prefs.tor.socks_host,
+        prefs.tor.control_port,
+    ) {
+        Ok(st) => st.summary_line(),
+        Err(e) => format!("bridges=unknown ({})", e.message()),
+    }
+}
+
 fn bridges_page(url: &Url, prefs: &Prefs) -> Document {
     Document::internal(InternalPage {
         title: "Bridges".into(),
@@ -1956,7 +1971,7 @@ fn bridges_page(url: &Url, prefs: &Prefs) -> Document {
                 subtitle: "Pluggable transports. Fail-closed when required.".into(),
             },
             Block::Paragraph(
-                "Frihart does not rewrite torrc and does not start pluggable-transport binaries. Paste bridge lines into your system Tor config, reload Tor, then use the require switch if you want Tor tabs held until Tor itself reports that bridges took effect (same design as HashChat)."
+                "Frihart does not rewrite torrc and does not start pluggable-transport binaries. Paste bridge lines into your system Tor config, reload Tor, then use the require switch if you want Tor tabs held until Tor itself reports that bridges took effect (same design as HashChat). The check is read-only: SAFECOOKIE authentication on the loopback ControlPort, then GETCONF and GETINFO; Frihart never changes Tor's configuration. Your torrc needs ControlPort 9051 and CookieAuthentication 1."
                     .into(),
             ),
             Block::Heading("Preference".into()),
@@ -1973,6 +1988,14 @@ fn bridges_page(url: &Url, prefs: &Prefs) -> Document {
                 } else {
                     "off".into()
                 },
+            },
+            Block::KeyValue {
+                key: "ControlPort".into(),
+                value: format!("{}:{}", prefs.tor.socks_host, prefs.tor.control_port),
+            },
+            Block::KeyValue {
+                key: "Tor reports".into(),
+                value: bridge_status_line(prefs),
             },
             Block::Heading("torrc".into()),
             Block::Paragraph(
