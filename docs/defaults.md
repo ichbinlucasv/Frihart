@@ -84,6 +84,7 @@ Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
 | `tor.enabled` | `true` | Tor tabs are available. They need a system `tor` daemon. |
 | `tor.socks_host` | `127.0.0.1` | Local daemon only. |
 | `tor.socks_port` | `9050` | Standard Tor SOCKS. |
+| `tor.require_bridges` | `false` | When on, Tor tabs stay closed until Tor reports bridges active. |
 
 ## I2P
 

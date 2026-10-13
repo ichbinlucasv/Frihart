@@ -261,6 +261,9 @@ pub struct TorPrefs {
     pub enabled: bool,
     pub socks_host: String,
     pub socks_port: u16,
+    /// When true, Tor tabs stay closed until Tor reports bridges active
+    /// ([`frihart_net::bridges::allow_tor_fetch`]). Default off.
+    pub require_bridges: bool,
 }
 
 impl Default for TorPrefs {
@@ -269,6 +272,7 @@ impl Default for TorPrefs {
             enabled: true,
             socks_host: "127.0.0.1".into(),
             socks_port: 9050,
+            require_bridges: false,
         }
     }
 }
@@ -424,6 +428,7 @@ mod tests {
         assert!(p.translate.api_key.is_empty());
         assert!(p.tor.enabled);
         assert_eq!(p.tor.socks_port, 9050);
+        assert!(!p.tor.require_bridges);
         assert!(p.i2p.enabled);
         assert_eq!(p.i2p.socks_port, 4447);
         assert_eq!(p.vpn.provider, "none");

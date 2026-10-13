@@ -472,6 +472,31 @@ pub fn evaluate_bridge_status(
     st
 }
 
+/// Fail-closed gate for Tor fetches when the user requires bridges.
+///
+/// - `require` false → always allow (bridges are optional).
+/// - `require` true → allow only when `status` is present and
+///   [`BridgeStatus::verdict`] is [`BridgeVerdict::Active`].
+///
+/// Missing status refuses: we do not guess that bridges are up.
+pub fn allow_tor_fetch(require: bool, status: Option<&BridgeStatus>) -> Result<(), &'static str> {
+    if !require {
+        return Ok(());
+    }
+    let Some(st) = status else {
+        return Err("bridges required: Tor bridge status not checked yet");
+    };
+    match st.verdict() {
+        BridgeVerdict::Active => Ok(()),
+        BridgeVerdict::Off => Err("bridges required: UseBridges is off"),
+        BridgeVerdict::Misconfigured(_) => Err("bridges required: Tor bridge config is broken"),
+        BridgeVerdict::NotReady(_) => Err("bridges required: Tor has not finished bootstrapping"),
+        BridgeVerdict::OffBridge(_) => {
+            Err("bridges required: a built circuit starts outside the bridge list")
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -631,7 +656,9 @@ mod tests {
 
     fn boot(p: u8) -> Vec<String> {
         vec![
-            format!("250-status/bootstrap-phase=NOTICE BOOTSTRAP PROGRESS={p} TAG=done SUMMARY=\"Done\""),
+            format!(
+                "250-status/bootstrap-phase=NOTICE BOOTSTRAP PROGRESS={p} TAG=done SUMMARY=\"Done\""
+            ),
             "250 OK".into(),
         ]
     }
@@ -739,5 +766,29 @@ mod tests {
         assert_eq!(st.unparsed_bridges, 1);
         assert_eq!(st.bridge_count, 0);
         assert!(matches!(st.verdict(), BridgeVerdict::Misconfigured(_)));
+    }
+
+    #[test]
+    fn require_off_always_allows() {
+        assert!(allow_tor_fetch(false, None).is_ok());
+        assert!(allow_tor_fetch(false, Some(&BridgeStatus::default())).is_ok());
+    }
+
+    #[test]
+    fn require_on_needs_active_status() {
+        assert!(allow_tor_fetch(true, None).is_err());
+        let st = BridgeStatus {
+            use_bridges: true,
+            bridge_count: 1,
+            bootstrap_percent: Some(100),
+            ..Default::default()
+        };
+        assert_eq!(st.verdict(), BridgeVerdict::Active);
+        assert!(allow_tor_fetch(true, Some(&st)).is_ok());
+        let off = BridgeStatus {
+            use_bridges: false,
+            ..st
+        };
+        assert!(allow_tor_fetch(true, Some(&off)).is_err());
     }
 }
