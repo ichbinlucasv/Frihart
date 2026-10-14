@@ -98,12 +98,82 @@ feature `servo`, off by default.
 - Expected Linux system dependencies (Servo build docs): clang/LLVM,
   python3, cmake, pkg-config, GStreamer dev packages (if media is on),
   fontconfig/freetype, libX11/xcb/wayland, EGL/Mesa (surfman).
-- **Not built yet.** A full build was not attempted in this session to
-  avoid a heavy build in the default workspace. Size and time above are
-  estimates. M1 continues with an out-of-default spike build.
-- Done now: `crates/frihart-engine` (`Engine` trait, `OwnEngine`,
-  `select_engine`) and an empty `crates/frihart-engine-servo` with the
-  `servo` feature (no dependency yet), both tested.
+- Done 2026-10-13: `crates/frihart-engine` (`Engine` trait, `OwnEngine`,
+  `select_engine`) and the `frihart-engine-servo` crate with the `servo`
+  feature.
+
+## M1 result (2026-10-14): Servo builds and renders
+
+`servo = "=0.7.0"` is now a real optional dependency of
+`frihart-engine-servo` (feature `servo`, off by default; crate
+`rust-version` 1.88, rest of the workspace 1.85). Features used:
+`bundled` + `js_jit` only; clipboard, multiprocess, WebGL, WebGPU, WebXR,
+Bluetooth, gamepad and GStreamer media are off.
+
+Measured on the 8-core / 16 GB build box (Debian 13, rustc 1.99):
+
+| Build | Time | Output |
+| --- | --- | --- |
+| Cold dev build of all Servo deps (`-j6`) | 3 min 01 s | `target/` 2.9 GB for Servo alone |
+| Workspace dev build with `--features servo` | 3 min 33 s | — |
+| Release example (`-j4`, no LTO, 16 CGUs, shared box) | 10 min 12 s | 150 MB binary, 113 MB stripped |
+| Debug example binary | — | 323 MB |
+
+The workspace `target/` with both profiles reached about 15 GB. SpiderMonkey
+was not compiled from source: `mozjs_sys` 153.3 downloads its prebuilt
+archive, which is why the cold build is minutes, not the 30–60 min
+estimated above. Build dependencies installed on the box: clang/LLVM
+(19), libclang-dev, cmake, pkg-config, fontconfig/freetype/harfbuzz dev,
+EGL/GLES/Mesa dev, X11/xcb/xkbcommon/wayland dev, libudev, libunwind.
+The binary links only system libc/libstdc++, fontconfig, freetype,
+libpng, zlib, bzip2, brotli and expat.
+
+What works (tested, `cargo test -p frihart-engine-servo --features servo`):
+`ServoEngine::render_html` renders off screen through Servo's
+`SoftwareRenderingContext` (CPU, no window, no GPU) and returns the frame
+as one `DisplayOp::Image`; the chrome can blit it (`Framebuffer::blit_rgba`).
+The test page uses CSS grid and a script that changes the title and a
+style; both show up in the pixels. One `Servo` instance is reused across
+renders (one per process). `examples/servo_headless.rs` writes a PPM.
+
+Privacy settings (`prefs::HardenedPrefs`, checked by `is_locked_down`
+before Servo starts): Frihart's frozen user agent; devtools server,
+WebRTC, geolocation, Bluetooth, gamepad, WebGPU, notifications and service
+workers off; plain HTTP goes to a dead loopback proxy (port 9) and fails;
+HTTPS goes to Frihart's Compat proxy (below). Tested: a subresource on a
+local host is never contacted directly.
+
+Trade-offs to know:
+
+- **Lockfile.** Cargo resolves optional dependencies too, so `Cargo.lock`
+  gained ~540 packages, and Servo's pins moved shared crates: ICU went
+  from 2.3 to 2.1 (`icu_*`, `idna_adapter` 1.2.1) for every build,
+  including the default one (it is `url`'s IDNA backend). Default builds
+  still compile none of Servo.
+- **`cargo audit`.** No vulnerabilities. Servo adds 7 "unmaintained"
+  warnings (`bincode` 1, `paste`, five `unic-*` crates); the 4 existing
+  ones (`rustybuzz`, `ttf-parser`) are unchanged.
+- **TLS provider.** Servo enables rustls with aws-lc-rs, Frihart's net
+  layer with ring; with both on, rustls cannot pick a default and Servo's
+  resource thread panics. The adapter installs ring as the process
+  provider before Servo starts.
+- **Not 100% Rust**: SpiderMonkey (C++) arrives prebuilt from mozjs.
+
+## M3 step (2026-10-14): Servo HTTPS goes through Frihart
+
+`frihart_net::compat_proxy` is a loopback `CONNECT` proxy started per
+Servo instance. Servo's HTTPS proxy preference points at it, so Frihart
+does the DNS lookup and the policy check, and Servo only ever talks to
+127.0.0.1: only port 443; `.onion`, `.i2p`, `.local`, `.internal`,
+`.invalid`, `localhost` refused; IP literals and names resolving to
+loopback, link-local or private ranges refused (DNS rebinding);
+hosts on the native blocker lists refused; request head capped at 8 KiB
+and 10 s. Tested end to end: Servo's requests for a special-use name and a
+private IP reach the proxy and are refused without any lookup.
+
+Still open for M3: tracking-parameter stripping and per-site cookie
+policy need hooks inside Servo (the tunnel is TLS end to end), Client
+Hints and header audit inside Servo, a leak test against a live page.
 
 ## Milestones (Campaign S — Servo Compat engine)
 

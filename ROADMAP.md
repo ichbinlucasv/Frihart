@@ -723,13 +723,21 @@ Hybrid engine. Decision record: [docs/ENGINE_HYBRID.md](docs/ENGINE_HYBRID.md).
 Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
 *Compat* tabs. Servo never handles Tor/I2P until a leak audit passes.
 
-- [ ] **M1 — Feasibility spike:** `servo` (crates.io 0.7.0) builds on
-  Linux behind cargo feature `servo`, off by default; record build time
-  and size. *Done so far:* `Engine` trait (`frihart-engine`), empty
-  `frihart-engine-servo` crate with the feature.
+- [x] **M1 — Feasibility spike:** `servo` (crates.io 0.7.0) builds on
+  Linux behind cargo feature `servo`, off by default; build time and size
+  recorded in docs/ENGINE_HYBRID.md (cold dev build ~3 min with prebuilt
+  SpiderMonkey, release binary 113 MB stripped). Off-screen render to a
+  `DisplayOp::Image`, CSS grid and JS verified in tests (2026-10-14).
 - [ ] **M2 — Render a clearnet tab via Servo** in the Frihart chrome.
+  *Done so far:* `DisplayOp::Image` and `Framebuffer::blit_rgba` in the
+  chrome; `ServoEngine::render_html` returns a frame. Next: Compat mode
+  per tab in `frihart-chrome`, selected by `select_engine`, and input.
 - [ ] **M3 — Route all Servo networking through Frihart's proxy / net**
-  (blocker, frozen UA, no telemetry, DNS policy).
+  (blocker, frozen UA, no telemetry, DNS policy). *Done so far:* frozen
+  UA and leak-surface prefs locked; HTTPS through
+  `frihart_net::compat_proxy` (port 443 only, no special-use names, no
+  private IPs or rebinding, blocker enforced, DNS in Frihart); plain HTTP
+  to a dead proxy.
 - [ ] **M4 — Per-site JS toggle** in the protections panel.
 - [ ] **M5 — Compat is the default for clearnet tabs.**
 
