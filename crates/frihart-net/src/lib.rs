@@ -7,6 +7,7 @@ mod addr;
 pub mod bridges;
 mod clean;
 mod client;
+pub mod compat_proxy;
 mod cookie;
 mod download;
 mod headers;
