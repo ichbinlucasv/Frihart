@@ -2,7 +2,18 @@
 
 #![forbid(unsafe_code)]
 
+use std::collections::BTreeMap;
+
 use frihart_css::{Combinator, Compound, Declaration, Selector, Simple, Stylesheet};
+
+/// Custom properties (`--name` → raw value) visible to one element.
+pub type CustomProps = BTreeMap<String, String>;
+
+/// Deepest chain of `var()` references followed before giving up (cycles).
+pub const MAX_VAR_DEPTH: usize = 8;
+/// Longest value a `var()` substitution may produce, in bytes. Stops
+/// "billion laughs" chains such as `--b: var(--a) var(--a)`.
+pub const MAX_VAR_EXPANSION: usize = 4096;
 
 pub const REM_PX: f32 = 16.0;
 
@@ -435,12 +446,128 @@ pub fn style_in(
 ) -> Computed {
     let ctx = LengthCtx::for_element(el, vw, vh);
     let mut c = ua_style(&el.tag);
+    let props = if sheet_uses_vars(user) || sheet_uses_vars(author) {
+        custom_properties(el, user, author)
+    } else {
+        CustomProps::new()
+    };
     // list-style and white-space inherit. UA sets them on ul/ol/pre;
     // other tags take the parent's computed value, then user/author win.
-    inherit_list_and_ws(&mut c, el, user, author, vw, vh);
-    apply_matching(&mut c, user, el, ctx);
-    apply_matching(&mut c, author, el, ctx);
+    inherit_list_and_ws(&mut c, el, user, author, vw, vh, &props);
+    apply_matching(&mut c, user, el, ctx, &props);
+    apply_matching(&mut c, author, el, ctx, &props);
     c
+}
+
+fn sheet_uses_vars(sheet: &Stylesheet) -> bool {
+    sheet
+        .rules
+        .iter()
+        .any(|r| r.declarations.iter().any(|d| d.value.contains("var(")))
+}
+
+/// Custom properties inherited by `el`: walk an implicit `html` root, then
+/// root → parent → `el`, applying `--*` declarations from matching user and
+/// author rules in source order (later wins, author after user).
+pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -> CustomProps {
+    let mut props = CustomProps::new();
+    let mut chain: Vec<Element> = Vec::with_capacity(el.ancestors.len() + 2);
+    if el.ancestors.first().is_none_or(|a| a.tag != "html") && el.tag != "html" {
+        chain.push(Element::tag("html"));
+    }
+    for i in 0..el.ancestors.len() {
+        chain.push(Element {
+            tag: el.ancestors[i].tag.clone(),
+            id: el.ancestors[i].id.clone(),
+            classes: el.ancestors[i].classes.clone(),
+            ancestors: chain.clone(),
+        });
+    }
+    chain.push(Element {
+        tag: el.tag.clone(),
+        id: el.id.clone(),
+        classes: el.classes.clone(),
+        ancestors: chain.clone(),
+    });
+    for node in &chain {
+        for sheet in [user, author] {
+            for rule in &sheet.rules {
+                if !rule.declarations.iter().any(|d| d.name.starts_with("--")) {
+                    continue;
+                }
+                if rule_matches(rule, node) {
+                    for d in &rule.declarations {
+                        if d.name.starts_with("--") && d.value.len() <= MAX_VAR_EXPANSION {
+                            props.insert(d.name.clone(), d.value.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    props
+}
+
+/// Replace every `var(--name[, fallback])` in `value`. Returns `None` when a
+/// reference is unknown and has no fallback, forms a cycle, nests deeper
+/// than [`MAX_VAR_DEPTH`] or expands past [`MAX_VAR_EXPANSION`]; the caller
+/// then ignores the declaration (never a guessed value).
+pub fn resolve_vars(value: &str, props: &CustomProps) -> Option<String> {
+    resolve_vars_at(value, props, 0)
+}
+
+fn resolve_vars_at(value: &str, props: &CustomProps, depth: usize) -> Option<String> {
+    if !value.contains("var(") {
+        return Some(value.to_string());
+    }
+    if depth >= MAX_VAR_DEPTH {
+        return None;
+    }
+    let mut out = String::with_capacity(value.len());
+    let mut rest = value;
+    while let Some(at) = rest.find("var(") {
+        out.push_str(&rest[..at]);
+        let inner_start = at + 4;
+        let mut level = 1usize;
+        let mut end = None;
+        let mut comma = None;
+        for (i, ch) in rest[inner_start..].char_indices() {
+            match ch {
+                '(' => level += 1,
+                ')' => {
+                    level -= 1;
+                    if level == 0 {
+                        end = Some(inner_start + i);
+                        break;
+                    }
+                }
+                ',' if level == 1 && comma.is_none() => comma = Some(inner_start + i),
+                _ => {}
+            }
+        }
+        let end = end?;
+        let name_end = comma.unwrap_or(end);
+        let name = rest[inner_start..name_end].trim();
+        if !name.starts_with("--") {
+            return None;
+        }
+        let piece = match props.get(name) {
+            Some(v) => resolve_vars_at(v.trim(), props, depth + 1),
+            None => None,
+        };
+        let piece = match (piece, comma) {
+            (Some(p), _) => p,
+            (None, Some(c)) => resolve_vars_at(rest[c + 1..end].trim(), props, depth + 1)?,
+            (None, None) => return None,
+        };
+        out.push_str(&piece);
+        if out.len() > MAX_VAR_EXPANSION {
+            return None;
+        }
+        rest = &rest[end + 1..];
+    }
+    out.push_str(rest);
+    (out.len() <= MAX_VAR_EXPANSION).then_some(out)
 }
 
 fn ws_rule_needs_inherit(sheet: &Stylesheet) -> bool {
@@ -466,6 +593,7 @@ fn inherit_list_and_ws(
     author: &Stylesheet,
     vw: f32,
     vh: f32,
+    props: &CustomProps,
 ) {
     let need_list = el.tag == "li";
     let need_ws = el.tag != "pre"
@@ -494,8 +622,8 @@ fn inherit_list_and_ws(
             ac.white_space = ws;
         }
         let ctx = LengthCtx::for_element(&anc, vw, vh);
-        apply_matching(&mut ac, user, &anc, ctx);
-        apply_matching(&mut ac, author, &anc, ctx);
+        apply_matching(&mut ac, user, &anc, ctx, props);
+        apply_matching(&mut ac, author, &anc, ctx, props);
         list = ac.list_style;
         ws = ac.white_space;
     }
@@ -507,11 +635,33 @@ fn inherit_list_and_ws(
     }
 }
 
-fn apply_matching(computed: &mut Computed, sheet: &Stylesheet, el: &Element, ctx: LengthCtx) {
+fn apply_matching(
+    computed: &mut Computed,
+    sheet: &Stylesheet,
+    el: &Element,
+    ctx: LengthCtx,
+    props: &CustomProps,
+) {
     for rule in &sheet.rules {
-        if rule_matches(rule, el) {
-            apply_in(computed, &rule.declarations, ctx);
+        if !rule_matches(rule, el) {
+            continue;
         }
+        if !rule.declarations.iter().any(|d| d.value.contains("var(")) {
+            apply_in(computed, &rule.declarations, ctx);
+            continue;
+        }
+        let resolved: Vec<Declaration> = rule
+            .declarations
+            .iter()
+            .filter(|d| !d.name.starts_with("--"))
+            .filter_map(|d| {
+                resolve_vars(&d.value, props).map(|value| Declaration {
+                    name: d.name.clone(),
+                    value,
+                })
+            })
+            .collect();
+        apply_in(computed, &resolved, ctx);
     }
 }
 
@@ -571,9 +721,11 @@ fn simple_matches(simple: &Simple, el: &Element) -> bool {
         Simple::Type(t) => el.tag.eq_ignore_ascii_case(t),
         Simple::Class(c) => el.classes.iter().any(|have| have.eq_ignore_ascii_case(c)),
         Simple::Id(id) => el.id.eq_ignore_ascii_case(id),
-        Simple::Pseudo(p) => {
-            matches!(p.as_str(), "link" | "visited") && el.tag.eq_ignore_ascii_case("a")
-        }
+        Simple::Pseudo(p) => match p.as_str() {
+            "link" | "visited" => el.tag.eq_ignore_ascii_case("a"),
+            "root" => el.tag.eq_ignore_ascii_case("html") && el.ancestors.is_empty(),
+            _ => false,
+        },
     }
 }
 
@@ -703,6 +855,81 @@ fn apply_border(computed: &mut Computed, value: &str, ctx: LengthCtx) {
 mod tests {
     use super::*;
     use frihart_css::parse_stylesheet;
+
+    fn el_in(tag: &str, classes: &[&str], ancestors: &[&str]) -> Element {
+        Element {
+            tag: tag.into(),
+            id: String::new(),
+            classes: classes.iter().map(|c| c.to_string()).collect(),
+            ancestors: ancestors.iter().map(|t| Element::tag(t)).collect(),
+        }
+    }
+
+    #[test]
+    fn root_vars_reach_every_element() {
+        let author = parse_stylesheet(
+            ":root { --ink: #ff0000; --Gap: 12px } \
+             p { color: var(--ink); padding: var(--Gap) } \
+             .note { --ink: #00ff00 } \
+             h1 { color: var(--missing, #0000ff) } \
+             h2 { color: var(--missing) }",
+        );
+        let none = Stylesheet::default();
+        let p = style_in(&el_in("p", &[], &["body"]), &none, &author, 800.0, 600.0);
+        assert_eq!(p.color, 0x00ff0000);
+        assert_eq!(p.padding, 12.0, "custom property names keep their case");
+        let in_note = style_in(
+            &Element {
+                ancestors: vec![Element::tag("body"), el_in("div", &["note"], &[])],
+                ..Element::tag("p")
+            },
+            &none,
+            &author,
+            800.0,
+            600.0,
+        );
+        assert_eq!(in_note.color, 0x0000ff00, "nearest ancestor wins");
+        let h1 = style_in(&el_in("h1", &[], &["body"]), &none, &author, 800.0, 600.0);
+        assert_eq!(h1.color, 0x000000ff, "fallback");
+        let h2 = style_in(&el_in("h2", &[], &["body"]), &none, &author, 800.0, 600.0);
+        assert_eq!(h2.color, ua_style("h2").color, "unresolved var is ignored");
+    }
+
+    #[test]
+    fn var_cycles_and_blowups_are_refused() {
+        let mut props = CustomProps::new();
+        props.insert("--a".into(), "var(--b)".into());
+        props.insert("--b".into(), "var(--a)".into());
+        assert_eq!(resolve_vars("var(--a)", &props), None);
+        assert_eq!(
+            resolve_vars("var(--a, red)", &props).as_deref(),
+            Some("red")
+        );
+        props.insert("--l0".into(), "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".into());
+        for i in 1..8 {
+            let prev = format!("var(--l{})", i - 1);
+            props.insert(format!("--l{i}"), format!("{prev} {prev} {prev} {prev}"));
+        }
+        assert_eq!(resolve_vars("var(--l7)", &props), None, "expansion cap");
+        assert_eq!(
+            resolve_vars("var(--l1)", &props).map(|s| s.len()),
+            Some(131)
+        );
+        assert_eq!(resolve_vars("var(nope)", &props), None);
+        assert_eq!(resolve_vars("var(--l0", &props), None, "unbalanced");
+        assert_eq!(
+            resolve_vars("1px solid var(--c, var(--d, #333))", &props).as_deref(),
+            Some("1px solid #333")
+        );
+    }
+
+    #[test]
+    fn root_pseudo_matches_only_the_html_root() {
+        let sel = frihart_css::parse_selector(":root").unwrap();
+        assert!(selector_matches(&sel, &Element::tag("html")));
+        assert!(!selector_matches(&sel, &el_in("html", &[], &["div"])));
+        assert!(!selector_matches(&sel, &Element::tag("body")));
+    }
 
     #[test]
     fn author_overrides_ua() {

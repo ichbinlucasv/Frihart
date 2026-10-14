@@ -59,7 +59,12 @@ pub fn parse_declarations(input: &str) -> Vec<Declaration> {
             continue;
         }
         if let Some((n, v)) = part.split_once(':') {
-            let name = n.trim().to_ascii_lowercase();
+            // Custom property names (`--x`) are case-sensitive; others are not.
+            let name = if n.trim().starts_with("--") {
+                n.trim().to_string()
+            } else {
+                n.trim().to_ascii_lowercase()
+            };
             if name.is_empty() {
                 continue;
             }
@@ -186,7 +191,7 @@ fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
                     return None;
                 }
                 let (name, n) = read_ident(s, i);
-                if !matches!(name.as_str(), "link" | "visited") {
+                if !matches!(name.as_str(), "link" | "visited" | "root") {
                     return None;
                 }
                 simples.push(Simple::Pseudo(name));

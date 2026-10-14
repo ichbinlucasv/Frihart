@@ -23,13 +23,13 @@ host files.
 - universal (`*`)
 - comma lists (`h1, h2`)
 - `:link` and `:visited` (same color; no history leak)
+- `:root` (the `html` root element)
 
 `@media` / other at-rules are skipped. Nested rules inside them are
 not applied. That is honest: we do not fake a two-column table layout.
 
 ## Selectors (later)
 
-- `:root`
 - attribute selectors
 
 ## Properties (now)
@@ -49,6 +49,17 @@ not applied. That is honest: we do not fake a two-column table layout.
   `decimal`). Inherits from `ul`/`ol`. Position and image tokens ignored.
 - `white-space` (`normal`, `nowrap`, `pre`, `pre-wrap`, `pre-line`).
   Soft-wrap off for `pre`/`nowrap`; on otherwise. `<pre>` UA is `pre`.
+
+## Custom properties (now)
+
+- `--name: value` declarations, inherited root → element (an implicit
+  `html` root is always first, so `:root { --x: … }` reaches the body).
+  Names are case-sensitive.
+- `var(--name)` and `var(--name, fallback)`, nested fallbacks included,
+  in any property the subset already knows. A reference that cannot be
+  resolved, a cycle, more than 8 levels or an expansion over 4 KiB makes
+  the declaration ignored (never a guessed value).
+- Not yet: `var()` inside inline `style=""` attributes, `@property`.
 
 ## Properties (next)
 
