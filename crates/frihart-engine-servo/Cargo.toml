@@ -4,15 +4,29 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-rust-version.workspace = true
+# Servo 0.7 needs Rust 1.88; the rest of the workspace stays at 1.85.
+rust-version = "1.88"
 description = "Servo Compat engine adapter (feature `servo`, off by default). See docs/ENGINE_HYBRID.md"
 publish.workspace = true
 
 [features]
 default = []
-# M1: will pull in `servo` (crates.io, MPL-2.0). Kept empty until the
-# feasibility spike builds on Linux; it must never join the default build.
-servo = []
+# Campaign S. Pulls in Servo (crates.io, MPL-2.0, ~700 crates, SpiderMonkey
+# through mozjs). Never part of the default build. Build and test with:
+#   cargo test -p frihart-engine-servo --features servo
+servo = ["dep:servo", "dep:url", "dep:dpi"]
 
 [dependencies]
 frihart-engine = { path = "../frihart-engine" }
+frihart-core.workspace = true
+frihart-gfx.workspace = true
+# Pinned exactly: the embedding API is pre-1.0 and changes between releases.
+# Off: clipboard, multiprocess (until the sandbox step), WebGL, WebGPU,
+# WebXR, Bluetooth, gamepad, GStreamer media.
+servo = { version = "=0.7.0", default-features = false, features = ["bundled", "js_jit"], optional = true }
+url = { workspace = true, optional = true }
+dpi = { version = "0.1", optional = true }
+
+[[example]]
+name = "servo_headless"
+required-features = ["servo"]
