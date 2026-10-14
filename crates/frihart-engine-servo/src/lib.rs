@@ -33,6 +33,16 @@ pub struct ServoEngine {
 }
 
 impl ServoEngine {
+    /// HTTPS requests Frihart's Compat proxy (allowed, refused) for this
+    /// engine so far; `(0, 0)` before the first render or without Servo.
+    pub fn proxy_counts(&self) -> (u64, u64) {
+        #[cfg(feature = "servo")]
+        if let Some(h) = &self.inner {
+            return h.proxy_counts();
+        }
+        (0, 0)
+    }
+
     /// Clamp a requested viewport to what the adapter accepts.
     pub fn clamp_viewport(w: f32, h: u32) -> (u32, u32) {
         let w = if w.is_finite() { w.round() as i64 } else { 0 };
@@ -156,6 +166,21 @@ mod tests {
         assert!(
             target.accept().is_err(),
             "Servo connected to the image host directly"
+        );
+
+        // HTTPS subresources reach Frihart's proxy, which refuses a
+        // special-use name and a private address without any DNS lookup.
+        let (_, refused_before) = e.proxy_counts();
+        let html = "<title>proxied</title>\
+            <img src=\"https://frihart-test.invalid/a.png\">\
+            <img src=\"https://10.1.2.3/b.png\">";
+        let r4 = e.render_html(html, 120.0).unwrap();
+        assert_eq!(r4.title, "proxied");
+        let (allowed, refused) = e.proxy_counts();
+        assert_eq!(allowed, 0);
+        assert!(
+            refused >= refused_before + 2,
+            "Servo did not use the Compat proxy ({refused_before} -> {refused})"
         );
     }
 }

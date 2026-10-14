@@ -2108,9 +2108,12 @@ name = "frihart-engine-servo"
 version = "0.1.0"
 dependencies = [
  "dpi",
+ "frihart-blocker",
  "frihart-core",
  "frihart-engine",
  "frihart-gfx",
+ "frihart-net",
+ "rustls",
  "servo",
  "url",
 ]

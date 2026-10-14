@@ -11,6 +11,8 @@ use servo::{
     SoftwareRenderingContext, WebView, WebViewBuilder, WebViewDelegate,
 };
 
+use frihart_net::compat_proxy::{CompatPolicy, CompatProxy};
+
 use crate::prefs::HardenedPrefs;
 
 /// Longest a single render may take before it is abandoned.
@@ -80,11 +82,22 @@ fn data_url(html: &str) -> Result<url::Url, EngineError> {
 pub(crate) struct Headless {
     servo: Servo,
     ctx: Rc<SoftwareRenderingContext>,
+    proxy: CompatProxy,
 }
 
 impl Headless {
     pub fn new(w: u32, h: u32) -> Result<Self, EngineError> {
-        let prefs = HardenedPrefs::default();
+        // One TLS provider for the whole process (ring, as frihart-net).
+        // Err means one is already installed, which is fine.
+        let _ = rustls::crypto::ring::default_provider().install_default();
+        // HTTPS goes through Frihart's Compat proxy (policy + DNS in
+        // Frihart); plain HTTP stays on the dead proxy and fails closed.
+        let proxy = CompatProxy::spawn(CompatPolicy::new(frihart_blocker::FilterEngine::builtin()))
+            .map_err(|e| EngineError::Failed(format!("compat proxy: {e}")))?;
+        let prefs = HardenedPrefs {
+            https_proxy: proxy.uri(),
+            ..HardenedPrefs::default()
+        };
         if !prefs.is_locked_down() {
             return Err(EngineError::Refused(
                 "Servo preferences are not locked down",
@@ -101,7 +114,18 @@ impl Headless {
         Ok(Self {
             servo,
             ctx: Rc::new(ctx),
+            proxy,
         })
+    }
+
+    /// Requests the Compat proxy allowed and refused so far.
+    pub fn proxy_counts(&self) -> (u64, u64) {
+        use std::sync::atomic::Ordering;
+        let s = self.proxy.stats();
+        (
+            s.allowed.load(Ordering::Relaxed),
+            s.refused.load(Ordering::Relaxed),
+        )
     }
 
     fn spin_until(&self, deadline: Instant, done: impl Fn() -> bool) -> bool {
