@@ -76,6 +76,35 @@ impl Framebuffer {
         }
     }
 
+    /// Copy an RGBA bitmap (`w` × `h`, 4 bytes per pixel) with its top-left
+    /// at (`x`, `y`), clipped to the framebuffer and to `clip`. Alpha is
+    /// ignored (Servo frames are opaque). Does nothing if `rgba` is short.
+    pub fn blit_rgba(&mut self, x: i32, y: i32, w: u32, h: u32, rgba: &[u8], clip: Rect) {
+        let need = (w as usize)
+            .checked_mul(h as usize)
+            .and_then(|n| n.checked_mul(4));
+        if need != Some(rgba.len()) || w == 0 || h == 0 {
+            return;
+        }
+        let cx0 = clip.x.max(0).max(x);
+        let cy0 = clip.y.max(0).max(y);
+        let cx1 = clip.right().min(self.width as i32).min(x + w as i32);
+        let cy1 = clip.bottom().min(self.height as i32).min(y + h as i32);
+        if cx0 >= cx1 || cy0 >= cy1 {
+            return;
+        }
+        for dy in cy0..cy1 {
+            let src_row = (dy - y) as usize * w as usize;
+            let dst_row = dy as usize * self.width as usize;
+            for dx in cx0..cx1 {
+                let si = (src_row + (dx - x) as usize) * 4;
+                let px =
+                    ((rgba[si] as u32) << 16) | ((rgba[si + 1] as u32) << 8) | rgba[si + 2] as u32;
+                self.pixels[dst_row + dx as usize] = px;
+            }
+        }
+    }
+
     /// Fill with rounded corners (radius in px). Used for pills and tabs.
     pub fn fill_round_rect(&mut self, rect: Rect, radius: i32, color: Rgb) {
         let r = radius.clamp(0, rect.w.min(rect.h) / 2);
@@ -157,4 +186,37 @@ fn corner_inset(r: i32, d: i32) -> i32 {
     let y = d as f32 - 0.5;
     let x = ((r * r) as f32 - y * y).max(0.0).sqrt();
     (r as f32 - x).round() as i32
+}
+
+#[cfg(test)]
+mod blit_tests {
+    use super::*;
+
+    #[test]
+    fn blit_copies_rgb_and_clips() {
+        let mut fb = Framebuffer::new(4, 4);
+        fb.fill(0);
+        // 2×2 red/green/blue/white bitmap at (3, 3): only the top-left pixel fits.
+        let rgba = [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+        ];
+        fb.blit_rgba(3, 3, 2, 2, &rgba, Rect::new(0, 0, 4, 4));
+        assert_eq!(fb.pixels[15], 0x00FF_0000);
+        assert_eq!(fb.pixels.iter().filter(|p| **p != 0).count(), 1);
+
+        fb.fill(0);
+        fb.blit_rgba(-1, 0, 2, 2, &rgba, Rect::new(0, 0, 4, 4));
+        assert_eq!(fb.pixels[0], 0x0000_FF00, "left column clipped off");
+        assert_eq!(fb.pixels[4], 0x00FF_FFFF);
+
+        fb.fill(0);
+        fb.blit_rgba(0, 0, 2, 2, &rgba[..15], Rect::new(0, 0, 4, 4));
+        assert!(fb.pixels.iter().all(|p| *p == 0), "short buffer ignored");
+        fb.blit_rgba(0, 0, 2, 2, &rgba, Rect::new(0, 0, 1, 1));
+        assert_eq!(
+            fb.pixels.iter().filter(|p| **p != 0).count(),
+            1,
+            "clip rect"
+        );
+    }
 }

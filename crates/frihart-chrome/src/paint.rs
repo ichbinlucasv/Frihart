@@ -701,6 +701,20 @@ fn paint_display_list(
     let mut bottom = origin_y;
     for op in &list.ops {
         match op {
+            DisplayOp::Image {
+                x,
+                y,
+                width,
+                height,
+                rgba,
+            } => {
+                let ox = origin_x + *x as i32;
+                let oy = origin_y + *y as i32;
+                if op.image_is_well_formed() {
+                    fb.blit_rgba(ox, oy, *width, *height, rgba, viewport);
+                    bottom = bottom.max(oy + *height as i32);
+                }
+            }
             DisplayOp::Fill { x, y, w, h, color } => {
                 let rect = Rect::new(
                     origin_x + *x as i32,

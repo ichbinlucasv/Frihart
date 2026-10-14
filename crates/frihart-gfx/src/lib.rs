@@ -38,6 +38,35 @@ pub enum DisplayOp {
         secret: bool,
         label: String,
     },
+    /// A ready-made RGBA bitmap at (x, y), `width` × `height` pixels,
+    /// row-major, 4 bytes per pixel. Produced by the Servo Compat engine
+    /// (docs/ENGINE_HYBRID.md, M2); the own engine never emits it.
+    /// Painters must skip it when `rgba.len() != width * height * 4`.
+    Image {
+        x: f32,
+        y: f32,
+        width: u32,
+        height: u32,
+        rgba: Vec<u8>,
+    },
+}
+
+impl DisplayOp {
+    /// True for an `Image` whose buffer matches its size (safe to blit).
+    pub fn image_is_well_formed(&self) -> bool {
+        match self {
+            DisplayOp::Image {
+                width,
+                height,
+                rgba,
+                ..
+            } => (*width as usize)
+                .checked_mul(*height as usize)
+                .and_then(|n| n.checked_mul(4))
+                .is_some_and(|n| n == rgba.len()),
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -83,7 +112,7 @@ impl DisplayList {
             let (y, text) = match op {
                 DisplayOp::Text { y, text, .. } => (*y, text.as_str()),
                 DisplayOp::Field { y, label, .. } => (*y, label.as_str()),
-                DisplayOp::Fill { .. } => continue,
+                DisplayOp::Fill { .. } | DisplayOp::Image { .. } => continue,
             };
             if text.to_ascii_lowercase().contains(&n) {
                 return Some(TextHit {
@@ -266,5 +295,37 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn image_op_size_check() {
+        let ok = DisplayOp::Image {
+            x: 0.0,
+            y: 0.0,
+            width: 2,
+            height: 3,
+            rgba: vec![0; 24],
+        };
+        assert!(ok.image_is_well_formed());
+        let short = DisplayOp::Image {
+            x: 0.0,
+            y: 0.0,
+            width: 2,
+            height: 3,
+            rgba: vec![0; 23],
+        };
+        assert!(!short.image_is_well_formed());
+        let huge = DisplayOp::Image {
+            x: 0.0,
+            y: 0.0,
+            width: u32::MAX,
+            height: u32::MAX,
+            rgba: vec![],
+        };
+        assert!(!huge.image_is_well_formed());
+        let mut list = DisplayList::default();
+        list.ops.push(ok);
+        assert!(list.find("x").is_none());
+        assert!(list.searchable().is_empty());
     }
 }
