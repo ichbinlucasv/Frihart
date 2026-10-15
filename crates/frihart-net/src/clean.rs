@@ -66,6 +66,34 @@ const KEYS: &[&str] = &[
     "mbid",
     "cmpid",
     "s_cid",
+    "ttclid",
+    "tw_source",
+    "tw_adid",
+    "li_fat_id",
+    "mc_tc",
+    "oly_anon_id",
+    "oly_enc_id",
+    "rb_clickid",
+    "s_kwcid",
+    "trk_contact",
+    "trk_msg",
+    "trk_module",
+    "trk_sid",
+    "sc_cid",
+    "pk_campaign",
+    "pk_kwd",
+    "mtm_campaign",
+    "mtm_kwd",
+    "mtm_source",
+    "mtm_medium",
+    "mtm_content",
+    "mtm_cid",
+    "mtm_group",
+    "mtm_placement",
+    "_branch_match_id",
+    "_bta_tid",
+    "_bta_c",
+    "irclid",
 ];
 
 pub fn is_tracking_key(name: &str) -> bool {
@@ -121,5 +149,14 @@ mod tests {
     fn empty_query_dropped() {
         let u = Url::parse("https://ex.test/?utm_campaign=x").unwrap();
         assert_eq!(strip_tracking(&u).as_str(), "https://ex.test/");
+    }
+
+    #[test]
+    fn strips_matomo_and_tiktok() {
+        let u = Url::parse(
+            "https://ex.test/p?mtm_campaign=x&ttclid=1&q=keep&pk_campaign=y",
+        )
+        .unwrap();
+        assert_eq!(strip_tracking(&u).as_str(), "https://ex.test/p?q=keep");
     }
 }

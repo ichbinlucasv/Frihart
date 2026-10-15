@@ -171,9 +171,20 @@ hosts on the native blocker lists refused; request head capped at 8 KiB
 and 10 s. Tested end to end: Servo's requests for a special-use name and a
 private IP reach the proxy and are refused without any lookup.
 
-Still open for M3: tracking-parameter stripping and per-site cookie
-policy need hooks inside Servo (the tunnel is TLS end to end), Client
-Hints and header audit inside Servo, a leak test against a live page.
+*2026-10-15:* Chrome strips tracking parameters on every navigate (and
+`open_url`); the strip list grew (Matomo, TikTok `ttclid`, LinkedIn,
+etc.). Compat clearnet fetches Frihart performs itself use
+`SiteCookieJars` (one jar per first-party host), never the profile jar.
+Still open for M3: in-tunnel Cookie / Client-Hints / header audit inside
+Servo (the CONNECT tunnel is TLS end to end), and a leak test against a
+live page.
+
+## M2 step (2026-10-15): Compat mode in chrome
+
+`Tab` carries `TabMode::{Reader, Compat}`. `prepare_frame` calls
+`select_engine`; clearnet Compat uses `ServoEngine` when the `servo`
+feature is on, otherwise falls back to the own engine. Tor and I2P tabs
+are forced to Reader. Shift+E cycles the mode on the active tab.
 
 ## Milestones (Campaign S — Servo Compat engine)
 

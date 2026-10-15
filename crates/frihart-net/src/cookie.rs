@@ -201,6 +201,46 @@ fn domain_matches(cookie_domain: &str, host: &str) -> bool {
     host == cookie_domain || host.ends_with(&format!(".{cookie_domain}"))
 }
 
+
+/// Per first-party host cookie jars for Compat clearnet tabs (Campaign S M3).
+///
+/// Kept separate from the profile [`CookieJar`] so a Compat site cannot read
+/// cookies set while browsing in Reader / Tor / I2P mode. Keys are lowercased
+/// host names without a trailing dot. Not persisted to disk in this cut (Servo
+/// still owns in-tunnel cookies; chrome uses these for Compat fetches Frihart
+/// performs itself, e.g. before handing HTML to Servo).
+#[derive(Debug, Clone, Default)]
+pub struct SiteCookieJars {
+    jars: std::collections::HashMap<String, CookieJar>,
+}
+
+impl SiteCookieJars {
+    fn key(host: &str) -> String {
+        host.trim().trim_end_matches('.').to_ascii_lowercase()
+    }
+
+    pub fn for_site_mut(&mut self, host: &str) -> &mut CookieJar {
+        let k = Self::key(host);
+        self.jars.entry(k).or_default()
+    }
+
+    pub fn for_site(&self, host: &str) -> Option<&CookieJar> {
+        self.jars.get(&Self::key(host))
+    }
+
+    pub fn clear(&mut self) {
+        self.jars.clear();
+    }
+
+    pub fn site_count(&self) -> usize {
+        self.jars.len()
+    }
+
+    pub fn clear_site(&mut self, host: &str) -> bool {
+        self.jars.remove(&Self::key(host)).is_some()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,4 +355,38 @@ mod tests {
             .unwrap();
         assert_eq!(hdr, "sid=tor");
     }
+    #[test]
+    fn site_jars_isolate_hosts() {
+        let mut sites = SiteCookieJars::default();
+        let policy = Policy::new(Prefs::default());
+        let a = Url::parse("https://a.example/").unwrap();
+        let b = Url::parse("https://b.example/").unwrap();
+        sites.for_site_mut("a.example").store(
+            "id=1; Path=/",
+            &a,
+            "a.example",
+            ContainerId(1),
+            CircuitKind::Direct,
+            &policy,
+            false,
+        );
+        assert_eq!(sites.site_count(), 1);
+        assert!(sites.for_site("b.example").map(|j| j.is_empty()).unwrap_or(true));
+        assert!(!sites.for_site_mut("a.example").is_empty());
+        sites.for_site_mut("b.example").store(
+            "id=2; Path=/",
+            &b,
+            "b.example",
+            ContainerId(1),
+            CircuitKind::Direct,
+            &policy,
+            false,
+        );
+        assert_eq!(sites.site_count(), 2);
+        sites.clear_site("a.example");
+        assert_eq!(sites.site_count(), 1);
+        sites.clear();
+        assert_eq!(sites.site_count(), 0);
+    }
+
 }

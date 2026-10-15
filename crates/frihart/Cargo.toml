@@ -20,3 +20,7 @@ frihart-pipeline.workspace = true
 frihart-platform.workspace = true
 frihart-profile.workspace = true
 serde_json.workspace = true
+
+[features]
+default = []
+servo = ["frihart-chrome/servo"]

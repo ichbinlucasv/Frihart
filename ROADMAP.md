@@ -729,15 +729,22 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   SpiderMonkey, release binary 113 MB stripped). Off-screen render to a
   `DisplayOp::Image`, CSS grid and JS verified in tests (2026-10-14).
 - [ ] **M2 — Render a clearnet tab via Servo** in the Frihart chrome.
-  *Done so far:* `DisplayOp::Image` and `Framebuffer::blit_rgba` in the
-  chrome; `ServoEngine::render_html` returns a frame. Next: Compat mode
-  per tab in `frihart-chrome`, selected by `select_engine`, and input.
+  *Done so far (2026-10-15):* `DisplayOp::Image` / `blit_rgba`;
+  `ServoEngine::render_html`; per-tab `TabMode` (Reader/Compat) in
+  `frihart-chrome`; `select_engine` in `prepare_frame` (Servo only for
+  clearnet Compat when `servo` is built; Tor/I2P forced to Reader);
+  Shift+E cycles mode. Still open: input/events into Servo, chrome badge
+  polish, default Compat for clearnet (M5).
 - [ ] **M3 — Route all Servo networking through Frihart's proxy / net**
   (blocker, frozen UA, no telemetry, DNS policy). *Done so far:* frozen
   UA and leak-surface prefs locked; HTTPS through
   `frihart_net::compat_proxy` (port 443 only, no special-use names, no
   private IPs or rebinding, blocker enforced, DNS in Frihart); plain HTTP
-  to a dead proxy.
+  to a dead proxy. *2026-10-15:* expanded tracking-parameter strip list
+  (Matomo/TikTok/etc.); chrome already strips on navigate; Compat clearnet
+  fetches use per-site `SiteCookieJars` isolated from the profile jar.
+  Still open: in-tunnel Cookie/Client-Hints hooks inside Servo, leak test
+  against a live page.
 - [ ] **M4 — Per-site JS toggle** in the protections panel.
 - [ ] **M5 — Compat is the default for clearnet tabs.**
 

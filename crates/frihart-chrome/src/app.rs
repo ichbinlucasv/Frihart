@@ -227,6 +227,11 @@ impl Handler {
                         self.request_redraw();
                         return;
                     }
+                    "e" if shift => {
+                        self.browser.cycle_engine_mode();
+                        self.request_redraw();
+                        return;
+                    }
                     "o" if shift => {
                         self.browser.new_tor_tab();
                         self.request_redraw();

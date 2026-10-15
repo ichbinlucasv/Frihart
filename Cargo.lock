@@ -2027,6 +2027,8 @@ dependencies = [
  "frihart-config",
  "frihart-content",
  "frihart-core",
+ "frihart-engine",
+ "frihart-engine-servo",
  "frihart-forms",
  "frihart-gfx",
  "frihart-i18n",

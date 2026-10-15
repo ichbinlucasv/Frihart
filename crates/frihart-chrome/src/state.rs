@@ -11,7 +11,9 @@ use frihart_core::{
 };
 use frihart_gfx::DisplayList;
 use frihart_ipc::Supervisor;
-use frihart_net::{CookieJar, FetchMode, RustlsClient};
+use frihart_engine::{Engine, EngineKind, TabMode, TabNetwork, select_engine};
+use frihart_engine_servo::ServoEngine;
+use frihart_net::{CookieJar, FetchMode, RustlsClient, SiteCookieJars};
 use frihart_pipeline::LayoutJob;
 use frihart_profile::Profile;
 use frihart_search::{by_id, primary, resolve};
@@ -75,6 +77,8 @@ pub struct Tab {
     pub scroll_y: f32,
     pub container: ContainerId,
     pub circuit: Circuit,
+    /// Reader (own engine) or Compat (Servo on clearnet when built).
+    pub mode: TabMode,
     pub frame: Option<DisplayList>,
     pub frame_w: f32,
     pub sandboxed: bool,
@@ -120,6 +124,10 @@ pub struct Browser {
     pub find_status: String,
     client: RustlsClient,
     jar: CookieJar,
+    /// Per-site jars for Compat clearnet tabs (Campaign S M3); never shared with Reader/Tor.
+    compat_jars: SiteCookieJars,
+    /// Servo Compat engine (no-op / Unavailable unless built with `servo`).
+    servo: ServoEngine,
     blocker: FilterEngine,
     pub field_focus: Option<usize>,
     identity: Identity,
@@ -141,8 +149,10 @@ impl Browser {
         let mut tab = open_tab(&mut profile, &start);
         if i2p {
             tab.circuit = Circuit::I2p;
+        tab.mode = TabMode::Reader;
         } else if tor {
             tab.circuit = Circuit::Tor;
+        tab.mode = TabMode::Reader;
         } else if profile.is_ephemeral() {
             tab.circuit = Circuit::Private;
         }
@@ -172,6 +182,8 @@ impl Browser {
             find_status: String::new(),
             client: RustlsClient::new(),
             jar,
+            compat_jars: SiteCookieJars::default(),
+            servo: ServoEngine::default(),
             blocker: FilterEngine::new(enabled),
             field_focus: None,
             identity,
@@ -198,12 +210,18 @@ impl Browser {
         let container = self.active_tab().container;
         let circuit = self.active_tab().circuit;
         let mut tab = open_tab(&mut self.profile, &url);
+        let mode = self.active_tab().mode;
         tab.container = container;
         tab.circuit = match circuit {
             Circuit::Tor => Circuit::Tor,
             Circuit::I2p => Circuit::I2p,
             Circuit::Private => Circuit::Private,
             Circuit::Direct => Circuit::Direct,
+        };
+        // Tor/I2P never run Compat/Servo (fail closed).
+        tab.mode = match tab.circuit {
+            Circuit::Tor | Circuit::I2p => TabMode::Reader,
+            _ => mode,
         };
         self.tabs.push(tab);
         self.active = self.tabs.len() - 1;
@@ -384,6 +402,7 @@ impl Browser {
         let mut tab = open_tab(&mut self.profile, &url);
         tab.container = container;
         tab.circuit = Circuit::Tor;
+        tab.mode = TabMode::Reader;
         self.tabs.push(tab);
         self.active = self.tabs.len() - 1;
         self.sync_url_bar();
@@ -397,6 +416,7 @@ impl Browser {
         let mut tab = open_tab(&mut self.profile, &url);
         tab.container = container;
         tab.circuit = Circuit::I2p;
+        tab.mode = TabMode::Reader;
         self.tabs.push(tab);
         self.active = self.tabs.len() - 1;
         self.sync_url_bar();
@@ -499,6 +519,8 @@ impl Browser {
     }
 
     /// Layout HTML in a sandboxed worker when possible. Safe to call often.
+    /// Compat clearnet tabs use Servo when the `servo` feature is built in
+    /// (Campaign S M2); Tor/I2P and Reader always use the own engine.
     pub fn prepare_frame(&mut self, width: f32) {
         let width = width.max(80.0);
         let extra = self.profile.user_css();
@@ -515,6 +537,27 @@ impl Browser {
         if tab.frame.is_some() && (tab.frame_w - width).abs() < 8.0 {
             return;
         }
+        let net = match tab.circuit {
+            Circuit::Tor => TabNetwork::Tor,
+            Circuit::I2p => TabNetwork::I2p,
+            Circuit::Direct | Circuit::Private => TabNetwork::Clearnet,
+        };
+        let kind = select_engine(net, tab.mode, frihart_engine_servo::AVAILABLE);
+        if kind == EngineKind::Servo {
+            match self.servo.render_html(&html, width) {
+                Ok(rendered) => {
+                    let tab = self.active_tab_mut();
+                    tab.frame = Some(rendered.display);
+                    tab.frame_w = width;
+                    tab.sandboxed = false;
+                    return;
+                }
+                Err(_) => {
+                    // Fall back to the own engine rather than leave a blank pane.
+                }
+            }
+        }
+        let tab = self.active_tab();
         let key = IsolationKey::from_url_on(&tab.url(), tab.container, tab.circuit.kind());
         let out = self.workers.layout(
             key,
@@ -528,6 +571,34 @@ impl Browser {
         tab.frame = Some(out.display);
         tab.frame_w = width;
         tab.sandboxed = out.sandboxed;
+    }
+
+    /// Cycle Reader ↔ Compat on the active clearnet tab (Campaign S M2).
+    /// Tor/I2P tabs are forced to Reader; Servo is never offered there.
+    pub fn cycle_engine_mode(&mut self) {
+        let circuit = self.active_tab().circuit;
+        if matches!(circuit, Circuit::Tor | Circuit::I2p) {
+            self.active_tab_mut().mode = TabMode::Reader;
+            self.status = "reader (tor/i2p)".into();
+            return;
+        }
+        let next = match self.active_tab().mode {
+            TabMode::Reader => TabMode::Compat,
+            TabMode::Compat => TabMode::Reader,
+        };
+        self.active_tab_mut().mode = next;
+        self.active_tab_mut().frame = None;
+        self.status = match next {
+            TabMode::Compat => {
+                if frihart_engine_servo::AVAILABLE {
+                    "compat (servo)".into()
+                } else {
+                    "compat (servo not in this build)".into()
+                }
+            }
+            TabMode::Reader => "reader".into(),
+        };
+        self.prepare_frame(self.active_tab().frame_w.max(960.0));
     }
 
     pub fn navigate(&mut self, url: Url) {
@@ -670,19 +741,39 @@ impl Browser {
             _ => FetchMode::Direct,
         };
         let container = self.active_tab().container;
-        fetch(FetchRequest {
-            url: &target,
-            profile: &self.profile,
-            client: &self.client,
-            jar: &mut self.jar,
-            blocker: &self.blocker,
-            container,
-            mode,
-        })
+        let use_compat_jar = self.active_tab().mode == TabMode::Compat
+            && matches!(
+                self.active_tab().circuit,
+                Circuit::Direct | Circuit::Private
+            );
+        if use_compat_jar {
+            let host = target.host_str().unwrap_or("").to_string();
+            let jar = self.compat_jars.for_site_mut(&host);
+            fetch(FetchRequest {
+                url: &target,
+                profile: &self.profile,
+                client: &self.client,
+                jar,
+                blocker: &self.blocker,
+                container,
+                mode,
+            })
+        } else {
+            fetch(FetchRequest {
+                url: &target,
+                profile: &self.profile,
+                client: &self.client,
+                jar: &mut self.jar,
+                blocker: &self.blocker,
+                container,
+                mode,
+            })
+        }
     }
 
     pub fn wipe(&mut self) {
         self.jar.clear();
+        self.compat_jars.clear();
         let _ = self.profile.wipe_session();
         self.persist_jar();
         self.workers.drop_all();
@@ -692,6 +783,7 @@ impl Browser {
 
     pub fn reset_profile(&mut self) {
         self.jar.clear();
+        self.compat_jars.clear();
         let _ = self.profile.reset_like_new();
         self.blocker = FilterEngine::new(self.profile.prefs().privacy.blocker);
         self.persist_jar();
@@ -701,6 +793,7 @@ impl Browser {
 
     pub fn shred(&mut self) {
         self.jar.clear();
+        self.compat_jars.clear();
         let _ = self.profile.shred();
         self.workers.drop_all();
         self.reset_tabs();
@@ -984,6 +1077,7 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
         scroll_y: 0.0,
         container: ContainerId::PERSONAL,
         circuit: Circuit::Direct,
+        mode: TabMode::Reader,
         frame: None,
         frame_w: 0.0,
         sandboxed: false,

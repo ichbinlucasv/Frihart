@@ -19,7 +19,7 @@ pub use client::{
     FetchMode, NetFail, RustlsClient, classify_error, content_type, decode_body, redirect_target,
     refuse_wrong_net,
 };
-pub use cookie::{CookieJar, StoredCookie};
+pub use cookie::{CookieJar, SiteCookieJars, StoredCookie};
 pub use download::{DownloadLog, DownloadRecord, filename_for, save_download, should_save};
 pub use headers::apply_identity_headers;
 

@@ -14,6 +14,8 @@ frihart-autofill.workspace = true
 frihart-blocker.workspace = true
 frihart-config.workspace = true
 frihart-content.workspace = true
+frihart-engine.workspace = true
+frihart-engine-servo = { path = "../frihart-engine-servo" }
 frihart-forms.workspace = true
 frihart-core.workspace = true
 frihart-gfx.workspace = true
@@ -29,3 +31,8 @@ serde_json.workspace = true
 softbuffer.workspace = true
 url.workspace = true
 winit.workspace = true
+
+[features]
+default = []
+# Campaign S: pull Servo into chrome Compat path (long build).
+servo = ["frihart-engine-servo/servo"]
