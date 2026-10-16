@@ -53,7 +53,7 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519), **RFC 7748** (Curve25519 / X25519),
 **RFC 5869** (HKDF), **openbsd.org**, **openssh.com**
-(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**, **torproject.org**, **i2pd.website**, **mullvad.net**, **privacyguides.org**. Settings is
+(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**, **torproject.org**, **i2pd.website**, **mullvad.net**, **privacyguides.org**, **sequoia-pgp.org**. Settings is
 the LibreWolf-stance page (native prefs, black/yellow). CSS
 `font-family` is engine slots only; `list-style` / `white-space` are in.
 Letterboxing paint exists (pref off).
@@ -79,8 +79,8 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 1. **Bridges (OPSEC).** `about:bridges` + `tor.require_bridges` + `allow_tor_fetch` are in. Next OPSEC slice: ControlPort bridge-status query so require=on can pass when Tor reports Active.
 2. **This / next session — D.** The named queue is empty. Pick one more
    static document (not Wikipedia / GitHub / mail) and claim it from live
-   HTML. Thirty-eight public claims; CSS leftovers done. **tails.net**
-   claimed (apex 200, www 302 to apex). **libsodium.org** Forbidden
+   HTML. Thirty-nine public claims; CSS leftovers done. **sequoia-pgp.org**
+   claimed 2026-10-16 (apex/www same bytes). **libsodium.org** Forbidden
    (apex→doc→gitbook.io) — unclaimed / NeedsJs. **age-encryption.org**
    Forbidden (apex → GitHub) — unclaimed / NeedsJs.
 2. **Keep claiming static documents** one host/path per session until
@@ -129,12 +129,12 @@ docs.kernel.org, ietf.org, rfc-editor.org index, w3.org landing,
 w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
 RFC 5280 HTML, RFC 8032 HTML (Ed25519), RFC 7748 HTML (Curve25519 /
 X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
-(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org, c2sp.org/age, torproject.org, i2pd.website, mullvad.net, privacyguides.org, tails.net.
+(→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org, c2sp.org/age, torproject.org, i2pd.website, mullvad.net, privacyguides.org, tails.net, sequoia-pgp.org.
 
 ## Next session — start here
 
 **D: claim one more static document** (not Wikipedia / GitHub / mail).
-Thirty-eight public sites (tails.net last Claimed).
+Thirty-nine public sites (sequoia-pgp.org last Claimed).
 **libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
 libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.
 **age-encryption.org** Forbidden (apex → GitHub) — NeedsJs, left

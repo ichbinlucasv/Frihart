@@ -54,10 +54,12 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.privacyguides.org/ | Live HTML 2026-10-04 (apex 302 → www same host). Title `Privacy Guides`. Nav Knowledge Base / Articles / Videos / Forum / About. h1 “Privacy Guides”, This Week in Privacy, Trustworthy Reviews / Community-Built / “Privacy: It's a human right”, Activism. External CSS unused (nav stacks); scripts skipped. Also 5120×1440. |
 | https://tails.net/ | Live HTML 2026-10-05 (www 302 → apex same host). Title `Tails - Home`. Nav Home / How Tails works / Install Tails / Documentation / Support / News. “Tails is a portable operating system that protects against surveillance and censorship.”, four feature blocks, Who uses Tails, Recommended by, Supporters. External CSS unused (nav stacks); local.js skipped (only sets the title). Also 5120×1440. |
 
+| https://www.sequoia-pgp.org/ | Live HTML 2026-10-16 (apex and www same bytes). Title `Sequoia-PGP`. h1 “A new OpenPGP Library”, modular OpenPGP in Rust, blog cards. External CSS unused (nav stacks). IE conditional + `/script.js` skipped. Also 5120×1440. |
+
 ## Target (open next)
 
-Thirty-eight public claims are in. CSS leftovers `list-style` /
-`white-space` are in. tails.net claimed this session.
+Thirty-nine public claims are in. CSS leftovers `list-style` /
+`white-space` are in. **sequoia-pgp.org** claimed 2026-10-16.
 **libsodium.org** Forbidden (apex/www → doc → gitbook.io) and
 **age-encryption.org** Forbidden (apex → GitHub) remain unclaimed.
 The named queue is empty; pick the next static document from live HTML.

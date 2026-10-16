@@ -1399,4 +1399,21 @@ line2</pre>"#;
         let wide = layout_html_ex(html, "https://tails.net/", 5120.0, 1440.0);
         assert!(wide.title.contains("Tails"));
     }
+
+    #[test]
+    fn sequoia_pgp_org_is_readable() {
+        let html = include_str!("../testdata/sequoia-pgp.org.html");
+        let f = layout_html_ex(html, "https://www.sequoia-pgp.org/", 1000.0, 800.0);
+        assert!(f.title.contains("Sequoia"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("OpenPGP"));
+        assert!(blob.contains("Rust") || blob.contains("new OpenPGP Library"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("sequoia") || h.contains("openpgp") || h.contains("blog")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://www.sequoia-pgp.org/", 5120.0, 1440.0);
+        assert!(wide.title.contains("Sequoia"));
+    }
 }
