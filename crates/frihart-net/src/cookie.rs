@@ -201,7 +201,6 @@ fn domain_matches(cookie_domain: &str, host: &str) -> bool {
     host == cookie_domain || host.ends_with(&format!(".{cookie_domain}"))
 }
 
-
 /// Per first-party host cookie jars for Compat clearnet tabs (Campaign S M3).
 ///
 /// Kept separate from the profile [`CookieJar`] so a Compat site cannot read
@@ -371,7 +370,12 @@ mod tests {
             false,
         );
         assert_eq!(sites.site_count(), 1);
-        assert!(sites.for_site("b.example").map(|j| j.is_empty()).unwrap_or(true));
+        assert!(
+            sites
+                .for_site("b.example")
+                .map(|j| j.is_empty())
+                .unwrap_or(true)
+        );
         assert!(!sites.for_site_mut("a.example").is_empty());
         sites.for_site_mut("b.example").store(
             "id=2; Path=/",
@@ -388,5 +392,4 @@ mod tests {
         sites.clear();
         assert_eq!(sites.site_count(), 0);
     }
-
 }

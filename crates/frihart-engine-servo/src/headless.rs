@@ -62,6 +62,8 @@ fn to_servo_prefs(p: &HardenedPrefs) -> Preferences {
         dom_webgpu_enabled: p.webgpu,
         dom_notification_enabled: p.notifications,
         dom_serviceworker_enabled: p.service_workers,
+        // Servo has no master "scripts off" switch; Wasm tracks our JS flag.
+        js_wasm_enabled: p.javascript,
         ..Preferences::default()
     }
 }
@@ -94,11 +96,14 @@ impl Headless {
         // Frihart); plain HTTP stays on the dead proxy and fails closed.
         let proxy = CompatProxy::spawn(CompatPolicy::new(frihart_blocker::FilterEngine::builtin()))
             .map_err(|e| EngineError::Failed(format!("compat proxy: {e}")))?;
+        // Baseline is JS-off (fail closed). Per-render script stripping
+        // enforces the site override; leak surfaces stay locked here.
         let prefs = HardenedPrefs {
             https_proxy: proxy.uri(),
+            javascript: false,
             ..HardenedPrefs::default()
         };
-        if !prefs.is_locked_down() {
+        if !prefs.leak_surfaces_locked() {
             return Err(EngineError::Refused(
                 "Servo preferences are not locked down",
             ));
@@ -139,13 +144,24 @@ impl Headless {
         true
     }
 
-    pub fn render(&mut self, html: &str, w: u32, h: u32) -> Result<Frame, EngineError> {
+    pub fn render(
+        &mut self,
+        html: &str,
+        w: u32,
+        h: u32,
+        javascript: bool,
+    ) -> Result<Frame, EngineError> {
         if self.ctx.size() != dpi::PhysicalSize::new(w, h) {
             self.ctx.resize(dpi::PhysicalSize::new(w, h));
         }
+        let html = if javascript {
+            html.to_string()
+        } else {
+            crate::prefs::strip_scripts(html)
+        };
         let watch = Rc::new(Watch::default());
         let webview = WebViewBuilder::new(&self.servo, self.ctx.clone())
-            .url(data_url(html)?)
+            .url(data_url(&html)?)
             .delegate(watch.clone())
             .build();
         let deadline = Instant::now() + RENDER_TIMEOUT;

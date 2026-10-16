@@ -148,6 +148,7 @@ impl Handler {
             Hit::UrlBar => self.browser.focus_url(),
             Hit::PrivacyBadge => self.browser.shields_open = !self.browser.shields_open,
             Hit::ShieldsPanel => {}
+            Hit::ShieldsSiteJs => self.browser.toggle_site_js(),
             Hit::ContainerBadge => self.browser.cycle_container(),
             Hit::FindBar => {
                 self.browser.find_open = true;
@@ -487,6 +488,7 @@ fn hits_eq(a: &Hit, b: &Hit) -> bool {
         | (Hit::UrlBar, Hit::UrlBar)
         | (Hit::PrivacyBadge, Hit::PrivacyBadge)
         | (Hit::ShieldsPanel, Hit::ShieldsPanel)
+        | (Hit::ShieldsSiteJs, Hit::ShieldsSiteJs)
         | (Hit::ContainerBadge, Hit::ContainerBadge)
         | (Hit::FindBar, Hit::FindBar)
         | (Hit::Autofill, Hit::Autofill)

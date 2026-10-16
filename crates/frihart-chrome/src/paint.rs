@@ -355,8 +355,40 @@ fn paint_toolbar(
         hit: Hit::PrivacyBadge,
     });
 
+    // Campaign S M2 polish: Reader / Compat cue (Shift+E cycles).
+    let mode_w = m.s(28.0);
+    let mode_rect = Rect::new(
+        badge.x - 6 - mode_w,
+        y + (btn - m.s(18.0)) / 2,
+        mode_w,
+        m.s(18.0),
+    );
+    let (mode_label, mode_good) = match browser.active_tab().mode {
+        frihart_engine::TabMode::Reader => ("R", true),
+        frihart_engine::TabMode::Compat => ("C", frihart_engine_servo::AVAILABLE),
+    };
+    let (mbg, mfg) = if mode_good {
+        (ACCENT_DIM, TEXT_CHROME)
+    } else {
+        (BAD, TEXT_CONTENT)
+    };
+    fb.fill_round_rect(mode_rect, mode_rect.h / 2, mbg);
+    let mfs = 10.0 * m.scale;
+    let mtw = text.measure_width(mode_label, mfs, 14.0 * m.scale, Weight::BOLD) as i32;
+    label(
+        fb,
+        text,
+        mode_label,
+        mode_rect.x + (mode_rect.w - mtw) / 2,
+        mode_rect.y + 1,
+        mtw + 2,
+        mfs,
+        mfg,
+        Weight::BOLD,
+    );
+
     let url_x = x + 6;
-    let url_w = (badge.x - 8 - url_x).max(40);
+    let url_w = (mode_rect.x - 8 - url_x).max(40);
     let url_h = m.url_h();
     let url_y = rect.y + (rect.h - url_h) / 2;
     let url_rect = Rect::new(url_x, url_y, url_w, url_h);
@@ -1889,6 +1921,91 @@ fn paint_shields_panel(
         fb.fill_rect(Rect::new(x, y + row_h - 1, iw, 1), HAIRLINE);
         y += row_h;
     }
+
+    // Campaign S M4 — per-site JS override (interactive).
+    {
+        let host = browser.active_host();
+        let torish = matches!(circuit, Circuit::Tor | Circuit::I2p);
+        let mode = browser.active_tab().mode;
+        let (state, good, clickable) = if torish {
+            ("off · unavailable".to_string(), true, false)
+        } else if host.is_empty() {
+            ("no host".to_string(), true, false)
+        } else {
+            let on = browser.site_js_allowed();
+            let label = if on {
+                match mode {
+                    frihart_engine::TabMode::Compat if frihart_engine_servo::AVAILABLE => {
+                        "on · Compat".into()
+                    }
+                    frihart_engine::TabMode::Compat => "on · needs servo".into(),
+                    frihart_engine::TabMode::Reader => "on · needs Compat".into(),
+                }
+            } else {
+                "off".into()
+            };
+            (label, !on, true)
+        };
+        let row_h = m.s(46.0);
+        let row_rect = Rect::new(x, y, iw, row_h);
+        label(
+            fb,
+            text,
+            "JavaScript (this site)",
+            x,
+            y + m.s(4.0),
+            iw - m.s(110.0),
+            m.font_ui(),
+            TEXT_CONTENT,
+            Weight::MEDIUM,
+        );
+        let sub = if host.is_empty() {
+            "first-party host".to_string()
+        } else {
+            host.clone()
+        };
+        label(
+            fb,
+            text,
+            &sub,
+            x,
+            y + m.s(23.0),
+            iw - m.s(110.0),
+            10.5 * m.scale,
+            TEXT_MUTED,
+            Weight::NORMAL,
+        );
+        let fs = 10.5 * m.scale;
+        let tw = text.measure_width(&state, fs, 14.0 * m.scale, Weight::BOLD) as i32;
+        let pw = tw + m.s(14.0);
+        let pr = Rect::new(r.right() - pad - pw, y + m.s(10.0), pw, m.s(18.0));
+        let (bg, fg) = if good {
+            (ACCENT, BG_CHROME)
+        } else {
+            (BAD, TEXT_CONTENT)
+        };
+        fb.fill_round_rect(pr, pr.h / 2, bg);
+        label(
+            fb,
+            text,
+            &state,
+            pr.x + m.s(7.0),
+            pr.y + 1,
+            tw + 4,
+            fs,
+            fg,
+            Weight::BOLD,
+        );
+        fb.fill_rect(Rect::new(x, y + row_h - 1, iw, 1), HAIRLINE);
+        if clickable {
+            hits.push(HitRegion {
+                rect: row_rect,
+                hit: Hit::ShieldsSiteJs,
+            });
+        }
+        y += row_h;
+    }
+
     y += m.s(14.0);
     for (txt, href) in [
         ("Blocker details", "about:blocker"),
@@ -2000,6 +2117,31 @@ mod design_tests {
             hits.iter()
                 .any(|h| matches!(&h.hit, Hit::ContentLink(u) if u == "about:blocker"))
         );
+        // Tor tab: site JS row is locked (no ShieldsSiteJs hit).
+        assert!(
+            !hits.iter().any(|h| matches!(h.hit, Hit::ShieldsSiteJs)),
+            "Tor must not expose a site-JS toggle"
+        );
+    }
+
+    #[test]
+    fn shields_site_js_hit_on_clearnet_and_toggles() {
+        let profile = Profile::ephemeral().expect("ephemeral");
+        let mut b = Browser::new(profile, Some("https://example.com/".into()), false, false);
+        b.shields_open = true;
+        let mut fb = Framebuffer::new(1280, 800);
+        let mut text = TextEngine::new();
+        let hits = paint(&mut fb, &mut text, &b, 1.0);
+        assert!(
+            hits.iter().any(|h| matches!(h.hit, Hit::ShieldsSiteJs)),
+            "clearnet site must expose per-site JS toggle"
+        );
+        assert!(!b.site_js_allowed());
+        b.toggle_site_js();
+        assert!(b.site_js_allowed());
+        assert_eq!(b.profile.site_js().override_for("example.com"), Some(true));
+        b.toggle_site_js();
+        assert!(!b.site_js_allowed());
     }
 
     #[test]

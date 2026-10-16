@@ -186,13 +186,29 @@ live page.
 feature is on, otherwise falls back to the own engine. Tor and I2P tabs
 are forced to Reader. Shift+E cycles the mode on the active tab.
 
+## M4 step (2026-10-16): Per-site JS
+
+`frihart_profile::SiteJsStore` persists host → bool under `site_js.toml`
+(0600). Shields shows **JavaScript (this site)** for the active host;
+clicks call `Browser::toggle_site_js`. Effective allow = override or
+global `privacy.javascript` (default false). Tor/I2P always refuse.
+
+Compat frames pass the flag into `ServoEngine::render_html_with_js`.
+`HardenedPrefs.javascript` defaults false (`is_locked_down` requires it
+off). Servo 0.7 has no master "disable scripts" preference, so when JS
+is off Frihart strips `<script>` elements and sets `js_wasm_enabled:
+false`. Reader mode may store an "on" override but does not run script
+until Compat (Servo) or Campaign B-JS (Boa).
+
 ## Milestones (Campaign S — Servo Compat engine)
 
 - **M1 — Feasibility spike.** `servo` builds on Linux behind the cargo
   feature `servo`, off by default; record real build time and size.
 - **M2 — Render a clearnet tab via Servo** inside Frihart's chrome.
 - **M3 — Force all Servo networking through Frihart's proxy / net layer.**
-- **M4 — Per-site JS toggle** in the protections panel.
+- **M4 — Per-site JS toggle** in the protections panel. **Done** (2026-10-16):
+  profile `SiteJsStore`, shields row, `HardenedPrefs.javascript` (default
+  false) + HTML `<script>` strip when off; Tor/I2P never enable.
 - **M5 — Compat becomes the default for clearnet tabs** (own engine stays
   for Tor/I2P/reader).
 

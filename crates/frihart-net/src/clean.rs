@@ -153,10 +153,8 @@ mod tests {
 
     #[test]
     fn strips_matomo_and_tiktok() {
-        let u = Url::parse(
-            "https://ex.test/p?mtm_campaign=x&ttclid=1&q=keep&pk_campaign=y",
-        )
-        .unwrap();
+        let u =
+            Url::parse("https://ex.test/p?mtm_campaign=x&ttclid=1&q=keep&pk_campaign=y").unwrap();
         assert_eq!(strip_tracking(&u).as_str(), "https://ex.test/p?q=keep");
     }
 }

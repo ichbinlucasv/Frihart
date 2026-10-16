@@ -7,6 +7,7 @@ mod containers;
 mod deadman;
 mod history;
 mod lock;
+mod site_js;
 
 use std::path::{Path, PathBuf};
 
@@ -25,6 +26,7 @@ pub use deadman::{
 };
 pub use frihart_extensions::{AddonStore, InstalledAddon};
 pub use history::{HistoryEntry, HistoryStore};
+pub use site_js::SiteJsStore;
 
 use lock::ProfileLock;
 
@@ -38,6 +40,7 @@ pub struct Profile {
     history: HistoryStore,
     containers: ContainerStore,
     addons: AddonStore,
+    site_js: SiteJsStore,
     _lock: Option<ProfileLock>,
 }
 
@@ -74,6 +77,7 @@ impl Profile {
             history: HistoryStore::default(),
             containers: ContainerStore::defaults(),
             addons: AddonStore::default(),
+            site_js: SiteJsStore::default(),
             _lock: None,
         };
         profile.prefs.privacy.persist_history = false;
@@ -118,6 +122,11 @@ impl Profile {
         } else {
             AddonStore::load(&AddonStore::registry_path(&root))?
         };
+        let site_js = if ephemeral {
+            SiteJsStore::default()
+        } else {
+            SiteJsStore::load(&root.join("site_js.toml"))?
+        };
         Ok(Self {
             root,
             name: name.to_string(),
@@ -127,6 +136,7 @@ impl Profile {
             history,
             containers,
             addons,
+            site_js,
             _lock: lock,
         })
     }
@@ -197,6 +207,21 @@ impl Profile {
         &self.addons
     }
 
+    pub fn site_js(&self) -> &SiteJsStore {
+        &self.site_js
+    }
+
+    pub fn site_js_mut(&mut self) -> &mut SiteJsStore {
+        &mut self.site_js
+    }
+
+    pub fn save_site_js(&self) -> Result<()> {
+        if self.ephemeral {
+            return Ok(());
+        }
+        self.site_js.save(&self.root.join("site_js.toml"))
+    }
+
     pub fn install_addon(&mut self, source: &Path) -> Result<frihart_extensions::InstalledAddon> {
         if self.ephemeral {
             return Err(frihart_core::FrihartError::profile(
@@ -249,6 +274,7 @@ impl Profile {
         self.bookmarks = bookmarks;
         self.containers = ContainerStore::defaults();
         self.addons = AddonStore::default();
+        self.site_js = SiteJsStore::default();
         if self.ephemeral {
             self.prefs.privacy.persist_history = false;
             self.prefs.privacy.persist_cookies = false;
@@ -256,6 +282,7 @@ impl Profile {
         }
         self.save_prefs()?;
         self.save_bookmarks()?;
+        self.save_site_js()?;
         Ok(())
     }
 
@@ -274,9 +301,11 @@ impl Profile {
         self.history = HistoryStore::default();
         self.containers = ContainerStore::defaults();
         self.addons = AddonStore::default();
+        self.site_js = SiteJsStore::default();
         self._lock = Some(ProfileLock::acquire(root.join("lock"))?);
         self.save_prefs()?;
         self.save_bookmarks()?;
+        self.save_site_js()?;
         Ok(())
     }
 }
@@ -292,6 +321,7 @@ fn shred_files(root: &Path) {
         "cookies.json",
         "downloads.json",
         "autofill.toml",
+        "site_js.toml",
         "user.css",
         deadman::DEADMAN_FILE,
     ];

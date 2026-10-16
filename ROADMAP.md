@@ -733,8 +733,8 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   `ServoEngine::render_html`; per-tab `TabMode` (Reader/Compat) in
   `frihart-chrome`; `select_engine` in `prepare_frame` (Servo only for
   clearnet Compat when `servo` is built; Tor/I2P forced to Reader);
-  Shift+E cycles mode. Still open: input/events into Servo, chrome badge
-  polish, default Compat for clearnet (M5).
+  Shift+E cycles mode; toolbar R/C badge (2026-10-16). Still open:
+  input/events into Servo, default Compat for clearnet (M5).
 - [ ] **M3 — Route all Servo networking through Frihart's proxy / net**
   (blocker, frozen UA, no telemetry, DNS policy). *Done so far:* frozen
   UA and leak-surface prefs locked; HTTPS through
@@ -745,7 +745,13 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   fetches use per-site `SiteCookieJars` isolated from the profile jar.
   Still open: in-tunnel Cookie/Client-Hints hooks inside Servo, leak test
   against a live page.
-- [ ] **M4 — Per-site JS toggle** in the protections panel.
+- [x] **M4 — Per-site JS toggle** in the protections panel (2026-10-16).
+  `SiteJsStore` (profile `site_js.toml`, 0600) maps first-party host →
+  allow; inherits global `privacy.javascript` (default false). Shields
+  row "JavaScript (this site)" toggles the override; Tor/I2P locked off.
+  Compat+Servo uses the flag via `HardenedPrefs.javascript` + script
+  stripping (Servo 0.7 has no master scripts-off pref). Reader stores
+  intent only ("needs Compat / Boa").
 - [ ] **M5 — Compat is the default for clearnet tabs.**
 
 ## Campaign B-JS — Boa light JS (opt-in, per site)

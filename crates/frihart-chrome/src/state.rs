@@ -9,10 +9,10 @@ use frihart_core::{
     CircuitKind, ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
     parse_user_input,
 };
+use frihart_engine::{EngineKind, TabMode, TabNetwork, select_engine};
+use frihart_engine_servo::ServoEngine;
 use frihart_gfx::DisplayList;
 use frihart_ipc::Supervisor;
-use frihart_engine::{Engine, EngineKind, TabMode, TabNetwork, select_engine};
-use frihart_engine_servo::ServoEngine;
 use frihart_net::{CookieJar, FetchMode, RustlsClient, SiteCookieJars};
 use frihart_pipeline::LayoutJob;
 use frihart_profile::Profile;
@@ -59,6 +59,8 @@ pub enum Hit {
     PrivacyBadge,
     /// Background of the open shields panel (swallows clicks; no action).
     ShieldsPanel,
+    /// Per-site JavaScript override row in the shields panel (Campaign S M4).
+    ShieldsSiteJs,
     ContainerBadge,
     FindBar,
     ContentLink(String),
@@ -149,10 +151,10 @@ impl Browser {
         let mut tab = open_tab(&mut profile, &start);
         if i2p {
             tab.circuit = Circuit::I2p;
-        tab.mode = TabMode::Reader;
+            tab.mode = TabMode::Reader;
         } else if tor {
             tab.circuit = Circuit::Tor;
-        tab.mode = TabMode::Reader;
+            tab.mode = TabMode::Reader;
         } else if profile.is_ephemeral() {
             tab.circuit = Circuit::Private;
         }
@@ -544,7 +546,8 @@ impl Browser {
         };
         let kind = select_engine(net, tab.mode, frihart_engine_servo::AVAILABLE);
         if kind == EngineKind::Servo {
-            match self.servo.render_html(&html, width) {
+            let js = self.site_js_allowed();
+            match self.servo.render_html_with_js(&html, width, js) {
                 Ok(rendered) => {
                     let tab = self.active_tab_mut();
                     tab.frame = Some(rendered.display);
@@ -571,6 +574,64 @@ impl Browser {
         tab.frame = Some(out.display);
         tab.frame_w = width;
         tab.sandboxed = out.sandboxed;
+    }
+
+    /// First-party host of the active tab, if any (empty for about:).
+    pub fn active_host(&self) -> String {
+        self.active_tab()
+            .url()
+            .host_str()
+            .unwrap_or("")
+            .to_ascii_lowercase()
+    }
+
+    /// Effective JS allow for the active tab's host (override or global).
+    /// Tor/I2P are always false — Servo never runs on those circuits.
+    pub fn site_js_allowed(&self) -> bool {
+        let circuit = self.active_tab().circuit;
+        if matches!(circuit, Circuit::Tor | Circuit::I2p) {
+            return false;
+        }
+        let host = self.active_host();
+        if host.is_empty() {
+            return false;
+        }
+        let global = self.profile.prefs().privacy.javascript;
+        self.profile.site_js().allowed(&host, global)
+    }
+
+    /// Toggle per-site JS for the active clearnet host. Tor/I2P refuse.
+    pub fn toggle_site_js(&mut self) {
+        let circuit = self.active_tab().circuit;
+        if matches!(circuit, Circuit::Tor | Circuit::I2p) {
+            self.status = "js locked off on tor/i2p".into();
+            return;
+        }
+        let host = self.active_host();
+        if host.is_empty() {
+            self.status = "no site host".into();
+            return;
+        }
+        let global = self.profile.prefs().privacy.javascript;
+        let next = self.profile.site_js_mut().toggle(&host, global);
+        if self.profile.save_site_js().is_err() {
+            self.status = "err".into();
+            return;
+        }
+        self.active_tab_mut().frame = None;
+        let mode = self.active_tab().mode;
+        self.status = if next {
+            if mode == TabMode::Compat && frihart_engine_servo::AVAILABLE {
+                format!("js on for {host} (compat)")
+            } else if mode == TabMode::Compat {
+                format!("js on for {host} (needs servo build)")
+            } else {
+                format!("js on for {host} (needs Compat / Boa)")
+            }
+        } else {
+            format!("js off for {host}")
+        };
+        self.prepare_frame(self.active_tab().frame_w.max(960.0));
     }
 
     /// Cycle Reader ↔ Compat on the active clearnet tab (Campaign S M2).

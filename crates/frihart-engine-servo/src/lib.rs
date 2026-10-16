@@ -51,27 +51,39 @@ impl ServoEngine {
     }
 }
 
-impl Engine for ServoEngine {
-    fn kind(&self) -> EngineKind {
-        EngineKind::Servo
-    }
-    fn allowed_on(&self, net: TabNetwork) -> bool {
-        // Servo must never handle Tor/I2P until proven not to leak.
-        net == TabNetwork::Clearnet
-    }
+impl ServoEngine {
+    /// Compat render with an explicit per-site JavaScript allow (Campaign S M4).
+    /// When `javascript` is false, `<script>` is stripped before Servo sees the
+    /// HTML (fail closed). Tor/I2P must never call this path.
     #[cfg(not(feature = "servo"))]
-    fn render_html(&mut self, _html: &str, _viewport_w: f32) -> Result<Rendered, EngineError> {
+    pub fn render_html_with_js(
+        &mut self,
+        html: &str,
+        viewport_w: f32,
+        javascript: bool,
+    ) -> Result<Rendered, EngineError> {
+        let _ = (html, viewport_w, javascript);
         Err(EngineError::Unavailable(
             "this build has no Servo Compat engine (cargo feature `servo`)",
         ))
     }
+
     #[cfg(feature = "servo")]
-    fn render_html(&mut self, html: &str, viewport_w: f32) -> Result<Rendered, EngineError> {
+    pub fn render_html_with_js(
+        &mut self,
+        html: &str,
+        viewport_w: f32,
+        javascript: bool,
+    ) -> Result<Rendered, EngineError> {
         let (w, h) = Self::clamp_viewport(viewport_w, DEFAULT_VIEWPORT_H);
         if self.inner.is_none() {
             self.inner = Some(headless::Headless::new(w, h)?);
         }
-        let frame = self.inner.as_mut().expect("just set").render(html, w, h)?;
+        let frame = self
+            .inner
+            .as_mut()
+            .expect("just set")
+            .render(html, w, h, javascript)?;
         let mut display = frihart_gfx::DisplayList::default();
         display.ops.push(frihart_gfx::DisplayOp::Image {
             x: 0.0,
@@ -84,6 +96,20 @@ impl Engine for ServoEngine {
             title: frame.title,
             display,
         })
+    }
+}
+
+impl Engine for ServoEngine {
+    fn kind(&self) -> EngineKind {
+        EngineKind::Servo
+    }
+    fn allowed_on(&self, net: TabNetwork) -> bool {
+        // Servo must never handle Tor/I2P until proven not to leak.
+        net == TabNetwork::Clearnet
+    }
+    fn render_html(&mut self, html: &str, viewport_w: f32) -> Result<Rendered, EngineError> {
+        // Trait path is fail-closed: JS off.
+        self.render_html_with_js(html, viewport_w, false)
     }
 }
 
@@ -130,7 +156,7 @@ mod tests {
             main{display:grid;grid-template-columns:1fr 1fr}div{height:40px;background:#ffd700}\
             </style><main><div></div><div id=b></div></main>\
             <script>document.title='JS '+(6*7);document.getElementById('b').style.background='#00f'</script>";
-        let r = e.render_html(html, 200.0).unwrap();
+        let r = e.render_html_with_js(html, 200.0, true).unwrap();
         assert_eq!(r.title, "JS 42");
         let frihart_gfx::DisplayOp::Image {
             width,
@@ -151,8 +177,22 @@ mod tests {
         assert_eq!(px(150, 10), (0, 0, 0xff), "JS turned the right cell blue");
         assert_eq!(px(10, 100), (0, 0, 0), "below the grid is the body");
 
+        // JS off: script must not run (title stays as authored).
+        let blocked = e
+            .render_html_with_js(
+                "<title>blocked</title><script>document.title='pwned'</script>",
+                120.0,
+                false,
+            )
+            .unwrap();
+        assert_eq!(blocked.title, "blocked");
+
         let r2 = e
-            .render_html("<title>second</title><body style=background:#fff>", 120.0)
+            .render_html_with_js(
+                "<title>second</title><body style=background:#fff>",
+                120.0,
+                false,
+            )
             .unwrap();
         assert_eq!(r2.title, "second");
 
@@ -161,7 +201,7 @@ mod tests {
         target.set_nonblocking(true).unwrap();
         let port = target.local_addr().unwrap().port();
         let html = format!("<title>leak</title><img src=\"http://127.0.0.1:{port}/x.png\">");
-        let r3 = e.render_html(&html, 120.0).unwrap();
+        let r3 = e.render_html_with_js(&html, 120.0, false).unwrap();
         assert_eq!(r3.title, "leak");
         assert!(
             target.accept().is_err(),
@@ -174,7 +214,7 @@ mod tests {
         let html = "<title>proxied</title>\
             <img src=\"https://frihart-test.invalid/a.png\">\
             <img src=\"https://10.1.2.3/b.png\">";
-        let r4 = e.render_html(html, 120.0).unwrap();
+        let r4 = e.render_html_with_js(html, 120.0, false).unwrap();
         assert_eq!(r4.title, "proxied");
         let (allowed, refused) = e.proxy_counts();
         assert_eq!(allowed, 0);
