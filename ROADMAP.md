@@ -750,7 +750,11 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   (`Sec-CH-*`), `X-Client-Data`, `X-Requested-With`, a foreign UA and
   header floods are cancelled before they leave Servo; Servo cookies,
   site storage and HTTP cache are wiped before and after every render
-  (Servo's jar is global, not per site). Still open: per-site partitioned
+  (Servo's jar is global, not per site). *2026-10-17:* the in-process
+  gate also refuses `Referer` / `Ping-From` / `Ping-To`, and a `Cookie`
+  unless the document host and the request host are the same site. The
+  Compat document is still a `data:` URL, so it has no host and `Cookie`
+  is refused. Still open: per-site partitioned
   Servo jar (needed for Compat logins), leak test against a live page.
 - [x] **M4 — Per-site JS toggle** in the protections panel (2026-10-16).
   `SiteJsStore` (profile `site_js.toml`, 0600) maps first-party host →

@@ -136,7 +136,12 @@ X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
 ## Next session — start here
 
 **D: claim one more static document** (not Wikipedia / GitHub / mail).
-Forty public sites (RFC 8439 last Claimed).
+Forty public sites (RFC 8439 last Claimed). Servo stays the Compat
+engine for clearnet speed and tests. Own engine stays Reader, Tor, and
+I2P. On 2026-10-17 the Servo request gate refuses `Referer` and a
+`Cookie` that is not same-site with the document. The Compat document
+is still a `data:` URL, so `Cookie` is refused. Do not embed Servo as
+the product engine.
 **libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
 libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.
 **age-encryption.org** Forbidden (apex → GitHub) — NeedsJs, left

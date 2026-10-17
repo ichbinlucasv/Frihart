@@ -10,9 +10,12 @@
 //! Allowed without checks: in-memory `data:`, `blob:` and `about:` loads.
 //! Refused: any other scheme than `https` (`http`, `ws`, `file`, …); User-Agent Client Hints
 //! (`Sec-CH-*`) and other identifying headers (`X-Client-Data`,
-//! `X-Requested-With`); a User-Agent other than Frihart's frozen one; an
-//! oversized header list. Host policy (special-use names, private
-//! addresses, rebinding, blocker lists) stays with the Compat proxy.
+//! `X-Requested-With`, `Referer`, `Ping-From`, `Ping-To`); a User-Agent other
+//! than Frihart's frozen one; an oversized header list; a `Cookie` whose
+//! document host and request host are not the same site. The page Servo is
+//! handed today is a `data:` URL, which has no host, so that `Cookie` is
+//! refused. Host policy (special-use names, private addresses, rebinding,
+//! blocker lists) stays with the Compat proxy.
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -24,7 +27,14 @@ pub const MAX_REQUEST_HEADERS: usize = 64;
 
 /// Header-name prefixes and names that identify the browser or the user.
 const FORBIDDEN_PREFIXES: &[&str] = &["sec-ch-"];
-const FORBIDDEN_NAMES: &[&str] = &["x-client-data", "x-requested-with"];
+const FORBIDDEN_NAMES: &[&str] = &[
+    "x-client-data",
+    "x-requested-with",
+    "referer",
+    "referrer",
+    "ping-from",
+    "ping-to",
+];
 
 /// Why a load was refused.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -33,6 +43,8 @@ pub enum Refusal {
     IdentifyingHeader,
     UserAgent,
     TooManyHeaders,
+    /// A cookie the proxy cannot see, and that is not tied to the document site.
+    Cookie,
 }
 
 impl Refusal {
@@ -42,16 +54,52 @@ impl Refusal {
             Self::IdentifyingHeader => "identifying header (client hints)",
             Self::UserAgent => "user agent is not the frozen one",
             Self::TooManyHeaders => "too many request headers",
+            Self::Cookie => "cookie is not same-site with the document",
         }
     }
 }
 
+/// True when two hosts are equal, or one is a parent of the other.
+///
+/// `notevil.com` does not share a site with `evil.com`. Sibling names such
+/// as `www.example.com` and `cdn.example.com` do not either: without a
+/// public-suffix list, sharing only a parent label is not enough.
+pub fn hosts_share_site(document_host: &str, request_host: &str) -> bool {
+    fn label(host: &str) -> Option<String> {
+        let h = host.trim().trim_end_matches('.').to_ascii_lowercase();
+        if h.is_empty() || h.bytes().any(|c| c == b':' || c == b'/' || c == b' ') {
+            return None;
+        }
+        Some(h)
+    }
+    let (Some(a), Some(b)) = (label(document_host), label(request_host)) else {
+        return false;
+    };
+    if a == b {
+        return true;
+    }
+    let (longer, shorter) = if a.len() >= b.len() {
+        (&a, &b)
+    } else {
+        (&b, &a)
+    };
+    longer.len() > shorter.len()
+        && longer.as_bytes()[longer.len() - shorter.len() - 1] == b'.'
+        && longer.ends_with(shorter.as_str())
+}
+
 /// Decide one Servo load. `header_names` are the request's header names
 /// (any case); `user_agent` is its User-Agent value when present.
+///
+/// `document_host` is the page's host. `request_host` is this load's host.
+/// A `Cookie` is allowed only when those two share a site. `None` refuses
+/// the cookie: the current Compat document is a `data:` URL and has no host.
 pub fn check_request<'a>(
     scheme: &str,
     header_names: impl IntoIterator<Item = &'a str>,
     user_agent: Option<&str>,
+    document_host: Option<&str>,
+    request_host: Option<&str>,
 ) -> Result<(), Refusal> {
     // In-memory documents (the page Frihart hands Servo is a `data:` URL)
     // never touch the network.
@@ -62,17 +110,29 @@ pub fn check_request<'a>(
         return Err(Refusal::NotHttps);
     }
     let mut n = 0usize;
+    let mut saw_cookie = false;
     for name in header_names {
         n += 1;
         if n > MAX_REQUEST_HEADERS {
             return Err(Refusal::TooManyHeaders);
         }
         let lower = name.to_ascii_lowercase();
+        if lower == "cookie" {
+            saw_cookie = true;
+        }
         if FORBIDDEN_PREFIXES.iter().any(|p| lower.starts_with(p))
             || FORBIDDEN_NAMES.contains(&lower.as_str())
         {
             return Err(Refusal::IdentifyingHeader);
         }
+    }
+    if saw_cookie
+        && !match (document_host, request_host) {
+            (Some(document), Some(request)) => hosts_share_site(document, request),
+            _ => false,
+        }
+    {
+        return Err(Refusal::Cookie);
     }
     if let Some(ua) = user_agent
         && ua != frihart_core::FROZEN_USER_AGENT
@@ -118,17 +178,33 @@ mod tests {
     #[test]
     fn plain_https_with_frozen_ua_passes() {
         let h = ["Host", "User-Agent", "Accept", "Accept-Language", "Cookie"];
-        assert_eq!(check_request("https", h, Some(UA)), Ok(()));
-        assert_eq!(check_request("HTTPS", [], None), Ok(()));
+        assert_eq!(
+            check_request(
+                "https",
+                h,
+                Some(UA),
+                Some("example.com"),
+                Some("example.com")
+            ),
+            Ok(())
+        );
+        assert_eq!(check_request("HTTPS", [], None, None, None), Ok(()));
     }
 
     #[test]
     fn other_schemes_are_refused() {
         for s in ["http", "ws", "wss", "ftp", "file", ""] {
-            assert_eq!(check_request(s, [], Some(UA)), Err(Refusal::NotHttps));
+            assert_eq!(
+                check_request(s, [], Some(UA), None, None),
+                Err(Refusal::NotHttps)
+            );
         }
         for s in ["data", "blob", "about"] {
-            assert_eq!(check_request(s, ["Sec-CH-UA"], None), Ok(()), "{s}");
+            assert_eq!(
+                check_request(s, ["Sec-CH-UA"], None, None, None),
+                Ok(()),
+                "{s}"
+            );
         }
     }
 
@@ -139,29 +215,86 @@ mod tests {
             "sec-ch-ua-platform",
             "X-Client-Data",
             "X-Requested-With",
+            "Referer",
+            "Referrer",
+            "Ping-From",
+            "Ping-To",
         ] {
             assert_eq!(
-                check_request("https", ["Accept", h], Some(UA)),
+                check_request("https", ["Accept", h], Some(UA), None, None),
                 Err(Refusal::IdentifyingHeader),
                 "{h}"
             );
         }
         // Fetch metadata is not identifying.
         assert_eq!(
-            check_request("https", ["Sec-Fetch-Mode", "Sec-Fetch-Site"], Some(UA)),
+            check_request(
+                "https",
+                ["Sec-Fetch-Mode", "Sec-Fetch-Site"],
+                Some(UA),
+                None,
+                None
+            ),
             Ok(())
         );
     }
 
     #[test]
+    fn cookie_requires_a_same_site_document() {
+        let cookie = ["Cookie"];
+        assert_eq!(
+            check_request("https", cookie, Some(UA), None, Some("example.com")),
+            Err(Refusal::Cookie)
+        );
+        assert_eq!(
+            check_request(
+                "https",
+                cookie,
+                Some(UA),
+                Some("www.example.com"),
+                Some("example.com")
+            ),
+            Ok(())
+        );
+        assert_eq!(
+            check_request(
+                "https",
+                cookie,
+                Some(UA),
+                Some("www.example.com"),
+                Some("cdn.example.com")
+            ),
+            Err(Refusal::Cookie)
+        );
+        assert_eq!(
+            check_request(
+                "https",
+                cookie,
+                Some(UA),
+                Some("notevil.com"),
+                Some("evil.com")
+            ),
+            Err(Refusal::Cookie)
+        );
+        assert!(!hosts_share_site("notevil.com", "evil.com"));
+        assert!(hosts_share_site("www.example.com", "example.com"));
+    }
+
+    #[test]
     fn foreign_user_agent_and_header_floods_are_refused() {
         assert_eq!(
-            check_request("https", ["User-Agent"], Some("Mozilla/5.0 Servo/0.7")),
+            check_request(
+                "https",
+                ["User-Agent"],
+                Some("Mozilla/5.0 Servo/0.7"),
+                None,
+                None
+            ),
             Err(Refusal::UserAgent)
         );
         let many = vec!["X-A"; MAX_REQUEST_HEADERS + 1];
         assert_eq!(
-            check_request("https", many, Some(UA)),
+            check_request("https", many, Some(UA), None, None),
             Err(Refusal::TooManyHeaders)
         );
     }

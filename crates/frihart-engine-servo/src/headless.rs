@@ -52,7 +52,16 @@ impl WebViewDelegate for Watch {
             .headers
             .get("user-agent")
             .map(|v| v.to_str().unwrap_or("\u{fffd}"));
-        let verdict = self.gate.record(check_request(req.url.scheme(), names, ua));
+        // The document is a data: URL (see `render`), so it has no host.
+        // A Cookie inside the TLS tunnel is refused until a real document
+        // host is known and shares a site with this request.
+        let verdict = self.gate.record(check_request(
+            req.url.scheme(),
+            names,
+            ua,
+            None,
+            req.url.host_str(),
+        ));
         if verdict.is_err() {
             let url = req.url.clone();
             load.intercept(WebResourceResponse::new(url)).cancel();
