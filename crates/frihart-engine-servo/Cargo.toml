@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-# Servo 0.7 needs Rust 1.88; the rest of the workspace stays at 1.85.
+# Servo 0.7 needs Rust 1.88, which is also the workspace minimum since zip 9 (2026-10-17).
 rust-version = "1.88"
 description = "Servo Compat engine adapter (feature `servo`, off by default). See docs/ENGINE_HYBRID.md"
 publish.workspace = true

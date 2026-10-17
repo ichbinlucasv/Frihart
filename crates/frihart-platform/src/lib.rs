@@ -33,19 +33,19 @@ pub fn profiles_dir() -> PathBuf {
 
 /// User downloads directory. Never execute what lands here.
 pub fn downloads_dir() -> PathBuf {
-    if let Ok(value) = env::var("XDG_DOWNLOAD_DIR") {
-        if !value.is_empty() {
-            return PathBuf::from(value);
-        }
+    if let Ok(value) = env::var("XDG_DOWNLOAD_DIR")
+        && !value.is_empty()
+    {
+        return PathBuf::from(value);
     }
     home_dir().join("Downloads")
 }
 
 fn xdg_dir(var: &str, fallback: &str) -> PathBuf {
-    if let Ok(value) = env::var(var) {
-        if !value.is_empty() {
-            return PathBuf::from(value);
-        }
+    if let Ok(value) = env::var(var)
+        && !value.is_empty()
+    {
+        return PathBuf::from(value);
     }
     home_dir().join(fallback)
 }

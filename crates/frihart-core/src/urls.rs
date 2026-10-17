@@ -62,18 +62,17 @@ pub fn looks_like_destination(input: &str) -> bool {
     if trimmed.starts_with("//") && trimmed.contains('.') {
         return true;
     }
-    if let Ok(url) = Url::parse(trimmed) {
-        if is_script_scheme(url.scheme()) || is_known_scheme(url.scheme()) {
-            return true;
-        }
+    if let Ok(url) = Url::parse(trimmed)
+        && (is_script_scheme(url.scheme()) || is_known_scheme(url.scheme()))
+    {
+        return true;
     }
-    if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
-        if url
+    if let Ok(url) = Url::parse(&format!("https://{trimmed}"))
+        && url
             .host_str()
             .is_some_and(|h| h.contains('.') || h == "localhost")
-        {
-            return true;
-        }
+    {
+        return true;
     }
     false
 }
@@ -104,20 +103,18 @@ pub fn try_parse_user_input(input: &str) -> Option<Url> {
         }
     }
 
-    if trimmed.starts_with("//") {
-        if let Ok(url) = Url::parse(&format!("https:{trimmed}")) {
-            if url.host_str().is_some() {
-                return Some(url);
-            }
-        }
+    if trimmed.starts_with("//")
+        && let Ok(url) = Url::parse(&format!("https:{trimmed}"))
+        && url.host_str().is_some()
+    {
+        return Some(url);
     }
 
-    if trimmed.starts_with('[') {
-        if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
-            if url.host_str().is_some() {
-                return Some(url);
-            }
-        }
+    if trimmed.starts_with('[')
+        && let Ok(url) = Url::parse(&format!("https://{trimmed}"))
+        && url.host_str().is_some()
+    {
+        return Some(url);
     }
 
     if let Ok(url) = Url::parse(&format!("https://{trimmed}")) {
@@ -147,14 +144,13 @@ pub fn resolve_href(base: &Url, href: &str) -> Option<Url> {
         };
         return Url::parse(&format!("{scheme}:{h}")).ok();
     }
-    if let Ok(url) = base.join(h) {
-        if url.scheme() == "https"
+    if let Ok(url) = base.join(h)
+        && (url.scheme() == "https"
             || url.scheme() == "http"
             || url.scheme() == "about"
-            || url.scheme() == "frihart"
-        {
-            return Some(url);
-        }
+            || url.scheme() == "frihart")
+    {
+        return Some(url);
     }
     try_parse_user_input(h)
 }

@@ -315,15 +315,14 @@ impl HttpClient for RustlsClient {
                 }
             }
 
-            if (300..400).contains(&status) {
-                if let Some(loc) = headers
+            if (300..400).contains(&status)
+                && let Some(loc) = headers
                     .iter()
                     .find(|(n, _)| n.eq_ignore_ascii_case("location"))
                     .map(|(_, v)| v.clone())
-                {
-                    current = redirect_target(&mode, &current, &loc)?;
-                    continue;
-                }
+            {
+                current = redirect_target(&mode, &current, &loc)?;
+                continue;
             }
 
             let mut body = Vec::new();

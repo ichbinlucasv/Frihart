@@ -206,14 +206,14 @@ fn decode_entities(s: &str) -> String {
     let mut out = String::new();
     let mut i = 0;
     while i < chars.len() {
-        if chars[i] == '&' {
-            if let Some(rel) = chars[i + 1..].iter().position(|&c| c == ';') {
-                let ent: String = chars[i + 1..i + 1 + rel].iter().collect();
-                if let Some(c) = map_entity(&ent) {
-                    out.push(c);
-                    i += rel + 2;
-                    continue;
-                }
+        if chars[i] == '&'
+            && let Some(rel) = chars[i + 1..].iter().position(|&c| c == ';')
+        {
+            let ent: String = chars[i + 1..i + 1 + rel].iter().collect();
+            if let Some(c) = map_entity(&ent) {
+                out.push(c);
+                i += rel + 2;
+                continue;
             }
         }
         out.push(chars[i]);

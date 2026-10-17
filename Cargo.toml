@@ -37,7 +37,7 @@ version = "0.1.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 authors = ["Frihart contributors"]
-rust-version = "1.85"
+rust-version = "1.88"
 description = "A sovereign, privacy-first web browser"
 publish = false
 
@@ -83,7 +83,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.5"
 ureq = { version = "2.12", default-features = false, features = ["tls", "socks-proxy"] }
 winit = "0.30"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 [profile.release]
 lto = "thin"

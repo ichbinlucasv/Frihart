@@ -13,14 +13,12 @@ pub struct ProfileLock {
 
 impl ProfileLock {
     pub fn acquire(path: PathBuf) -> Result<Self> {
-        if path.exists() {
-            if let Ok(text) = fs::read_to_string(&path) {
-                if let Ok(pid) = text.trim().parse::<u32>() {
-                    if pid_is_alive(pid) {
-                        return Err(FrihartError::ProfileLocked { pid });
-                    }
-                }
-            }
+        if path.exists()
+            && let Ok(text) = fs::read_to_string(&path)
+            && let Ok(pid) = text.trim().parse::<u32>()
+            && pid_is_alive(pid)
+        {
+            return Err(FrihartError::ProfileLocked { pid });
         }
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;

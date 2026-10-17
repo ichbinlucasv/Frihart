@@ -72,10 +72,10 @@ fn disposition_attachment(headers: &[(String, String)]) -> bool {
 }
 
 pub fn filename_for(url: &Url, content_disposition: Option<&str>) -> String {
-    if let Some(disp) = content_disposition {
-        if let Some(name) = filename_from_disposition(disp) {
-            return sanitize_filename(&name);
-        }
+    if let Some(disp) = content_disposition
+        && let Some(name) = filename_from_disposition(disp)
+    {
+        return sanitize_filename(&name);
     }
     let last = url
         .path_segments()

@@ -287,10 +287,10 @@ fn parse_authchallenge(lines: &[String]) -> Option<([u8; 32], [u8; 32])> {
             if hash.replace(hex32(v)?).is_some() {
                 return None;
             }
-        } else if let Some(v) = tok.strip_prefix("SERVERNONCE=") {
-            if nonce.replace(hex32(v)?).is_some() {
-                return None;
-            }
+        } else if let Some(v) = tok.strip_prefix("SERVERNONCE=")
+            && nonce.replace(hex32(v)?).is_some()
+        {
+            return None;
         }
     }
     Some((hash?, nonce?))

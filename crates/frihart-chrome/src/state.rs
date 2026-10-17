@@ -502,12 +502,12 @@ impl Browser {
             return;
         }
         let needle = self.find_text.clone();
-        if let Some(frame) = &self.active_tab().frame {
-            if let Some(hit) = frame.find(&needle) {
-                self.find_status = "ok".into();
-                self.active_tab_mut().scroll_y = hit.y.max(0.0);
-                return;
-            }
+        if let Some(frame) = &self.active_tab().frame
+            && let Some(hit) = frame.find(&needle)
+        {
+            self.find_status = "ok".into();
+            self.active_tab_mut().scroll_y = hit.y.max(0.0);
+            return;
         }
         let hay = self.active_tab().document.searchable_text();
         let needle_l = needle.to_ascii_lowercase();

@@ -348,10 +348,11 @@ pub fn list_profiles() -> Vec<String> {
         if !entry.path().is_dir() {
             continue;
         }
-        if let Some(name) = entry.file_name().to_str() {
-            if !name.is_empty() && !name.starts_with('.') {
-                names.push(name.to_string());
-            }
+        if let Some(name) = entry.file_name().to_str()
+            && !name.is_empty()
+            && !name.starts_with('.')
+        {
+            names.push(name.to_string());
         }
     }
     names.sort();

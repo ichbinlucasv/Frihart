@@ -199,7 +199,7 @@ fn valid_date(s: &str) -> bool {
 }
 
 fn hex_decode(s: &str) -> Option<Vec<u8>> {
-    if s.len() % 2 != 0 || !s.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f')) {
+    if !s.len().is_multiple_of(2) || !s.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f')) {
         return None;
     }
     (0..s.len())

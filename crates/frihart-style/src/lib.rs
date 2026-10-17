@@ -421,11 +421,11 @@ fn apply_line_height(computed: &mut Computed, value: &str, ctx: LengthCtx) {
         computed.line_height_mult = None;
         return;
     }
-    if let Ok(n) = v.parse::<f32>() {
-        if n > 0.0 {
-            computed.line_height_mult = Some(n);
-            computed.line_height_px = None;
-        }
+    if let Ok(n) = v.parse::<f32>()
+        && n > 0.0
+    {
+        computed.line_height_mult = Some(n);
+        computed.line_height_px = None;
     }
 }
 
@@ -816,7 +816,7 @@ fn parse_weight(value: &str) -> Option<u16> {
         "bold" | "bolder" => Some(700),
         n => {
             let w: u16 = n.parse().ok()?;
-            if (100..=900).contains(&w) && w % 100 == 0 {
+            if (100..=900).contains(&w) && w.is_multiple_of(100) {
                 Some(w)
             } else {
                 None

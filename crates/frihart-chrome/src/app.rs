@@ -371,33 +371,36 @@ impl Handler {
             _ => {}
         }
 
-        if self.browser.field_focus.is_some() && !ctrl && !alt {
-            if let Some(txt) = event.text.as_ref() {
-                if !txt.chars().any(|c| c.is_control()) {
-                    self.browser.insert_field_text(txt);
-                    self.request_redraw();
-                    return;
-                }
-            }
+        if self.browser.field_focus.is_some()
+            && !ctrl
+            && !alt
+            && let Some(txt) = event.text.as_ref()
+            && !txt.chars().any(|c| c.is_control())
+        {
+            self.browser.insert_field_text(txt);
+            self.request_redraw();
+            return;
         }
 
-        if self.browser.find_focused && !ctrl && !alt {
-            if let Some(txt) = event.text.as_ref() {
-                if !txt.chars().any(|c| c.is_control()) {
-                    self.browser.insert_find_text(txt);
-                    self.request_redraw();
-                    return;
-                }
-            }
+        if self.browser.find_focused
+            && !ctrl
+            && !alt
+            && let Some(txt) = event.text.as_ref()
+            && !txt.chars().any(|c| c.is_control())
+        {
+            self.browser.insert_find_text(txt);
+            self.request_redraw();
+            return;
         }
 
-        if self.browser.url_focused && !ctrl && !alt {
-            if let Some(txt) = event.text.as_ref() {
-                if !txt.chars().any(|c| c.is_control()) {
-                    self.browser.insert_url_text(txt);
-                    self.request_redraw();
-                }
-            }
+        if self.browser.url_focused
+            && !ctrl
+            && !alt
+            && let Some(txt) = event.text.as_ref()
+            && !txt.chars().any(|c| c.is_control())
+        {
+            self.browser.insert_url_text(txt);
+            self.request_redraw();
         }
     }
 }
