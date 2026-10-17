@@ -179,6 +179,21 @@ Still open for M3: in-tunnel Cookie / Client-Hints / header audit inside
 Servo (the CONNECT tunnel is TLS end to end), and a leak test against a
 live page.
 
+## Supply chain (2026-10-17)
+
+`cargo audit` is clean of vulnerabilities again: rustls 0.23.45 → 0.23.46
+(RUSTSEC-2026-0346/0347/0348/0349: secrets in `Debug`, ECH data, Brotli
+certificate allocation, ServerHello key-exchange downgrade), and zip 2.4.2
+(yanked) → 9.0.4 (RUSTSEC-2026-0367/0368/0369, all about
+`ZipArchive::extract`). Frihart never called `extract`; `materialize` now
+also skips symlink entries, never writes through an existing symlink,
+never applies archive permission bits, and caps entries (10 000) and
+extracted size (256 MiB). zip 9 needs Rust 1.88, so the workspace
+`rust-version` is now 1.88 (Debian 13's packaged rustc 1.85 can no longer
+build Frihart; use rustup or a backport). The remaining audit output is
+"unmaintained" warnings only (`rustybuzz`/`ttf-parser`, and Servo's
+`bincode` 1, `paste`, `unic-*`).
+
 ## M2 step (2026-10-15): Compat mode in chrome
 
 `Tab` carries `TabMode::{Reader, Compat}`. `prepare_frame` calls
