@@ -10,6 +10,11 @@ use frihart_core::{FrihartError, Result};
 
 use crate::manifest::Manifest;
 
+/// Most entries an add-on archive may hold.
+pub const MAX_XPI_ENTRIES: usize = 10_000;
+/// Most bytes extracted from one add-on archive (zip-bomb cap).
+pub const MAX_XPI_BYTES: u64 = 256 * 1024 * 1024;
+
 pub fn read_manifest_from_path(path: &Path) -> Result<Manifest> {
     if path.is_dir() {
         let text = fs::read_to_string(path.join("manifest.json"))?;
@@ -41,6 +46,12 @@ fn read_manifest_from_xpi(path: &Path) -> Result<Manifest> {
 }
 
 /// Copy an unpacked dir or extract an XPI into `dest`.
+///
+/// Extraction is done by hand rather than with `ZipArchive::extract`:
+/// entries whose names escape `dest` are skipped, symlink entries are
+/// skipped (never created), Unix permission bits from the archive are never
+/// applied (files get the process umask, nothing is executable by design),
+/// and entry count and total size are capped.
 pub fn materialize(source: &Path, dest: &Path) -> Result<()> {
     if dest.exists() {
         fs::remove_dir_all(dest)?;
@@ -53,10 +64,17 @@ pub fn materialize(source: &Path, dest: &Path) -> Result<()> {
     let file = File::open(source)?;
     let mut archive =
         ZipArchive::new(file).map_err(|e| FrihartError::config(format!("xpi zip: {e}")))?;
+    if archive.len() > MAX_XPI_ENTRIES {
+        return Err(FrihartError::config("xpi: too many entries"));
+    }
+    let mut budget = MAX_XPI_BYTES;
     for i in 0..archive.len() {
-        let mut entry = archive
+        let entry = archive
             .by_index(i)
             .map_err(|e| FrihartError::config(format!("xpi entry: {e}")))?;
+        if entry.is_symlink() {
+            continue;
+        }
         let Some(rel) = entry.enclosed_name() else {
             continue;
         };
@@ -68,8 +86,22 @@ pub fn materialize(source: &Path, dest: &Path) -> Result<()> {
         if let Some(parent) = out.parent() {
             fs::create_dir_all(parent)?;
         }
+        // Never write through a path that already exists as a symlink.
+        if fs::symlink_metadata(&out).is_ok_and(|m| m.file_type().is_symlink()) {
+            continue;
+        }
         let mut dest_file = File::create(&out)?;
-        std::io::copy(&mut entry, &mut dest_file)?;
+        // Read one byte past the budget so an over-size entry is detected
+        // from the real stream, not the size the archive claims.
+        let copied = std::io::copy(&mut entry.take(budget + 1), &mut dest_file)?;
+        if copied > budget {
+            drop(dest_file);
+            let _ = fs::remove_dir_all(dest);
+            return Err(FrihartError::config(
+                "xpi: archive too large when extracted",
+            ));
+        }
+        budget -= copied;
         dest_file.flush()?;
     }
     Ok(())
@@ -87,4 +119,80 @@ fn copy_dir(from: &Path, to: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+    use zip::ZipWriter;
+    use zip::write::SimpleFileOptions;
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let d = std::env::temp_dir().join(format!(
+            "frihart-xpi-{name}-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn write_xpi(
+        dir: &Path,
+        build: impl FnOnce(&mut ZipWriter<Cursor<Vec<u8>>>),
+    ) -> std::path::PathBuf {
+        let mut w = ZipWriter::new(Cursor::new(Vec::new()));
+        build(&mut w);
+        let bytes = w.finish().unwrap().into_inner();
+        let p = dir.join("addon.xpi");
+        fs::write(&p, bytes).unwrap();
+        p
+    }
+
+    #[test]
+    fn extracts_files_but_skips_symlinks_and_escapes() {
+        let dir = scratch("sym");
+        let opts = SimpleFileOptions::default().unix_permissions(0o4755);
+        let xpi = write_xpi(&dir, |w| {
+            w.start_file("manifest.json", opts).unwrap();
+            w.write_all(br#"{"manifest_version":2,"name":"t","version":"1"}"#)
+                .unwrap();
+            w.add_symlink("link", "/etc/passwd", opts).unwrap();
+            w.start_file("../escape.txt", opts).unwrap();
+            w.write_all(b"x").unwrap();
+            w.start_file("js/a.js", opts).unwrap();
+            w.write_all(b"1;").unwrap();
+        });
+        let dest = dir.join("out");
+        materialize(&xpi, &dest).unwrap();
+        assert!(dest.join("manifest.json").is_file());
+        assert_eq!(fs::read(dest.join("js/a.js")).unwrap(), b"1;");
+        assert!(fs::symlink_metadata(dest.join("link")).is_err());
+        assert!(!dir.join("escape.txt").exists());
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(dest.join("js/a.js"))
+                .unwrap()
+                .permissions()
+                .mode();
+            assert_eq!(mode & 0o7000, 0, "setuid/setgid/sticky never applied");
+        }
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn manifest_reads_from_xpi() {
+        let dir = scratch("manifest");
+        let xpi = write_xpi(&dir, |w| {
+            w.start_file("manifest.json", SimpleFileOptions::default())
+                .unwrap();
+            w.write_all(br#"{"manifest_version":2,"name":"t","version":"1"}"#)
+                .unwrap();
+        });
+        assert!(read_manifest_from_path(&xpi).is_ok());
+        let _ = fs::remove_dir_all(&dir);
+    }
 }
