@@ -278,6 +278,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title Sequoia-PGP, A new OpenPGP Library, modular OpenPGP in Rust; apex and www same bytes; IE conditional /script.js skipped; live HTML 2026-10-16",
         },
         SiteClaim {
+            url: "https://www.rfc-editor.org/rfc/rfc8439.html",
+            name: "RFC 8439",
+            status: ClaimStatus::Claimed,
+            note: "title ChaCha20 and Poly1305 for IETF Protocols, Abstract, AEAD, pre page; live HTML 2026-10-17",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -331,7 +337,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 39);
+        assert_eq!(public_claimed(), 40);
         assert!(
             claims()
                 .iter()
@@ -530,6 +536,11 @@ mod tests {
                 .iter()
                 .any(|s| s.status == ClaimStatus::Claimed && s.url.contains("sequoia-pgp.org"))
         );
+        assert!(claims().iter().any(|s| {
+            s.status == ClaimStatus::Claimed
+                && s.url.contains("rfc8439")
+                && s.note.contains("ChaCha20")
+        }));
         assert!(claims().iter().any(|s| {
             s.status == ClaimStatus::NeedsJs
                 && s.url.contains("age-encryption.org")

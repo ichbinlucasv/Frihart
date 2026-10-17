@@ -55,11 +55,13 @@ These are our chrome. They do not prove the HTML engine.
 | https://tails.net/ | Live HTML 2026-10-05 (www 302 → apex same host). Title `Tails - Home`. Nav Home / How Tails works / Install Tails / Documentation / Support / News. “Tails is a portable operating system that protects against surveillance and censorship.”, four feature blocks, Who uses Tails, Recommended by, Supporters. External CSS unused (nav stacks); local.js skipped (only sets the title). Also 5120×1440. |
 
 | https://www.sequoia-pgp.org/ | Live HTML 2026-10-16 (apex and www same bytes). Title `Sequoia-PGP`. h1 “A new OpenPGP Library”, modular OpenPGP in Rust, blog cards. External CSS unused (nav stacks). IE conditional + `/script.js` skipped. Also 5120×1440. |
+| https://www.rfc-editor.org/rfc/rfc8439.html | Live HTML 2026-10-17. Title from `span.h1`: ChaCha20 and Poly1305 for IETF Protocols. Abstract, AEAD, pre page. Same shape as the other claimed RFCs. Also 5120×1440. |
 
 ## Target (open next)
 
-Thirty-nine public claims are in. CSS leftovers `list-style` /
-`white-space` are in. **sequoia-pgp.org** claimed 2026-10-16.
+Forty public claims are in. CSS leftovers `list-style` /
+`white-space` are in. **RFC 8439** claimed 2026-10-17. **sequoia-pgp.org**
+claimed 2026-10-16.
 **libsodium.org** Forbidden (apex/www → doc → gitbook.io) and
 **age-encryption.org** Forbidden (apex → GitHub) remain unclaimed.
 The named queue is empty; pick the next static document from live HTML.

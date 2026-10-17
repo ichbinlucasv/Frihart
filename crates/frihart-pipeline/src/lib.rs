@@ -1092,6 +1092,22 @@ mod tests {
     }
 
     #[test]
+    fn rfc8439_is_readable() {
+        let html = include_str!("../testdata/rfc8439.html");
+        let f = layout_html_ex(html, "", 1000.0, 800.0);
+        assert!(f.title.contains("ChaCha20"));
+        assert!(f.title.contains("Poly1305"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("Abstract"));
+        assert!(blob.contains("ChaCha20"));
+        assert!(blob.contains("Poly1305"));
+        assert!(blob.contains("AEAD"));
+        assert!(f.boxes.iter().any(|b| b.preserve));
+        let wide = layout_html_ex(html, "", 5120.0, 1440.0);
+        assert_eq!(wide.title, f.title);
+    }
+
+    #[test]
     fn list_style_none_drops_markers() {
         let html = r#"<style>ul{list-style:none} ol{list-style-type:square}</style>
 <ul><li>alpha</li><li>beta</li></ul>
