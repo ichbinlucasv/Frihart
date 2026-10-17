@@ -6,13 +6,17 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use frihart_engine::EngineError;
+use std::sync::Arc;
+
 use servo::{
     EventLoopWaker, LoadStatus, Preferences, RenderingContext, RgbaImage, Servo, ServoBuilder,
-    SoftwareRenderingContext, WebView, WebViewBuilder, WebViewDelegate,
+    SoftwareRenderingContext, StorageType, WebResourceLoad, WebResourceResponse, WebView,
+    WebViewBuilder, WebViewDelegate,
 };
 
 use frihart_net::compat_proxy::{CompatPolicy, CompatProxy};
 
+use crate::gate::{GateStats, check_request};
 use crate::prefs::HardenedPrefs;
 
 /// Longest a single render may take before it is abandoned.
@@ -34,11 +38,28 @@ impl EventLoopWaker for PollWaker {
     fn wake(&self) {}
 }
 
-#[derive(Default)]
 struct Watch {
     complete: Cell<bool>,
+    gate: Arc<GateStats>,
 }
 impl WebViewDelegate for Watch {
+    /// Every HTTP(S) load Servo makes passes here before it leaves Servo;
+    /// loads that break policy are cancelled (a network error for the page).
+    fn load_web_resource(&self, _: WebView, load: WebResourceLoad) {
+        let req = load.request();
+        let names = req.headers.keys().map(|k| k.as_str());
+        let ua = req
+            .headers
+            .get("user-agent")
+            .map(|v| v.to_str().unwrap_or("\u{fffd}"));
+        let verdict = self.gate.record(check_request(req.url.scheme(), names, ua));
+        if verdict.is_err() {
+            let url = req.url.clone();
+            load.intercept(WebResourceResponse::new(url)).cancel();
+        }
+        // Allowed: dropping `load` lets Servo continue (through the proxy).
+    }
+
     fn notify_load_status_changed(&self, _: WebView, status: LoadStatus) {
         if status == LoadStatus::Complete {
             self.complete.set(true);
@@ -85,6 +106,7 @@ pub(crate) struct Headless {
     servo: Servo,
     ctx: Rc<SoftwareRenderingContext>,
     proxy: CompatProxy,
+    gate: Arc<GateStats>,
 }
 
 impl Headless {
@@ -120,6 +142,7 @@ impl Headless {
             servo,
             ctx: Rc::new(ctx),
             proxy,
+            gate: Arc::default(),
         })
     }
 
@@ -131,6 +154,26 @@ impl Headless {
             s.allowed.load(Ordering::Relaxed),
             s.refused.load(Ordering::Relaxed),
         )
+    }
+
+    /// Requests the in-Servo gate allowed and refused so far.
+    pub fn gate_counts(&self) -> (u64, u64) {
+        self.gate.counts()
+    }
+
+    /// Forget everything Servo stored while rendering: cookies, local and
+    /// session storage, and the HTTP cache. Servo's jar is one global jar,
+    /// not partitioned per first party, so no state may outlive a page.
+    fn forget_site_state(&self) {
+        let sdm = self.servo.site_data_manager();
+        sdm.clear_cookies(None);
+        let sites = sdm.site_data(StorageType::all());
+        let names: Vec<String> = sites.iter().map(|s| s.name()).collect();
+        if !names.is_empty() {
+            let refs: Vec<&str> = names.iter().map(String::as_str).collect();
+            sdm.clear_site_data(&refs, StorageType::all());
+        }
+        self.servo.network_manager().clear_cache();
     }
 
     fn spin_until(&self, deadline: Instant, done: impl Fn() -> bool) -> bool {
@@ -154,12 +197,17 @@ impl Headless {
         if self.ctx.size() != dpi::PhysicalSize::new(w, h) {
             self.ctx.resize(dpi::PhysicalSize::new(w, h));
         }
+        // A page that failed half way must not leave state for the next one.
+        self.forget_site_state();
         let html = if javascript {
             html.to_string()
         } else {
             crate::prefs::strip_scripts(html)
         };
-        let watch = Rc::new(Watch::default());
+        let watch = Rc::new(Watch {
+            complete: Cell::new(false),
+            gate: self.gate.clone(),
+        });
         let webview = WebViewBuilder::new(&self.servo, self.ctx.clone())
             .url(data_url(&html)?)
             .delegate(watch.clone())
@@ -183,6 +231,7 @@ impl Headless {
             .map_err(EngineError::Failed)?;
         let title = webview.page_title().unwrap_or_default();
         drop(webview);
+        self.forget_site_state();
         Ok(Frame {
             title,
             width: img.width(),

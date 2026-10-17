@@ -10,6 +10,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod gate;
 pub mod prefs;
 
 #[cfg(feature = "servo")]
@@ -39,6 +40,16 @@ impl ServoEngine {
         #[cfg(feature = "servo")]
         if let Some(h) = &self.inner {
             return h.proxy_counts();
+        }
+        (0, 0)
+    }
+
+    /// Servo loads the request gate (allowed, refused) for this engine so
+    /// far; `(0, 0)` before the first render or without Servo.
+    pub fn gate_counts(&self) -> (u64, u64) {
+        #[cfg(feature = "servo")]
+        if let Some(h) = &self.inner {
+            return h.gate_counts();
         }
         (0, 0)
     }
@@ -196,7 +207,9 @@ mod tests {
             .unwrap();
         assert_eq!(r2.title, "second");
 
-        // A subresource must go to the dead proxy, never straight to its host.
+        // A plain-HTTP subresource is cancelled by the in-Servo gate and
+        // never reaches its host (nor the dead proxy behind it).
+        let (_, gate_refused_before) = e.gate_counts();
         let target = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         target.set_nonblocking(true).unwrap();
         let port = target.local_addr().unwrap().port();
@@ -207,10 +220,15 @@ mod tests {
             target.accept().is_err(),
             "Servo connected to the image host directly"
         );
+        assert!(
+            e.gate_counts().1 > gate_refused_before,
+            "the gate did not see the plain-HTTP load"
+        );
 
         // HTTPS subresources reach Frihart's proxy, which refuses a
         // special-use name and a private address without any DNS lookup.
         let (_, refused_before) = e.proxy_counts();
+        let (gate_allowed_before, _) = e.gate_counts();
         let html = "<title>proxied</title>\
             <img src=\"https://frihart-test.invalid/a.png\">\
             <img src=\"https://10.1.2.3/b.png\">";
@@ -221,6 +239,12 @@ mod tests {
         assert!(
             refused >= refused_before + 2,
             "Servo did not use the Compat proxy ({refused_before} -> {refused})"
+        );
+        // Those HTTPS loads passed the in-tunnel audit first: frozen UA, no
+        // client hints or other identifying headers in what Servo sends.
+        assert!(
+            e.gate_counts().0 >= gate_allowed_before + 2,
+            "Servo's HTTPS requests failed the header audit"
         );
     }
 }
