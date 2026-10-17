@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use frihart_css::parse_stylesheet;
+use frihart_css::{MediaEnv, parse_stylesheet_media};
 use frihart_gfx::DisplayOp;
 use frihart_gfx::{DisplayList, from_boxes};
 use frihart_html::{Block, author_css, document_title, parse, visible_fragments};
@@ -51,8 +51,13 @@ pub fn layout_html(html: &str, extra_css: &str, viewport_w: f32) -> Frame {
 pub fn layout_html_ex(html: &str, extra_css: &str, viewport_w: f32, viewport_h: f32) -> Frame {
     let tree = parse(html);
     let author = author_css(&tree);
-    let user = parse_stylesheet(extra_css);
-    let author_sheet = parse_stylesheet(&author);
+    // `@media` blocks are evaluated against the (letterboxed) viewport.
+    let media = MediaEnv {
+        width: viewport_w,
+        height: viewport_h,
+    };
+    let user = parse_stylesheet_media(extra_css, media);
+    let author_sheet = parse_stylesheet_media(&author, media);
     let body = style_in(
         &Element::tag("body"),
         &user,
