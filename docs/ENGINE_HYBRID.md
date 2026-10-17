@@ -179,6 +179,32 @@ Still open for M3: in-tunnel Cookie / Client-Hints / header audit inside
 Servo (the CONNECT tunnel is TLS end to end), and a leak test against a
 live page.
 
+## M3 step (2026-10-17): request gate inside Servo
+
+The CONNECT tunnel is TLS end to end, so the proxy cannot see request
+headers. Frihart now also checks every request inside Servo, before it
+is sent: `Headless` implements `WebViewDelegate::load_web_resource` and
+runs `frihart_engine_servo::gate::check_request` on the scheme, header
+names and `User-Agent`. Refused requests are cancelled (an empty
+intercepted response), allowed ones continue to the proxy:
+
+- in-memory `data:`, `blob:`, `about:` loads are allowed (no network)
+- any other scheme than `https` is refused (`http`, `ws`, `file`, …)
+- `Sec-CH-*` Client Hints, `X-Client-Data`, `X-Requested-With` refused
+- a `User-Agent` other than `frihart_core::FROZEN_USER_AGENT` refused
+- more than 64 headers refused
+
+`GateStats` counts both outcomes (`ServoEngine::gate_counts`); the Servo
+feature test checks that a plain-HTTP image is refused by the gate and
+that HTTPS images to a special-use name and a private IP pass the gate
+and are then refused by the proxy.
+
+Servo 0.7's cookie jar and storage are global to the instance, not
+partitioned per site. Until Frihart can give Servo one jar per
+first-party site, `Headless` clears cookies, all site data and the HTTP
+cache before and after every render. Compat pages therefore cannot keep
+a login yet; that is the price of no cross-site state.
+
 ## Supply chain (2026-10-17)
 
 `cargo audit` is clean of vulnerabilities again: rustls 0.23.45 → 0.23.46

@@ -25,8 +25,29 @@ host files.
 - `:link` and `:visited` (same color; no history leak)
 - `:root` (the `html` root element)
 
-`@media` / other at-rules are skipped. Nested rules inside them are
-not applied. That is honest: we do not fake a two-column table layout.
+## At-rules (now)
+
+`@media` blocks are evaluated against the viewport (2026-10-17;
+`frihart_css::parse_stylesheet_media`, used by the pipeline for the user
+and author sheets). Supported (Media Queries 4 subset):
+
+- comma lists (any match), `not`, `only`
+- media types `all`, `screen` (true), `print` (false)
+- `width` / `height` with `min-` / `max-` prefixes and range syntax
+  (`(width >= 40em)`, `(400px < width <= 900px)`); units `px`, `em`,
+  `rem` (1em = 16px, the initial font size)
+- `orientation: portrait | landscape`
+- fixed, fingerprint-neutral answers, never read from the system:
+  `prefers-color-scheme: light`, `prefers-reduced-motion` and
+  `prefers-contrast: no-preference`, `hover: hover`, `pointer: fine`,
+  `color` true, `monochrome` false, `scripting: none`
+- nesting up to 4 levels; queries longer than 512 bytes never match
+
+Unknown features evaluate to false (the block is skipped). Rules inside a
+matching block go through the normal cascade, so properties we do not
+implement are still ignored; we do not fake a two-column table layout.
+Other at-rules (`@font-face`, `@supports`, `@keyframes`, `@import`, …)
+are skipped with their nested rules.
 
 ## Selectors (later)
 

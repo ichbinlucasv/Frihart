@@ -681,6 +681,7 @@ A sustainable rhythm for a long project:
 - [x] Settings = LibreWolf-stance prefs (native, black/yellow)
 - [x] Native ClearURLs + private-redirect refuse + ultrawide content width
 - [x] Content-worker rlimits (as / nofile / nproc / core)
+- [x] CSS `@media` evaluation (viewport width/height/orientation; fixed preference answers)
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages published (spec/debian exist)
 
@@ -743,8 +744,13 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   to a dead proxy. *2026-10-15:* expanded tracking-parameter strip list
   (Matomo/TikTok/etc.); chrome already strips on navigate; Compat clearnet
   fetches use per-site `SiteCookieJars` isolated from the profile jar.
-  Still open: in-tunnel Cookie/Client-Hints hooks inside Servo, leak test
-  against a live page.
+  *2026-10-17:* in-process request gate in Servo's `load_web_resource`
+  (`frihart_engine_servo::gate`): non-HTTPS network loads, Client Hints
+  (`Sec-CH-*`), `X-Client-Data`, `X-Requested-With`, a foreign UA and
+  header floods are cancelled before they leave Servo; Servo cookies,
+  site storage and HTTP cache are wiped before and after every render
+  (Servo's jar is global, not per site). Still open: per-site partitioned
+  Servo jar (needed for Compat logins), leak test against a live page.
 - [x] **M4 — Per-site JS toggle** in the protections panel (2026-10-16).
   `SiteJsStore` (profile `site_js.toml`, 0600) maps first-party host →
   allow; inherits global `privacy.javascript` (default false). Shields
