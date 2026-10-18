@@ -9,7 +9,7 @@ use frihart_core::{
     CircuitKind, ContainerId, IsolationKey, TabId, WindowId, display_url, looks_like_destination,
     parse_user_input,
 };
-use frihart_engine::{EngineKind, TabMode, TabNetwork, select_engine};
+use frihart_engine::{EngineKind, TabMode, TabNetwork, default_tab_mode, select_engine};
 use frihart_engine_servo::ServoEngine;
 use frihart_gfx::DisplayList;
 use frihart_ipc::Supervisor;
@@ -81,6 +81,9 @@ pub struct Tab {
     pub circuit: Circuit,
     /// Reader (own engine) or Compat (Servo on clearnet when built).
     pub mode: TabMode,
+    /// The user picked `mode` by hand (Shift+E). While false, each clearnet
+    /// navigation re-applies the M5 default for the new site.
+    pub mode_pinned: bool,
     pub frame: Option<DisplayList>,
     pub frame_w: f32,
     pub sandboxed: bool,
@@ -648,6 +651,7 @@ impl Browser {
             TabMode::Compat => TabMode::Reader,
         };
         self.active_tab_mut().mode = next;
+        self.active_tab_mut().mode_pinned = true;
         self.active_tab_mut().frame = None;
         self.status = match next {
             TabMode::Compat => {
@@ -710,6 +714,7 @@ impl Browser {
                 return;
             }
         }
+        self.apply_default_mode(&url);
         let doc = self.open_url(&url);
         let title = doc.title().to_string();
         let container = self.active_tab().container;
@@ -731,6 +736,26 @@ impl Browser {
         let _ = self.supervisor.slot_for(key);
         self.prepare_frame(self.active_tab().frame_w.max(960.0));
         self.status.clear();
+    }
+
+    /// Campaign S M5: an unpinned clearnet tab takes the default mode for
+    /// the site it is about to open. Tor/I2P tabs stay Reader.
+    fn apply_default_mode(&mut self, url: &Url) {
+        let compat_default = self.profile.prefs().content.compat_default;
+        let tab = self.active_tab_mut();
+        if matches!(tab.circuit, Circuit::Tor | Circuit::I2p) {
+            tab.mode = TabMode::Reader;
+            return;
+        }
+        if tab.mode_pinned {
+            return;
+        }
+        tab.mode = default_tab_mode(
+            TabNetwork::Clearnet,
+            compat_default,
+            frihart_engine_servo::AVAILABLE,
+            frihart_content::is_claimed_url(url),
+        );
     }
 
     pub fn reload(&mut self) {
@@ -1131,6 +1156,13 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
     let document = load(&url, profile);
     let title = document.title().to_string();
     let _ = profile.record_visit(url.as_str(), &title);
+    // Clearnet by default; Tor/I2P callers force Reader after this.
+    let mode = default_tab_mode(
+        TabNetwork::Clearnet,
+        profile.prefs().content.compat_default,
+        frihart_engine_servo::AVAILABLE,
+        frihart_content::is_claimed_url(&url),
+    );
     Tab {
         id: TabId::new(),
         session: SessionHistory::new(url, title),
@@ -1138,9 +1170,62 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
         scroll_y: 0.0,
         container: ContainerId::PERSONAL,
         circuit: Circuit::Direct,
-        mode: TabMode::Reader,
+        mode,
+        mode_pinned: false,
         frame: None,
         frame_w: 0.0,
         sandboxed: false,
+    }
+}
+
+#[cfg(test)]
+mod m5_tests {
+    use super::*;
+
+    fn browser(compat_default: bool) -> Browser {
+        let mut profile = Profile::ephemeral().expect("ephemeral profile");
+        profile.prefs_mut().content.compat_default = compat_default;
+        Browser::new(profile, Some("about:home".into()), false, false)
+    }
+
+    fn url(s: &str) -> Url {
+        Url::parse(s).unwrap()
+    }
+
+    #[test]
+    fn compat_default_off_keeps_reader() {
+        let mut b = browser(false);
+        b.navigate(url("https://example.invalid/"));
+        assert_eq!(b.active_tab().mode, TabMode::Reader);
+    }
+
+    #[test]
+    fn compat_default_on_follows_servo_and_claims() {
+        let mut b = browser(true);
+        // Internal pages are claimed: Reader.
+        assert_eq!(b.active_tab().mode, TabMode::Reader);
+        b.navigate(url("https://example.invalid/"));
+        let expect = if frihart_engine_servo::AVAILABLE {
+            TabMode::Compat
+        } else {
+            TabMode::Reader
+        };
+        assert_eq!(b.active_tab().mode, expect);
+        // A site the own engine claims goes back to Reader.
+        b.navigate(url("https://www.openbsd.org/"));
+        assert_eq!(b.active_tab().mode, TabMode::Reader);
+    }
+
+    #[test]
+    fn hand_picked_mode_is_kept_and_tor_is_reader() {
+        let mut b = browser(true);
+        b.cycle_engine_mode();
+        assert_eq!(b.active_tab().mode, TabMode::Compat);
+        assert!(b.active_tab().mode_pinned);
+        b.navigate(url("about:newtab"));
+        assert_eq!(b.active_tab().mode, TabMode::Compat);
+        b.new_tor_tab();
+        b.navigate(url("about:home"));
+        assert_eq!(b.active_tab().mode, TabMode::Reader);
     }
 }
