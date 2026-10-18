@@ -763,7 +763,14 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   Compat+Servo uses the flag via `HardenedPrefs.javascript` + script
   stripping (Servo 0.7 has no master scripts-off pref). Reader stores
   intent only ("needs Compat / Boa").
-- [ ] **M5 — Compat is the default for clearnet tabs.**
+- [ ] **M5 — Compat is the default for clearnet tabs.** *Done so far
+  (2026-10-18):* the switch exists and stays off. Pref
+  `content.compat_default` (default false); `frihart_engine::default_tab_mode`
+  picks Compat only for clearnet, with the pref on, Servo compiled in, and a
+  site the own engine does not claim (`frihart_content::is_claimed_url`).
+  Each clearnet navigation re-applies it unless the user picked the mode
+  with Shift+E (`Tab::mode_pinned`); Tor/I2P stay Reader. Still open: the
+  live-page leak test, then turning the default on.
 
 ## Campaign B-JS — Boa light JS (opt-in, per site)
 

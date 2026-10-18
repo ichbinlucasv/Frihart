@@ -241,6 +241,19 @@ is off Frihart strips `<script>` elements and sets `js_wasm_enabled:
 false`. Reader mode may store an "on" override but does not run script
 until Compat (Servo) or Campaign B-JS (Boa).
 
+## M5 step (2026-10-18): the default switch, off
+
+`content.compat_default` (default false) decides whether new clearnet
+navigations open in Compat. `frihart_engine::default_tab_mode(net,
+compat_default, servo_available, claimed)` returns Compat only when all
+hold: clearnet, pref on, Servo built, and the site is not on the own
+engine's claimed list (`frihart_content::is_claimed_url`, internal pages
+included). Claimed documents stay in Reader: no script, smaller attack
+surface. The chrome re-applies the default on every clearnet navigation
+unless the user chose the mode with Shift+E (`Tab::mode_pinned`); Tor and
+I2P tabs are forced to Reader before any fetch. The pref stays off until
+the live-page leak test from M3 passes.
+
 ## Milestones (Campaign S — Servo Compat engine)
 
 - **M1 — Feasibility spike.** `servo` builds on Linux behind the cargo
