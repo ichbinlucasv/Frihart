@@ -127,6 +127,11 @@ fn parse_rules_into(input: &str, env: Option<MediaEnv>, depth: usize, sheet: &mu
                 && media_matches(query, env)
             {
                 parse_rules_into(body, Some(env), depth + 1, sheet);
+            } else if let (Some(env), Some(cond)) = (env, at_rule_prelude(&selector, "@supports"))
+                && depth < MAX_MEDIA_NESTING
+                && supports_matches(cond)
+            {
+                parse_rules_into(body, Some(env), depth + 1, sheet);
             }
             continue;
         }
@@ -155,12 +160,18 @@ fn parse_rules_into(input: &str, env: Option<MediaEnv>, depth: usize, sheet: &mu
 
 /// The query text of an `@media` prelude, or `None` for other at-rules.
 fn at_media_query(prelude: &str) -> Option<&str> {
+    at_rule_prelude(prelude, "@media")
+}
+
+/// The text after `name` (for example `@supports`) in an at-rule prelude,
+/// or `None` when the prelude is another at-rule.
+fn at_rule_prelude<'a>(prelude: &'a str, name: &str) -> Option<&'a str> {
     let p = prelude.trim();
-    let head = p.get(..6)?;
-    if !head.eq_ignore_ascii_case("@media") {
+    let head = p.get(..name.len())?;
+    if !head.eq_ignore_ascii_case(name) {
         return None;
     }
-    let rest = &p[6..];
+    let rest = &p[name.len()..];
     // `@mediafoo` is not `@media`.
     if rest
         .chars()
@@ -170,6 +181,184 @@ fn at_media_query(prelude: &str) -> Option<&str> {
         return None;
     }
     Some(rest.trim())
+}
+
+/// Declarations the own engine applies, for `@supports`. `None` accepts any
+/// value of that property; `Some(list)` only those keywords. Kept in step
+/// with `frihart-style` so a page never takes a branch we cannot render.
+const SUPPORTED_DECLARATIONS: &[(&str, Option<&[&str]>)] = &[
+    ("color", None),
+    ("background-color", None),
+    ("background", None),
+    ("display", Some(&["none", "inline", "block"])),
+    ("font-size", None),
+    ("font-weight", None),
+    ("font-family", None),
+    ("list-style", None),
+    ("list-style-type", None),
+    (
+        "white-space",
+        Some(&["normal", "nowrap", "pre", "pre-wrap", "pre-line"]),
+    ),
+    ("margin", None),
+    ("margin-top", None),
+    ("margin-bottom", None),
+    ("padding", None),
+    ("width", None),
+    ("max-width", None),
+    ("height", None),
+    ("border", None),
+    ("border-width", None),
+    ("border-color", None),
+    ("line-height", None),
+    (
+        "text-align",
+        Some(&["left", "start", "center", "right", "end"]),
+    ),
+];
+
+/// Longest `@supports` condition evaluated, in bytes; longer ones are false.
+pub const MAX_SUPPORTS_BYTES: usize = 512;
+
+/// Evaluate an `@supports` condition (CSS Conditional 3 plus `selector()`).
+///
+/// `(prop: value)` is true when the own engine applies that declaration
+/// (see the supported list above; `display: grid` and `flex` are false
+/// today). `selector(...)` is true when [`parse_selector`] accepts it.
+/// `not`, `and` and `or` combine parenthesised conditions; mixing `and` and
+/// `or` at one level without parentheses is invalid and false, as the spec
+/// requires. Unknown functions are false.
+pub fn supports_matches(cond: &str) -> bool {
+    if cond.len() > MAX_SUPPORTS_BYTES {
+        return false;
+    }
+    supports_condition(cond.trim(), 0).unwrap_or(false)
+}
+
+fn supports_condition(c: &str, depth: usize) -> Option<bool> {
+    if depth > 8 || c.is_empty() {
+        return None;
+    }
+    if let Some(rest) = strip_keyword(c, "not") {
+        return supports_in_parens(rest.trim(), depth).map(|b| !b);
+    }
+    let and_parts = split_keyword(c, "and");
+    let or_parts = split_keyword(c, "or");
+    match (and_parts.len() > 1, or_parts.len() > 1) {
+        (true, true) => None,
+        (true, false) => {
+            let mut all = true;
+            for p in and_parts {
+                all &= supports_in_parens(p.trim(), depth)?;
+            }
+            Some(all)
+        }
+        (false, true) => {
+            let mut any = false;
+            for p in or_parts {
+                any |= supports_in_parens(p.trim(), depth)?;
+            }
+            Some(any)
+        }
+        (false, false) => supports_in_parens(c, depth),
+    }
+}
+
+/// `( condition )`, `( prop: value )` or `selector( ... )`.
+fn supports_in_parens(c: &str, depth: usize) -> Option<bool> {
+    let c = c.trim();
+    if let Some(inner) = c
+        .get(..9)
+        .filter(|h| h.eq_ignore_ascii_case("selector("))
+        .and_then(|_| c[9..].strip_suffix(')'))
+    {
+        return Some(parse_selector(inner.trim()).is_some());
+    }
+    let inner = c.strip_prefix('(')?.strip_suffix(')')?;
+    // The outer parens must enclose everything: "(a) and (b)" is not one group.
+    if !balanced(inner) {
+        return None;
+    }
+    let inner = inner.trim();
+    if inner.starts_with('(')
+        || strip_keyword(inner, "not").is_some()
+        || inner
+            .get(..9)
+            .is_some_and(|h| h.eq_ignore_ascii_case("selector("))
+    {
+        return supports_condition(inner, depth + 1);
+    }
+    let (name, value) = inner.split_once(':')?;
+    let name = name.trim().to_ascii_lowercase();
+    let value = value
+        .trim()
+        .trim_end_matches("!important")
+        .trim()
+        .to_ascii_lowercase();
+    if value.is_empty() {
+        return Some(false);
+    }
+    Some(SUPPORTED_DECLARATIONS.iter().any(|(n, allowed)| {
+        *n == name && allowed.is_none_or(|list| list.contains(&value.as_str()))
+    }))
+}
+
+fn balanced(s: &str) -> bool {
+    let mut depth = 0i32;
+    for ch in s.chars() {
+        match ch {
+            '(' => depth += 1,
+            ')' => {
+                depth -= 1;
+                if depth < 0 {
+                    return false;
+                }
+            }
+            _ => {}
+        }
+    }
+    depth == 0
+}
+
+/// `rest` after a leading keyword followed by whitespace or `(`.
+fn strip_keyword<'a>(s: &'a str, kw: &str) -> Option<&'a str> {
+    let head = s.get(..kw.len())?;
+    if !head.eq_ignore_ascii_case(kw) {
+        return None;
+    }
+    let rest = &s[kw.len()..];
+    rest.starts_with(|c: char| c.is_whitespace() || c == '(')
+        .then_some(rest)
+}
+
+/// Split on a keyword (` and ` / ` or `) at parenthesis depth 0.
+fn split_keyword<'a>(s: &'a str, kw: &str) -> Vec<&'a str> {
+    let bytes = s.as_bytes();
+    let mut out = Vec::new();
+    let mut depth = 0i32;
+    let mut start = 0usize;
+    let mut i = 0usize;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'(' => depth += 1,
+            b')' => depth -= 1,
+            b if depth == 0 && b.is_ascii_whitespace() => {
+                let after = &s[i + 1..];
+                let trimmed = after.trim_start();
+                if let Some(rest) = strip_keyword(trimmed, kw) {
+                    out.push(&s[start..i]);
+                    let consumed = s.len() - rest.len();
+                    start = consumed;
+                    i = consumed;
+                    continue;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    out.push(&s[start..]);
+    out
 }
 
 /// Evaluate a media query list (Media Queries 4 subset) against `env`.
@@ -645,6 +834,48 @@ mod tests {
         let s = parse_stylesheet_media(nested, env(800.0, 600.0));
         assert_eq!(s.rules.len(), 1);
         assert_eq!(s.rules[0].selector, "p");
+    }
+
+    #[test]
+    fn supports_conditions() {
+        for (c, want) in [
+            ("(display: block)", true),
+            ("(display: grid)", false),
+            ("(display: flex)", false),
+            ("(color: red)", true),
+            ("(COLOR: Red)", true),
+            ("(gap: 1em)", false),
+            ("(color:)", false),
+            ("not (display: grid)", true),
+            ("not (color: red)", false),
+            ("(color: red) and (display: block)", true),
+            ("(color: red) and (display: grid)", false),
+            ("(display: grid) or (display: block)", true),
+            ("(display: grid) or (gap: 1em)", false),
+            ("(color: red) and (width: 1px) or (gap: 0)", false),
+            ("((display: grid) or (color: red)) and (width: 1px)", true),
+            ("selector(.a > b)", true),
+            ("selector(:has(a))", false),
+            ("font-tech(color-COLRv1)", false),
+            ("", false),
+            ("color: red", false),
+        ] {
+            assert_eq!(supports_matches(c), want, "{c}");
+        }
+        assert!(!supports_matches(&format!("({})", "(".repeat(600))));
+    }
+
+    #[test]
+    fn supports_blocks_apply_in_media_mode() {
+        let css = "@supports (display: grid) { .grid { color: red } } \
+                   @supports not (display: grid) { .fallback { color: red } } \
+                   @supports (color: red) { @media (min-width: 10px) { .both { color: red } } } \
+                   @supportsx (color: red) { .bogus { color: red } }";
+        let s = parse_stylesheet_media(css, env(800.0, 600.0));
+        let sel: Vec<&str> = s.rules.iter().map(|r| r.selector.as_str()).collect();
+        assert_eq!(sel, [".fallback", ".both"]);
+        // The plain parser still skips every at-rule.
+        assert!(parse_stylesheet(css).rules.is_empty());
     }
 
     #[test]
