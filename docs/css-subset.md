@@ -43,6 +43,18 @@ and author sheets). Supported (Media Queries 4 subset):
   `color` true, `monochrome` false, `scripting: none`
 - nesting up to 4 levels; queries longer than 512 bytes never match
 
+`@supports` blocks are evaluated too (2026-10-18;
+`frihart_css::supports_matches`), so a page takes its fallback branch
+when the own engine cannot render the modern one:
+
+- `(prop: value)` is true only for declarations `frihart-style` applies;
+  `display` answers true for `none`, `inline` and `block` only, so
+  `(display: grid)` and `(display: flex)` are false today
+- `selector(...)` is true when the selector grammar above accepts it
+- `not`, `and`, `or`, nested parentheses; `and` mixed with `or` at one
+  level is invalid and false, as are unknown functions such as
+  `font-tech()`; conditions longer than 512 bytes are false
+
 Unknown features evaluate to false (the block is skipped). Rules inside a
 matching block go through the normal cascade, so properties we do not
 implement are still ignored; we do not fake a two-column table layout.
