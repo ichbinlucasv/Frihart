@@ -24,6 +24,7 @@ use url::Url;
 pub use about::PrefToggle;
 pub use document::{Block, Document, InternalPage, Page, PageItem};
 pub use session::{SessionEntry, SessionHistory};
+pub use sites::is_claimed_url;
 
 pub fn load(url: &Url, profile: &Profile) -> Document {
     let prefs = profile.prefs();

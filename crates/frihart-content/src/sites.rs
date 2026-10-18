@@ -316,6 +316,29 @@ pub fn claims() -> &'static [SiteClaim] {
     ]
 }
 
+/// True when Frihart's own engine claims this document: an internal page,
+/// or a host on the claimed list (a leading `www.` is ignored on both sides).
+/// Used by Campaign S M5 to keep claimed sites in Reader.
+pub fn is_claimed_url(url: &url::Url) -> bool {
+    if url.scheme() == "about" {
+        return true;
+    }
+    fn bare(h: &str) -> String {
+        let h = h.trim_end_matches('.').to_ascii_lowercase();
+        h.strip_prefix("www.").map(str::to_string).unwrap_or(h)
+    }
+    let Some(host) = url.host_str().map(bare) else {
+        return false;
+    };
+    claims().iter().any(|c| {
+        c.status == ClaimStatus::Claimed
+            && url::Url::parse(c.url)
+                .ok()
+                .and_then(|u| u.host_str().map(bare))
+                .is_some_and(|h| h == host)
+    })
+}
+
 pub fn claimed_count() -> usize {
     claims()
         .iter()
@@ -333,6 +356,17 @@ pub fn public_claimed() -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn claimed_url_matches_hosts_not_needs_js() {
+        let u = |s: &str| url::Url::parse(s).unwrap();
+        assert!(is_claimed_url(&u("about:home")));
+        assert!(is_claimed_url(&u("https://openbsd.org/faq/")));
+        assert!(is_claimed_url(&u("https://www.openbsd.org/")));
+        assert!(!is_claimed_url(&u("https://github.com/")));
+        assert!(!is_claimed_url(&u("https://notopenbsd.org/")));
+        assert!(!is_claimed_url(&u("https://example.invalid/")));
+    }
 
     #[test]
     fn list_is_honest() {

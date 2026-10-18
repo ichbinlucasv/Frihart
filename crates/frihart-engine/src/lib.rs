@@ -103,9 +103,51 @@ pub fn select_engine(net: TabNetwork, mode: TabMode, servo_available: bool) -> E
     }
 }
 
+/// Mode for a newly opened tab (Campaign S M5).
+///
+/// Tor and I2P tabs are always Reader. A clearnet tab is Compat only when
+/// the user turned `compat_default` on, Servo is compiled in, and Frihart's
+/// own engine does not claim the site (claimed documents render well, with
+/// no script and a smaller attack surface, in Reader).
+pub fn default_tab_mode(
+    net: TabNetwork,
+    compat_default: bool,
+    servo_available: bool,
+    claimed_by_own_engine: bool,
+) -> TabMode {
+    match net {
+        TabNetwork::Clearnet if compat_default && servo_available && !claimed_by_own_engine => {
+            TabMode::Compat
+        }
+        _ => TabMode::Reader,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_mode_is_reader_unless_every_condition_holds() {
+        assert_eq!(
+            default_tab_mode(TabNetwork::Clearnet, true, true, false),
+            TabMode::Compat
+        );
+        for (c, s, k) in [
+            (false, true, false),
+            (true, false, false),
+            (true, true, true),
+            (false, false, true),
+        ] {
+            assert_eq!(
+                default_tab_mode(TabNetwork::Clearnet, c, s, k),
+                TabMode::Reader
+            );
+        }
+        for net in [TabNetwork::Tor, TabNetwork::I2p] {
+            assert_eq!(default_tab_mode(net, true, true, false), TabMode::Reader);
+        }
+    }
 
     #[test]
     fn tor_and_i2p_never_get_servo() {

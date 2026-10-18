@@ -191,6 +191,11 @@ pub struct ContentPrefs {
     /// Dark pages and chrome. The product look is black and yellow.
     pub dark_mode: bool,
     pub autoplay: bool,
+    /// Campaign S M5: open new clearnet tabs in Compat (Servo) when Frihart is
+    /// built with the `servo` feature. Off until the live-page leak test
+    /// passes. Tor and I2P tabs never use Compat, and sites Frihart's own
+    /// engine claims stay in Reader.
+    pub compat_default: bool,
 }
 
 impl Default for ContentPrefs {
@@ -202,6 +207,7 @@ impl Default for ContentPrefs {
             canvas: false,
             dark_mode: true,
             autoplay: false,
+            compat_default: false,
         }
     }
 }
