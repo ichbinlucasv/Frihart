@@ -220,6 +220,12 @@ build Frihart; use rustup or a backport). The remaining audit output is
 "unmaintained" warnings only (`rustybuzz`/`ttf-parser`, and Servo's
 `bincode` 1, `paste`, `unic-*`).
 
+*2026-10-21:* three new advisories, lockfile only. `rustls-webpki`
+0.103.14 → 0.103.16 (RUSTSEC-2026-0382, distrusted intermediates),
+`webpki-roots` and `webpki-root-certs` 1.0.9 → 1.0.10
+(RUSTSEC-2026-0381/0383, emSign roots). `cargo audit` is back to
+unmaintained warnings only.
+
 ## M2 step (2026-10-15): Compat mode in chrome
 
 `Tab` carries `TabMode::{Reader, Compat}`. `prepare_frame` calls
