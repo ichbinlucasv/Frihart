@@ -173,6 +173,7 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
         tag: frag.qual.tag.clone(),
         id: frag.qual.id.clone(),
         classes: frag.qual.classes.clone(),
+        attrs: frag.qual.attrs.clone(),
         ancestors: frag
             .ancestors
             .iter()
@@ -180,6 +181,7 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
                 tag: q.tag.clone(),
                 id: q.id.clone(),
                 classes: q.classes.clone(),
+                attrs: q.attrs.clone(),
                 ancestors: Vec::new(),
             })
             .collect(),
@@ -197,6 +199,31 @@ mod tests {
         assert_eq!(f.title, "T");
         assert!(f.boxes.len() >= 2);
         assert!(!f.display.ops.is_empty());
+    }
+
+    #[test]
+    fn attribute_selectors_reach_the_painted_boxes() {
+        let html = r#"<style>
+            div[lang|="en"] a[rel~="me"] { color: #112233 }
+            a[href^="http://"] { color: #abcdef }
+          </style>
+          <div lang="en-GB"><p>
+            <a rel="me nofollow" href="https://example.com/a">secure</a>
+            <a href="http://example.com/b">plain</a>
+            <a href="mailto:a@example.com">mail</a>
+          </p></div>"#;
+        let f = layout_html(html, "", 400.0);
+        let color = |href: &str| {
+            f.boxes
+                .iter()
+                .find(|b| b.href.as_deref() == Some(href))
+                .unwrap_or_else(|| panic!("missing {href}"))
+                .style
+                .color
+        };
+        assert_eq!(color("https://example.com/a"), 0x00112233);
+        assert_eq!(color("http://example.com/b"), 0x00abcdef);
+        assert_eq!(color("mailto:a@example.com"), 0x00F5C400);
     }
 
     #[test]

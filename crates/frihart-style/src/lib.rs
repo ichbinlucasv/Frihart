@@ -4,7 +4,9 @@
 
 use std::collections::BTreeMap;
 
-use frihart_css::{Combinator, Compound, Declaration, Selector, Simple, Stylesheet};
+use frihart_css::{
+    AttrOp, AttrTest, Combinator, Compound, Declaration, Selector, Simple, Stylesheet,
+};
 
 /// Custom properties (`--name` → raw value) visible to one element.
 pub type CustomProps = BTreeMap<String, String>;
@@ -165,6 +167,8 @@ pub struct Element {
     pub tag: String,
     pub id: String,
     pub classes: Vec<String>,
+    /// HTML attributes (names lowercased), including `id` and `class`.
+    pub attrs: Vec<(String, String)>,
     /// Root → parent.
     pub ancestors: Vec<Element>,
 }
@@ -480,6 +484,7 @@ pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -
             tag: el.ancestors[i].tag.clone(),
             id: el.ancestors[i].id.clone(),
             classes: el.ancestors[i].classes.clone(),
+            attrs: el.ancestors[i].attrs.clone(),
             ancestors: chain.clone(),
         });
     }
@@ -487,6 +492,7 @@ pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -
         tag: el.tag.clone(),
         id: el.id.clone(),
         classes: el.classes.clone(),
+        attrs: el.attrs.clone(),
         ancestors: chain.clone(),
     });
     for node in &chain {
@@ -612,6 +618,7 @@ fn inherit_list_and_ws(
             tag: el.ancestors[i].tag.clone(),
             id: el.ancestors[i].id.clone(),
             classes: el.ancestors[i].classes.clone(),
+            attrs: el.ancestors[i].attrs.clone(),
             ancestors: el.ancestors[..i].to_vec(),
         };
         let mut ac = ua_style(&anc.tag);
@@ -726,7 +733,87 @@ fn simple_matches(simple: &Simple, el: &Element) -> bool {
             "root" => el.tag.eq_ignore_ascii_case("html") && el.ancestors.is_empty(),
             _ => false,
         },
+        Simple::Attr(attr) => attr_matches(attr, el),
     }
+}
+
+/// HTML `getAttribute`: the first attribute of that name. Values are
+/// case-sensitive unless the selector set the `i` flag. An empty `^=`,
+/// `$=`, `*=`, or `~=` value never matches (Selectors Level 4).
+fn attr_matches(attr: &AttrTest, el: &Element) -> bool {
+    let Some((_, have)) = el
+        .attrs
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case(&attr.name))
+    else {
+        return false;
+    };
+    let want = attr.value.as_str();
+    let fold = attr.insensitive;
+    match attr.op {
+        AttrOp::Present => true,
+        AttrOp::Exact => eq_sel(have, want, fold),
+        AttrOp::Word => {
+            if want.is_empty() || want.chars().any(char::is_whitespace) {
+                return false;
+            }
+            have.split_whitespace().any(|w| eq_sel(w, want, fold))
+        }
+        AttrOp::Dash => {
+            eq_sel(have, want, fold)
+                || strip_prefix_sel(have, want, fold).is_some_and(|rest| rest.starts_with('-'))
+        }
+        AttrOp::Prefix => !want.is_empty() && strip_prefix_sel(have, want, fold).is_some(),
+        AttrOp::Suffix => ends_sel(have, want, fold),
+        AttrOp::Substring => contains_sel(have, want, fold),
+    }
+}
+
+fn eq_sel(have: &str, want: &str, insensitive: bool) -> bool {
+    if insensitive {
+        have.eq_ignore_ascii_case(want)
+    } else {
+        have == want
+    }
+}
+
+fn strip_prefix_sel<'a>(have: &'a str, want: &str, insensitive: bool) -> Option<&'a str> {
+    if !insensitive {
+        return have.strip_prefix(want);
+    }
+    let prefix = have.get(..want.len())?;
+    prefix
+        .eq_ignore_ascii_case(want)
+        .then(|| &have[want.len()..])
+}
+
+fn ends_sel(have: &str, want: &str, insensitive: bool) -> bool {
+    if want.is_empty() || have.len() < want.len() {
+        return false;
+    }
+    if !insensitive {
+        return have.ends_with(want);
+    }
+    match have.get(have.len() - want.len()..) {
+        Some(suffix) => suffix.eq_ignore_ascii_case(want),
+        None => false,
+    }
+}
+
+fn contains_sel(have: &str, want: &str, insensitive: bool) -> bool {
+    if want.is_empty() || have.len() < want.len() {
+        return false;
+    }
+    if !insensitive {
+        return have.contains(want);
+    }
+    let h = have.as_bytes();
+    let w = want.as_bytes();
+    h.windows(w.len()).any(|win| {
+        win.iter()
+            .zip(w.iter())
+            .all(|(a, b)| a.eq_ignore_ascii_case(b))
+    })
 }
 
 pub fn is_light(color: u32) -> bool {
@@ -861,6 +948,7 @@ mod tests {
             tag: tag.into(),
             id: String::new(),
             classes: classes.iter().map(|c| c.to_string()).collect(),
+            attrs: Vec::new(),
             ancestors: ancestors.iter().map(|t| Element::tag(t)).collect(),
         }
     }
@@ -956,6 +1044,7 @@ mod tests {
             tag: "p".into(),
             id: String::new(),
             classes: vec!["lead".into()],
+            attrs: Vec::new(),
             ancestors: vec![
                 Element {
                     tag: "article".into(),
@@ -1078,5 +1167,92 @@ mod tests {
         let c = style_element(&li, &Stylesheet::default(), &sheet);
         assert_eq!(c.list_style, ListStyle::None);
         assert_eq!(c.white_space, WhiteSpace::Nowrap);
+    }
+
+    fn el_attrs(tag: &str, attrs: &[(&str, &str)], ancestors: Vec<Element>) -> Element {
+        Element {
+            tag: tag.into(),
+            attrs: attrs
+                .iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
+            ancestors,
+            ..Element::default()
+        }
+    }
+
+    #[test]
+    fn attribute_selectors_match_the_first_attribute() {
+        let author = parse_stylesheet(
+            r#"a[href^="https"] { color: red }
+               [rel~="nofollow"] { font-weight: 700 }
+               p[lang|="en"] { font-size: 20px }
+               input[type="text" i] { padding: 3px }
+               [data-id$="9"] { margin: 4px }
+               [title*="Hello"] { max-width: 10px }
+               a[href^=""] { color: yellow }
+               span[class~=""] { padding: 9px }
+               [type="TEXT"] { margin: 8px }"#,
+        );
+        let none = Stylesheet::default();
+        let link = el_attrs(
+            "a",
+            &[
+                ("href", "https://example.com"),
+                ("rel", "external nofollow"),
+            ],
+            vec![el_attrs("p", &[("lang", "en-US")], vec![])],
+        );
+        let styled = style_element(&link, &none, &author);
+        assert_eq!(
+            styled.color, 0x00C04040,
+            "prefix match; empty ^= does not win"
+        );
+        assert_eq!(styled.font_weight, 700, "word match");
+        let p = style_element(&el_attrs("p", &[("lang", "en")], vec![]), &none, &author);
+        assert_eq!(p.font_size, 20.0);
+        let english = style_element(
+            &el_attrs("p", &[("lang", "english")], vec![]),
+            &none,
+            &author,
+        );
+        assert_eq!(
+            english.font_size,
+            ua_style("p").font_size,
+            "|= is not a prefix"
+        );
+        let input = style_element(
+            &el_attrs("input", &[("type", "Text")], vec![]),
+            &none,
+            &author,
+        );
+        assert_eq!(input.padding, 3.0, "i flag folds ASCII case");
+        assert_eq!(input.margin, 0.0, "without i, TEXT does not match Text");
+        let id = style_element(
+            &el_attrs(
+                "span",
+                &[("data-id", "item-9"), ("title", "Say Hello")],
+                vec![],
+            ),
+            &none,
+            &author,
+        );
+        assert_eq!(id.margin, 4.0);
+        assert_eq!(id.max_width, Some(10.0));
+        let missed = style_element(
+            &el_attrs("span", &[("title", "hello"), ("class", "lead")], vec![]),
+            &none,
+            &author,
+        );
+        assert_eq!(missed.max_width, None, "substring is case-sensitive");
+        assert_eq!(missed.padding, 0.0, "empty ~= never matches");
+        // A value we cannot decode is ignored, not applied as a type rule.
+        let broken = parse_stylesheet(r#"a[title="\41"] { color: red }"#);
+        let plain = style_element(&el_attrs("a", &[("title", "A")], vec![]), &none, &broken);
+        assert_eq!(plain.color, ua_style("a").color);
+        // First attribute wins, the same way HTML getAttribute does.
+        let first = el_attrs("a", &[("title", "nope"), ("title", "Hello")], vec![]);
+        let first = style_element(&first, &none, &author);
+        assert_eq!(first.max_width, None);
     }
 }

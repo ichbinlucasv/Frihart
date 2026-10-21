@@ -20,6 +20,35 @@ pub struct Rule {
     pub declarations: Vec<Declaration>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AttrOp {
+    /// `[attr]` — the attribute is present (value ignored).
+    Present,
+    /// `[attr=value]`
+    Exact,
+    /// `[attr~=value]` — one whitespace-separated word.
+    Word,
+    /// `[attr|=value]` — exact, or a prefix followed by `-`.
+    Dash,
+    /// `[attr^=value]`
+    Prefix,
+    /// `[attr$=value]`
+    Suffix,
+    /// `[attr*=value]`
+    Substring,
+}
+
+/// One attribute selector. `name` is stored lowercased (HTML names are
+/// ASCII case-insensitive). `value` keeps the case from the stylesheet;
+/// [`AttrTest::insensitive`] is the `i` flag.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AttrTest {
+    pub name: String,
+    pub op: AttrOp,
+    pub value: String,
+    pub insensitive: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Simple {
     Universal,
@@ -27,6 +56,7 @@ pub enum Simple {
     Class(String),
     Id(String),
     Pseudo(String),
+    Attr(AttrTest),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -699,7 +729,11 @@ fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
                 simples.push(Simple::Pseudo(name));
                 i = n;
             }
-            b'[' => return None,
+            b'[' => {
+                let (attr, n) = parse_attr(s, i)?;
+                simples.push(attr);
+                i = n;
+            }
             _ => break,
         }
     }
@@ -707,6 +741,129 @@ fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
         return None;
     }
     Some((Compound { simples }, i))
+}
+
+/// `[attr]`, `[attr=value]`, and the `~=` `|=` `^=` `$=` `*=` matchers.
+///
+/// A namespace (`*|href`, `svg|a`) is rejected: the whole selector is
+/// ignored. A backslash in a value is rejected too — hex escapes are not
+/// decoded, so the rule is ignored instead of matched against a guessed
+/// string. The `i` flag compares values ASCII-case-insensitively; `s`
+/// (and the default) keeps the stylesheet's case.
+fn parse_attr(s: &str, start: usize) -> Option<(Simple, usize)> {
+    let bytes = s.as_bytes();
+    if start >= bytes.len() || bytes[start] != b'[' {
+        return None;
+    }
+    let mut i = skip_ws(bytes, start + 1);
+    let (name, n) = read_ident(s, i);
+    if name.is_empty() {
+        return None;
+    }
+    i = skip_ws(bytes, n);
+    if i >= bytes.len() {
+        return None;
+    }
+    if bytes[i] == b']' {
+        return Some((
+            Simple::Attr(AttrTest {
+                name,
+                op: AttrOp::Present,
+                value: String::new(),
+                insensitive: false,
+            }),
+            i + 1,
+        ));
+    }
+    // `ns|attr` / `*|attr` — not this subset. `|=` is the dash matcher.
+    if bytes[i] == b'|' && (i + 1 >= bytes.len() || bytes[i + 1] != b'=') {
+        return None;
+    }
+    let (op, n) = parse_attr_op(bytes, i)?;
+    i = skip_ws(bytes, n);
+    let (value, n) = read_attr_value(s, i)?;
+    i = skip_ws(bytes, n);
+    let mut insensitive = false;
+    if i < bytes.len() && is_ident_start(bytes[i]) {
+        let (flag, n) = read_ident(s, i);
+        match flag.as_str() {
+            "i" => insensitive = true,
+            "s" => {}
+            _ => return None,
+        }
+        i = skip_ws(bytes, n);
+    }
+    if i >= bytes.len() || bytes[i] != b']' {
+        return None;
+    }
+    Some((
+        Simple::Attr(AttrTest {
+            name,
+            op,
+            value,
+            insensitive,
+        }),
+        i + 1,
+    ))
+}
+
+fn parse_attr_op(bytes: &[u8], i: usize) -> Option<(AttrOp, usize)> {
+    if i >= bytes.len() {
+        return None;
+    }
+    let (op, width) = match bytes[i] {
+        b'=' => (AttrOp::Exact, 1),
+        b'~' => (AttrOp::Word, 2),
+        b'|' => (AttrOp::Dash, 2),
+        b'^' => (AttrOp::Prefix, 2),
+        b'$' => (AttrOp::Suffix, 2),
+        b'*' => (AttrOp::Substring, 2),
+        _ => return None,
+    };
+    if width == 2 && (i + 1 >= bytes.len() || bytes[i + 1] != b'=') {
+        return None;
+    }
+    Some((op, i + width))
+}
+
+/// A quoted string (case kept, no backslash escapes) or an unquoted ident.
+fn read_attr_value(s: &str, start: usize) -> Option<(String, usize)> {
+    let bytes = s.as_bytes();
+    if start >= bytes.len() {
+        return None;
+    }
+    if bytes[start] == b'"' || bytes[start] == b'\'' {
+        let q = bytes[start];
+        let mut i = start + 1;
+        let mut out = String::new();
+        while i < bytes.len() && bytes[i] != q {
+            if bytes[i] == b'\\' {
+                return None;
+            }
+            let ch = s[i..].chars().next()?;
+            out.push(ch);
+            i += ch.len_utf8();
+        }
+        if i >= bytes.len() || bytes[i] != q {
+            return None;
+        }
+        return Some((out, i + 1));
+    }
+    if !is_ident_start(bytes[start]) {
+        return None;
+    }
+    let mut i = start + 1;
+    while i < bytes.len() && is_ident(bytes[i]) {
+        i += 1;
+    }
+    Some((s[start..i].to_string(), i))
+}
+
+fn skip_ws(bytes: &[u8], mut i: usize) -> usize {
+    while i < bytes.len() && bytes[i].is_ascii_whitespace() {
+        i += 1;
+    }
+    i
 }
 
 fn is_ident_start(b: u8) -> bool {
@@ -808,6 +965,54 @@ mod tests {
                 .any(|s| matches!(s, Simple::Pseudo(p) if p == "link"))
         );
         assert!(parse_selector("a:hover").is_none());
+        assert!(parse_selector("a[href]").is_some());
+        assert!(parse_selector("a[*|href]").is_none());
+        assert!(parse_selector(r#"a[title="\41"]"#).is_none());
+    }
+
+    #[test]
+    fn parses_attribute_selectors() {
+        let present = parse_selector("a[href]").unwrap();
+        assert!(matches!(
+            &present.parts[0].1.simples[1],
+            Simple::Attr(a) if a.name == "href" && a.op == AttrOp::Present
+        ));
+        let both = parse_selector(r#"a[ HREF ^= "https" i ][rel~=me]"#).unwrap();
+        let simples = &both.parts[0].1.simples;
+        assert!(matches!(
+            &simples[1],
+            Simple::Attr(a)
+                if a.name == "href"
+                    && a.op == AttrOp::Prefix
+                    && a.value == "https"
+                    && a.insensitive
+        ));
+        assert!(matches!(
+            &simples[2],
+            Simple::Attr(a)
+                if a.name == "rel" && a.op == AttrOp::Word && a.value == "me" && !a.insensitive
+        ));
+        for (sel, op, value, insensitive) in [
+            (r#"[type="TEXT" s]"#, AttrOp::Exact, "TEXT", false),
+            ("[lang|=en]", AttrOp::Dash, "en", false),
+            (r#"[href$=".pdf"]"#, AttrOp::Suffix, ".pdf", false),
+            ("[title*=Hello]", AttrOp::Substring, "Hello", false),
+        ] {
+            let parsed = parse_selector(sel).unwrap();
+            assert!(
+                matches!(
+                    &parsed.parts[0].1.simples[0],
+                    Simple::Attr(a)
+                        if a.op == op && a.value == value && a.insensitive == insensitive
+                ),
+                "{sel}"
+            );
+        }
+        assert!(parse_selector("a[href=]").is_none());
+        assert!(parse_selector("a[href=\"unterminated]").is_none());
+        assert!(parse_selector(r#"a[href="x" z]"#).is_none());
+        assert!(parse_selector("[*|href]").is_none());
+        assert!(parse_selector("[]").is_none());
     }
 
     fn env(w: f32, h: f32) -> MediaEnv {
@@ -855,6 +1060,9 @@ mod tests {
             ("(color: red) and (width: 1px) or (gap: 0)", false),
             ("((display: grid) or (color: red)) and (width: 1px)", true),
             ("selector(.a > b)", true),
+            ("selector(a[href])", true),
+            ("selector(a[href^=https])", true),
+            ("selector(a[*|href])", false),
             ("selector(:has(a))", false),
             ("font-tech(color-COLRv1)", false),
             ("", false),

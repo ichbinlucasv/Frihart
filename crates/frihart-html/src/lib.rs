@@ -17,12 +17,14 @@ pub struct FormField {
     pub label: String,
 }
 
-/// Tag + id + class, plus ancestors from root toward the parent.
+/// Tag + id + class + attributes, plus ancestors from root toward the parent.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Qual {
     pub tag: String,
     pub id: String,
     pub classes: Vec<String>,
+    /// HTML attributes, names already lowercased.
+    pub attrs: Vec<(String, String)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -146,6 +148,7 @@ fn qual_of(node: &Node) -> Qual {
             .split_whitespace()
             .map(str::to_string)
             .collect(),
+        attrs: node.attrs.clone(),
     }
 }
 
