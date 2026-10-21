@@ -3,8 +3,15 @@
 Tag: **v0.1.0**. Head: `main` on Codeberg (primary) and GitHub (mirror).
 
 Do **not** start H (Windows/macOS/Android) or I (media decode, i18n
-depth, print/PDF, extension runtime). JS stays off. Do not write a JS
-engine.
+depth, print/PDF, extension runtime).
+
+**Engines (Lucas, 2026-10-21).** Servo is the clearnet Compat engine and
+Boa is the light JS bridge on the own engine, so the browser can be
+finished before Campaign J. The own Rust engine stays in this same
+project and keeps Tor, I2P and reader tabs. The day it covers the Compat
+job, set `content.own_replaces_compat` and Servo is no longer selected.
+Boa leaves when Campaign J covers the same scripts. Tor and I2P never
+use Servo. The default build still refuses untrusted script.
 
 ## Who / what
 
@@ -14,10 +21,11 @@ engine.
   Apache-2.0`). No telemetry, no account, no password vault.
 - **Linux first:** Arch/CachyOS reference, then Fedora, Mint, Tails,
   Qubes. Same binary. Linux free; other OS via Supporter plan later, no license server.
-- **The engine is Frihart, in Rust** (locked). Never embed V8,
-  SpiderMonkey, JavaScriptCore, QuickJS, Gecko, Blink, WebKit, Servo,
-  or CEF. Campaign G, if it ever starts, is a small interpreter we write
-  here. It has **not** been started.
+- **Three engines, one chrome.** Own engine for Tor, I2P and reader.
+  Servo (feature `servo`, brings SpiderMonkey) for clearnet Compat.
+  Boa for light JS on the own engine (feature not linked yet). Campaign
+  J replaces Boa, then Servo. Do not embed V8, JavaScriptCore, QuickJS,
+  Gecko, Blink, WebKit or CEF.
 
 Repos:
 
@@ -71,8 +79,11 @@ Detect + Tails/Qubes-DVM ephemeral default + packaging notes. Packages
 not published.
 
 **G Script**  
-Refuse-only. Pref flip is not a grant. `javascript:` refused.
-**Locked:** no foreign JS engine. A future G is Frihart Rust only.
+Refuse-only on the default build. Pref flip is not a grant.
+`javascript:` refused. Servo JS is per-site and clearnet-only when the
+`servo` feature is built. Boa evaluates one source when `frihart-js` is
+built with feature `boa`; the chrome does not call it yet. The own
+engine folder is `crates/frihart-own` and the browser does not select it.
 
 ## Plan (do these, in this order)
 
@@ -98,8 +109,8 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 6. **v0.2.0** when: named static list is claimed (25 already), worker
    sandbox on, `cargo test --workspace` green, one reference distro
    package actually installs (`pacman -U` the `.pkg.tar.zst`).
-7. **Then — and only then — discuss G.** Recommendation: stay refuse
-   another year. If G starts, it is a tiny Frihart interpreter in Rust.
+7. **Boa M1** after the next static claim: feature `boa`, inline
+   scripts, no network, HostApi still refused, off on Tor and I2P.
 8. **H and I stay parked** until Linux is a daily driver.
 
 ## Recommendations
@@ -108,10 +119,12 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
    if something is unreadable.
 2. **Claim sites by opening live HTML**, never by adding a URL to a
    list. Compatibility is per document, not “the web.”
-3. **Do not start a JS engine.** Locked: Frihart Rust only. Starting G
-   now eats a year and leaks. Pref flip is not a grant.
-4. **Do not embed** V8, SpiderMonkey, JavaScriptCore, QuickJS, Gecko,
-   Blink, WebKit, Servo, or CEF. Do not execute Firefox add-ons.
+3. **Servo and Boa are accepted bridges.** They exist so the browser
+   ships before Campaign J. Pref flip on the default build is still not
+   a grant.
+4. **Do not embed** V8, JavaScriptCore, QuickJS, Gecko, Blink, WebKit
+   or CEF. SpiderMonkey arrives only inside the feature-gated Servo
+   Compat engine, and never on Tor or I2P. Do not execute Firefox add-ons.
 5. **Do not split the network process** until the claim list is useful.
    Isolation theater is worse than documented in-process rustls.
 6. **Do not publish Tails/Qubes packages** until Arch/Fedora/Debian
@@ -136,18 +149,19 @@ X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
 ## Next session — start here
 
 **D: claim one more static document** (not Wikipedia / GitHub / mail).
-Forty public sites (RFC 8439 last Claimed). Servo stays the Compat
-engine for clearnet speed and tests. Own engine stays Reader, Tor, and
-I2P. On 2026-10-17 the Servo request gate refuses `Referer` and a
-`Cookie` that is not same-site with the document. The Compat document
-is still a `data:` URL, so `Cookie` is refused. Do not embed Servo as
-the product engine.
+Forty public sites (RFC 8439 last Claimed). Servo is the Compat engine
+for clearnet. The own engine is Reader, Tor, and I2P, and it replaces
+Servo when `content.own_replaces_compat` is set. On 2026-10-17 the Servo
+request gate refuses `Referer` and a `Cookie` that is not same-site with
+the document. The Compat document is still a `data:` URL, so `Cookie`
+is refused. Do not make Servo the product engine.
 **libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
 libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.
 **age-encryption.org** Forbidden (apex → GitHub) — NeedsJs, left
 unclaimed.
 Arch package builds; install is
-`sudo pacman -U`. Do not start a JS engine. G stays refuse.
+`sudo pacman -U`. Default build still refuses script. Next JS slice is
+Boa M1, feature-gated, not the product default.
 
 ## Commands
 

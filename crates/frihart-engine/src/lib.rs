@@ -96,7 +96,20 @@ impl Engine for OwnEngine {
 /// Per-tab engine selection. Fail closed: Tor/I2P and Reader always get
 /// the own engine; Compat goes to Servo only on clearnet and only when it
 /// is compiled in.
-pub fn select_engine(net: TabNetwork, mode: TabMode, servo_available: bool) -> EngineKind {
+///
+/// `own_replaces_compat` is the swap Lucas locked on 2026-10-21: Servo and
+/// Boa ship the browser sooner, and the day Frihart's own Rust engine covers
+/// the same job this flag retires Servo. Tor and I2P were already own-engine
+/// only.
+pub fn select_engine(
+    net: TabNetwork,
+    mode: TabMode,
+    servo_available: bool,
+    own_replaces_compat: bool,
+) -> EngineKind {
+    if own_replaces_compat {
+        return EngineKind::Own;
+    }
     match (net, mode) {
         (TabNetwork::Clearnet, TabMode::Compat) if servo_available => EngineKind::Servo,
         _ => EngineKind::Own,
@@ -114,7 +127,11 @@ pub fn default_tab_mode(
     compat_default: bool,
     servo_available: bool,
     claimed_by_own_engine: bool,
+    own_replaces_compat: bool,
 ) -> TabMode {
+    if own_replaces_compat {
+        return TabMode::Reader;
+    }
     match net {
         TabNetwork::Clearnet if compat_default && servo_available && !claimed_by_own_engine => {
             TabMode::Compat
@@ -130,8 +147,12 @@ mod tests {
     #[test]
     fn default_mode_is_reader_unless_every_condition_holds() {
         assert_eq!(
-            default_tab_mode(TabNetwork::Clearnet, true, true, false),
+            default_tab_mode(TabNetwork::Clearnet, true, true, false, false),
             TabMode::Compat
+        );
+        assert_eq!(
+            default_tab_mode(TabNetwork::Clearnet, true, true, false, true),
+            TabMode::Reader
         );
         for (c, s, k) in [
             (false, true, false),
@@ -140,12 +161,15 @@ mod tests {
             (false, false, true),
         ] {
             assert_eq!(
-                default_tab_mode(TabNetwork::Clearnet, c, s, k),
+                default_tab_mode(TabNetwork::Clearnet, c, s, k, false),
                 TabMode::Reader
             );
         }
         for net in [TabNetwork::Tor, TabNetwork::I2p] {
-            assert_eq!(default_tab_mode(net, true, true, false), TabMode::Reader);
+            assert_eq!(
+                default_tab_mode(net, true, true, false, false),
+                TabMode::Reader
+            );
         }
     }
 
@@ -153,23 +177,35 @@ mod tests {
     fn tor_and_i2p_never_get_servo() {
         for net in [TabNetwork::Tor, TabNetwork::I2p] {
             for mode in [TabMode::Reader, TabMode::Compat] {
-                assert_eq!(select_engine(net, mode, true), EngineKind::Own);
+                assert_eq!(select_engine(net, mode, true, false), EngineKind::Own);
             }
         }
     }
 
     #[test]
-    fn compat_clearnet_uses_servo_only_when_built() {
+    fn own_engine_swap_retires_servo() {
         assert_eq!(
-            select_engine(TabNetwork::Clearnet, TabMode::Compat, true),
-            EngineKind::Servo
-        );
-        assert_eq!(
-            select_engine(TabNetwork::Clearnet, TabMode::Compat, false),
+            select_engine(TabNetwork::Clearnet, TabMode::Compat, true, true),
             EngineKind::Own
         );
         assert_eq!(
-            select_engine(TabNetwork::Clearnet, TabMode::Reader, true),
+            select_engine(TabNetwork::Clearnet, TabMode::Compat, true, false),
+            EngineKind::Servo
+        );
+    }
+
+    #[test]
+    fn compat_clearnet_uses_servo_only_when_built() {
+        assert_eq!(
+            select_engine(TabNetwork::Clearnet, TabMode::Compat, true, false),
+            EngineKind::Servo
+        );
+        assert_eq!(
+            select_engine(TabNetwork::Clearnet, TabMode::Compat, false, false),
+            EngineKind::Own
+        );
+        assert_eq!(
+            select_engine(TabNetwork::Clearnet, TabMode::Reader, true, false),
             EngineKind::Own
         );
     }

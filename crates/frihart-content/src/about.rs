@@ -643,8 +643,10 @@ fn engine_page(url: &Url) -> Document {
                 "15 extension host; runtime dormant".into(),
             ]),
             Block::Note(
-                "Put extra CSS in this profile's user.css. Origin: UA, then user, \
-                 then author <style>."
+                "Three engines, one chrome. Own Rust engine: Tor, I2P, reader. \
+                 Servo: clearnet Compat, feature servo. Boa: light JS on the own \
+                 engine when that feature lands. content.own_replaces_compat \
+                 retires Servo. Put extra CSS in this profile's user.css."
                     .into(),
             ),
             Block::Link {
@@ -705,16 +707,21 @@ fn campaigns_page(url: &Url) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Campaigns".into(),
-                subtitle: "A B C closed (v0.1.0). D E F G open. H and I parked.".into(),
+                subtitle:
+                    "A B C closed. Servo and Boa ship clearnet. Own engine replaces them later."
+                        .into(),
             },
             Block::List(vec![
                 "A Foundation — closed".into(),
                 "B Chrome — closed".into(),
                 "C Network OPSEC — closed".into(),
-                "D Engine — open (38 public static documents claimed)".into(),
+                "D Engine — open (own Rust engine, Tor / I2P / reader)".into(),
                 "E Isolation — open (nnp + landlock + seccomp + rlimits; prefs.toml denied)".into(),
                 "F Linux homes — open (detect + Tails/Qubes private default)".into(),
-                "G Script — refuse-only (pref flip is not a grant)".into(),
+                "G Script — refuse-only on the default build".into(),
+                "S Servo Compat — clearnet only, feature servo, off unless built".into(),
+                "B-JS Boa — feature boa, off in the default build".into(),
+                "J Own engine — crates/frihart-own, not selected yet".into(),
             ]),
             Block::Note(
                 "H Other OS (Windows, macOS, Android) and I Depth (media, i18n, \
@@ -809,7 +816,7 @@ fn script_page(url: &Url, prefs: &Prefs) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "Script".into(),
-                subtitle: "Campaign G. Execution is off.".into(),
+                subtitle: "Default build refuses script. Servo and Boa are opt-in bridges.".into(),
             },
             Block::KeyValue {
                 key: "pref javascript".into(),
@@ -834,10 +841,13 @@ fn script_page(url: &Url, prefs: &Prefs) -> Document {
                     .collect(),
             ),
             Block::Note(
-                "Locked: the engine is Frihart, in Rust. We will not embed V8, \
-                 SpiderMonkey, or another browser's runtime. Campaign G, if it \
-                 ever starts, is a small interpreter we write here. Until then \
-                 flipping the pref does not execute, and javascript: is refused."
+                "Lucas, 2026-10-21: Servo (feature servo) is the clearnet Compat \
+                 engine. Boa (feature boa, off in this build) is the light JS \
+                 bridge. The own engine sits in crates/frihart-own and is not \
+                 selected. Tor and I2P stay on the reader engine with script \
+                 refused. content.own_replaces_compat (default off) retires \
+                 Servo when that folder can cover the job. Flipping the JS \
+                 pref on this build does not execute, and javascript: is refused."
                     .into(),
             ),
         ],
@@ -1552,8 +1562,9 @@ fn credits(url: &Url) -> Document {
                 "rustls (Phase 2) — TLS".into(),
             ]),
             Block::Note(
-                "Using those libraries is not the same as shipping Gecko, Blink, \
-                 WebKit, or Servo. See ARCHITECTURE.md."
+                "Servo is the clearnet Compat engine behind the servo feature \
+                 (it brings SpiderMonkey). It is not the product engine. Tor \
+                 and I2P never use it. See docs/ENGINE_HYBRID.md."
                     .into(),
             ),
         ],

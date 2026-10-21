@@ -163,11 +163,13 @@ product is not. Since 2026-10-13, Servo is embedded as the clearnet
 *Compat* engine only (docs/ENGINE_HYBRID.md); Frihart's own engine stays
 the product core and the only engine for Tor and I2P.
 
-**The engine is Frihart, in Rust.** HTML, CSS, layout, and — if Campaign
-G ever starts — script are written in this tree. We will not embed V8,
-SpiderMonkey, JavaScriptCore or QuickJS into the own engine. The one
-exception is the feature-gated Servo Compat engine for clearnet tabs,
-which never touches Tor or I2P tabs.
+**The engine is Frihart, in Rust.** HTML, CSS, layout, and Campaign J
+are written in this tree. We will not embed V8, JavaScriptCore or
+QuickJS. Servo (and the SpiderMonkey it ships) is the clearnet Compat
+bridge. Boa is the light JS bridge on the own engine. Neither touches
+Tor or I2P. On 2026-10-21 Lucas locked the swap: when the own engine
+covers that job, `content.own_replaces_compat` retires Servo, and
+Campaign J retires Boa.
 
 Every third-party crate must be justified. A crate that phones home, pulls
 in a telemetry SDK, or makes the supply chain absurd is rejected.

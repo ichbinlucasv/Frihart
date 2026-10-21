@@ -30,6 +30,7 @@ members = [
     "crates/frihart-print",
     "crates/frihart-engine",
     "crates/frihart-engine-servo",
+    "crates/frihart-own",
 ]
 
 [workspace.package]
@@ -69,6 +70,7 @@ frihart-media = { path = "crates/frihart-media" }
 frihart-i18n = { path = "crates/frihart-i18n" }
 frihart-print = { path = "crates/frihart-print" }
 frihart-engine = { path = "crates/frihart-engine" }
+frihart-own = { path = "crates/frihart-own" }
 
 clap = { version = "4.5", features = ["derive"] }
 libc = "0.2"

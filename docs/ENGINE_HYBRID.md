@@ -283,3 +283,14 @@ Two campaigns run beside Servo Compat; details live in
 
 Per-tab selection stays the table above until B-JS/J change it. Servo
 never handles Tor/I2P; Boa and Frihart JS inherit that rule until audited.
+
+## Swap (Lucas, 2026-10-21)
+
+Servo and Boa stay, so a usable browser does not wait on Campaign J.
+The own engine is built in this same tree the whole time. The pref
+`content.own_replaces_compat` (default false) is the switch:
+`select_engine` returns the own engine for every tab, and
+`default_tab_mode` stays Reader. Boa is deleted from the tree when
+Campaign J covers the same milestones. Turning the pref on before the
+own engine can paint those clearnet sites just drops Compat back to the
+reader engine.

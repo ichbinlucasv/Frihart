@@ -36,10 +36,11 @@ script all receive a `Policy` and must be able to explain a denial.
 
 ## Non-negotiable constraints
 
-1. **Original product.** Frihart is not Gecko, Blink, WebKit, or Servo
-   with a different chrome. Engine crates are written here. Do not
-   embed V8, SpiderMonkey, JavaScriptCore, or QuickJS. Script, if it
-   ever exists, is a Frihart interpreter in Rust.
+1. **Original product.** Frihart is not a reskin of Gecko, Blink, or
+   WebKit. The own engine is `crates/frihart-own` and is not selected
+   yet. Servo is the clearnet Compat bridge (feature `servo`) and Boa
+   is the light JS bridge (feature `boa`). Do not embed V8,
+   JavaScriptCore, or QuickJS. Tor and I2P stay on the own reader engine.
 2. **No telemetry pathway.** There is no `frihart-telemetry` crate, no
    analytics URL constant, and no "phone home later" hook.
 3. **Policy before I/O.** A network request, storage write, permission
@@ -106,7 +107,8 @@ Frihart/
 │   ├── frihart-pipeline/     # html → display list
 │   ├── frihart-forms/        # GET/POST encode
 │   ├── frihart-ipc/          # typed process messages
-│   ├── frihart-js/           # values; exec off
+│   ├── frihart-js/           # refuse layer; Boa behind feature `boa`
+│   ├── frihart-own/          # own Rust engine; not selected yet
 │   ├── frihart-media/        # sniff only
 │   ├── frihart-i18n/         # chrome strings
 │   ├── frihart-print/        # display list → PS
@@ -137,7 +139,8 @@ Each crate has types and tests. Depth is still the long job.
 | `frihart-pipeline` | 12 | html → display list (chrome paints it) |
 | `frihart-forms` | 5 | GET URL + POST body |
 | `frihart-ipc` | 6 | envelopes + in-process bus |
-| `frihart-js` | 7 | values; exec and fingerprint APIs off |
+| `frihart-js` | 7 | refuse layer; Boa is feature `boa`, off by default |
+| `frihart-own` | J | own engine folder; not selected (`READY_TO_REPLACE_COMPAT` is false) |
 | `frihart-media` | 11 | sniff; autoplay off |
 | `frihart-i18n` | 13 | chrome catalog, en default |
 | `frihart-print` | 14 | display list → local PostScript |
