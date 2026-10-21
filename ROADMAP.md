@@ -684,6 +684,7 @@ A sustainable rhythm for a long project:
 - [x] Content-worker rlimits (as / nofile / nproc / core)
 - [x] CSS `@media` evaluation (viewport width/height/orientation; fixed preference answers)
 - [x] CSS `@supports` evaluation (honest answers from the applied declaration list; `selector()`) (2026-10-18)
+- [x] CSS attribute selectors (`[attr]`, `=`, `~=`, `|=`, `^=`, `$=`, `*=`, `i`/`s` flags) (2026-10-21)
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages published (spec/debian exist)
 

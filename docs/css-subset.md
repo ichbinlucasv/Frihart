@@ -24,6 +24,18 @@ host files.
 - comma lists (`h1, h2`)
 - `:link` and `:visited` (same color; no history leak)
 - `:root` (the `html` root element)
+- attribute (2026-10-21): `[href]`, `[type="text"]`, `[rel~="nofollow"]`,
+  `[lang|="en"]`, `[href^="https"]`, `[href$=".pdf"]`, `[href*="example"]`
+  - names are ASCII case-insensitive (HTML). The first attribute of that
+    name wins, as `getAttribute` does
+  - values keep their case unless the `i` flag is set (`[type="text" i]`);
+    `s` forces the sensitive default
+  - an empty `^=` / `$=` / `*=` value, or a `~=` value that is empty or
+    contains whitespace, never matches
+  - a backslash in a value (hex escapes are not decoded) makes the
+    selector invalid, so the rule is ignored
+  - namespace prefixes (`*|href`, `xml:lang`) are not accepted; that
+    selector is ignored
 
 ## At-rules (now)
 
@@ -58,12 +70,13 @@ when the own engine cannot render the modern one:
 Unknown features evaluate to false (the block is skipped). Rules inside a
 matching block go through the normal cascade, so properties we do not
 implement are still ignored; we do not fake a two-column table layout.
-Other at-rules (`@font-face`, `@supports`, `@keyframes`, `@import`, …)
-are skipped with their nested rules.
+Other at-rules (`@font-face`, `@keyframes`, `@import`, …) are skipped
+with their nested rules.
 
 ## Selectors (later)
 
-- attribute selectors
+Sibling combinators (`+`, `~`) and pseudo-classes other than `:link`,
+`:visited` and `:root` are not accepted; the selector is ignored.
 
 ## Properties (now)
 
