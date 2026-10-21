@@ -196,6 +196,10 @@ pub struct ContentPrefs {
     /// passes. Tor and I2P tabs never use Compat, and sites Frihart's own
     /// engine claims stay in Reader.
     pub compat_default: bool,
+    /// When Frihart's own Rust engine covers the Compat job, this retires
+    /// Servo (Lucas, 2026-10-21). Off until that day. Boa is the light JS
+    /// bridge on the own engine until Campaign J replaces it too.
+    pub own_replaces_compat: bool,
 }
 
 impl Default for ContentPrefs {
@@ -208,6 +212,7 @@ impl Default for ContentPrefs {
             dark_mode: true,
             autoplay: false,
             compat_default: false,
+            own_replaces_compat: false,
         }
     }
 }

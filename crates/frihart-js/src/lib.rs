@@ -10,6 +10,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod boa;
+
 use frihart_core::{FrihartError, Result};
 
 #[derive(Clone, Debug, PartialEq)]

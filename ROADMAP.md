@@ -79,7 +79,7 @@ Frihart claims at that time. Desktop Linux is free; non-Linux builds
 | **I Depth** | 11, 13–15 | **Parked** | Media, i18n, print, extension runtime |
 | **S Servo Compat** | frihart-engine-servo | **Open** | Clearnet Compat tabs via Servo (see Campaign S) |
 | **B-JS Boa light JS** | frihart-js + boa | **Open** | Opt-in per-site Boa on the *own* engine |
-| **J Own JS engine** | frihart-js | **Open** (10-year) | 100% Rust JS engine; gradually replaces Boa, then Servo |
+| **J Own JS engine** | frihart-js | **Open** (10-year) | 100% Rust JS engine; `content.own_replaces_compat` retires Servo, then Boa goes |
 
 **Closed today:** A, B, C (crate phases 0–2). Leftovers (multi-window, HTTP/2) do not block close.
 
@@ -790,10 +790,12 @@ script goes only through `frihart-net`.
 
 ### Milestones
 
-- [ ] **M1 — Sandboxed inline scripts, no network.** Boa runs
-  `<script>` bodies (and maybe `javascript:` URLs if policy allows) in a
-  sandbox with no `fetch`, no WebSocket, no timers that touch the
-  network. Feature-gated; all HostApi still refuse.
+- [ ] **M1 — Sandboxed inline scripts, no network.** *Done so far
+  (2026-10-21):* `frihart-js` feature `boa` (off by default) evaluates one
+  source in a fresh Boa context. `fetch` and `WebSocket` are absent.
+  `inline_script_bodies` lists classic inline scripts and skips `src`
+  and non-JS types. The chrome does not call Boa yet, and HostApi still
+  refuses. `javascript:` stays refused.
 - [ ] **M2 — Minimal DOM bindings.** `document.querySelector`,
   `textContent`, basic events (`click`, `DOMContentLoaded`, `submit`).
   Enough for progressive enhancement on claimed sites.

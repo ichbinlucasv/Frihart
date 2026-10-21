@@ -12,7 +12,7 @@ network surfaces stay denied even if a JS pref is flipped.
 | --- | --- |
 | **G Script** | Refuse layer and typed host APIs (`HostApi`). Stays. |
 | **B-JS** | Optional Boa embed (feature-gated), wired through this crate's policy. Lives behind a flag; not the end state. |
-| **J Own JS engine** | 10-year goal: Frihart's own 100% Rust JS engine (parser, bytecode, GC, JIT, DOM). **This crate** is its home — there is no separate `frihart-js-engine`. |
+| **J Own JS engine** | 10-year goal. The code lives in [`frihart-own`](../frihart-own), not here. This crate keeps the host-API refuse policy that both Boa and that engine must pass through. |
 
 See [ROADMAP.md](../../ROADMAP.md) (Campaigns B-JS and J) and
 [docs/ENGINE_HYBRID.md](../../docs/ENGINE_HYBRID.md).

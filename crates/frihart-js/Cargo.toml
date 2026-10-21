@@ -5,8 +5,16 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 rust-version.workspace = true
-description = "JS refuse layer + future own Rust JS engine (Campaigns G, B-JS, J)."
+description = "JS refuse layer, optional Boa bridge, host-API policy (Campaigns G, B-JS)."
 publish.workspace = true
+
+[features]
+default = []
+boa = ["dep:boa_engine"]
 
 [dependencies]
 frihart-core.workspace = true
+# 0.21+ requires ICU 2.0/2.3. Servo 0.7 pins ICU 2.1 through mozjs, and
+# Cargo keeps one version of each crate in this workspace. 0.20 uses ICU
+# 1.5, which can sit beside that pin. No Intl and no Temporal.
+boa_engine = { version = "=0.20.0", optional = true, default-features = false }

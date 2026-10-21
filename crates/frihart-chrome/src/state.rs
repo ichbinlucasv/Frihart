@@ -547,7 +547,8 @@ impl Browser {
             Circuit::I2p => TabNetwork::I2p,
             Circuit::Direct | Circuit::Private => TabNetwork::Clearnet,
         };
-        let kind = select_engine(net, tab.mode, frihart_engine_servo::AVAILABLE);
+        let own_replaces = self.profile.prefs().content.own_replaces_compat;
+        let kind = select_engine(net, tab.mode, frihart_engine_servo::AVAILABLE, own_replaces);
         if kind == EngineKind::Servo {
             let js = self.site_js_allowed();
             match self.servo.render_html_with_js(&html, width, js) {
@@ -742,6 +743,7 @@ impl Browser {
     /// the site it is about to open. Tor/I2P tabs stay Reader.
     fn apply_default_mode(&mut self, url: &Url) {
         let compat_default = self.profile.prefs().content.compat_default;
+        let own_replaces = self.profile.prefs().content.own_replaces_compat;
         let tab = self.active_tab_mut();
         if matches!(tab.circuit, Circuit::Tor | Circuit::I2p) {
             tab.mode = TabMode::Reader;
@@ -755,6 +757,7 @@ impl Browser {
             compat_default,
             frihart_engine_servo::AVAILABLE,
             frihart_content::is_claimed_url(url),
+            own_replaces,
         );
     }
 
@@ -1162,6 +1165,7 @@ fn open_tab(profile: &mut Profile, input: &str) -> Tab {
         profile.prefs().content.compat_default,
         frihart_engine_servo::AVAILABLE,
         frihart_content::is_claimed_url(&url),
+        profile.prefs().content.own_replaces_compat,
     );
     Tab {
         id: TabId::new(),
