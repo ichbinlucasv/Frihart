@@ -227,6 +227,8 @@ mod tests {
 
         // HTTPS subresources reach Frihart's proxy, which refuses a
         // special-use name and a private address without any DNS lookup.
+        // `.onion` / `.i2p` never get this far: the gate cancels them.
+        // `.invalid` is what shows the proxy is still on the path.
         let (_, refused_before) = e.proxy_counts();
         let (gate_allowed_before, _) = e.gate_counts();
         let html = "<title>proxied</title>\

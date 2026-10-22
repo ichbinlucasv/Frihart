@@ -140,8 +140,9 @@ Forty public sites (RFC 8439 last Claimed). Servo stays the Compat
 engine for clearnet speed and tests. Own engine stays Reader, Tor, and
 I2P. On 2026-10-17 the Servo request gate refuses `Referer` and a
 `Cookie` that is not same-site with the document. The Compat document
-is still a `data:` URL, so `Cookie` is refused. Do not embed Servo as
-the product engine.
+is still a `data:` URL, so `Cookie` is refused. On 2026-10-22 the same
+gate refuses a `.onion` or `.i2p` host before the proxy. Do not embed
+Servo as the product engine.
 **libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
 libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.
 **age-encryption.org** Forbidden (apex → GitHub) — NeedsJs, left

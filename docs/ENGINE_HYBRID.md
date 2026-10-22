@@ -193,6 +193,10 @@ intercepted response), allowed ones continue to the proxy:
 - `Sec-CH-*` Client Hints, `X-Client-Data`, `X-Requested-With` refused
 - a `User-Agent` other than `frihart_core::FROZEN_USER_AGENT` refused
 - more than 64 headers refused
+- a `.onion` or `.i2p` document or request host is refused (2026-10-22),
+  including a trailing DNS dot and the bare suffix. Servo never starts a
+  Tor or I2P fetch. Other special-use names (`.invalid`, `.local`, …) and
+  private addresses still pass this gate and are refused by the proxy
 
 `GateStats` counts both outcomes (`ServoEngine::gate_counts`); the Servo
 feature test checks that a plain-HTTP image is refused by the gate and

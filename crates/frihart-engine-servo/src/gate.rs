@@ -14,8 +14,11 @@
 //! than Frihart's frozen one; an oversized header list; a `Cookie` whose
 //! document host and request host are not the same site. The page Servo is
 //! handed today is a `data:` URL, which has no host, so that `Cookie` is
-//! refused. Host policy (special-use names, private addresses, rebinding,
-//! blocker lists) stays with the Compat proxy.
+//! refused. A `.onion` or `.i2p` host on the document or the request is
+//! refused here: Servo never starts a Tor or I2P load. Other special-use
+//! names, private addresses, rebinding and blocker lists stay with the
+//! Compat proxy (an `.invalid` name still reaches it, which is how the
+//! Servo feature test shows the proxy is on the path).
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -45,6 +48,8 @@ pub enum Refusal {
     TooManyHeaders,
     /// A cookie the proxy cannot see, and that is not tied to the document site.
     Cookie,
+    /// Document or request host is Tor (`.onion`) or I2P (`.i2p`).
+    HiddenNetwork,
 }
 
 impl Refusal {
@@ -55,8 +60,27 @@ impl Refusal {
             Self::UserAgent => "user agent is not the frozen one",
             Self::TooManyHeaders => "too many request headers",
             Self::Cookie => "cookie is not same-site with the document",
+            Self::HiddenNetwork => "onion or i2p host",
         }
     }
+}
+
+/// True for a Tor (`.onion`) or I2P (`.i2p`) host.
+///
+/// Real names use [`frihart_core::hidden_net_host`], so this gate and the
+/// rest of Frihart share one suffix rule (trailing DNS dot included). The
+/// bare suffix (`onion`, `i2p`) is refused too, matching the Compat proxy.
+/// A label that only contains those letters (`notonion.com`,
+/// `onion.example.com`) does not: the suffix has to be its own label.
+pub fn hidden_network_host(host: &str) -> bool {
+    let h = host.trim();
+    if frihart_core::hidden_net_host(h).is_some() {
+        return true;
+    }
+    matches!(
+        h.trim_end_matches('.').to_ascii_lowercase().as_str(),
+        "onion" | "i2p"
+    )
 }
 
 /// True when two hosts are equal, or one is a parent of the other.
@@ -94,6 +118,7 @@ pub fn hosts_share_site(document_host: &str, request_host: &str) -> bool {
 /// `document_host` is the page's host. `request_host` is this load's host.
 /// A `Cookie` is allowed only when those two share a site. `None` refuses
 /// the cookie: the current Compat document is a `data:` URL and has no host.
+/// A document or request host on `.onion` or `.i2p` refuses the load.
 pub fn check_request<'a>(
     scheme: &str,
     header_names: impl IntoIterator<Item = &'a str>,
@@ -108,6 +133,14 @@ pub fn check_request<'a>(
     }
     if !scheme.eq_ignore_ascii_case("https") {
         return Err(Refusal::NotHttps);
+    }
+    // Servo is clearnet Compat only. Refuse before header checks so a
+    // hidden-network load is cancelled even when the rest of the request
+    // would have passed.
+    if document_host.is_some_and(hidden_network_host)
+        || request_host.is_some_and(hidden_network_host)
+    {
+        return Err(Refusal::HiddenNetwork);
     }
     let mut n = 0usize;
     let mut saw_cookie = false;
@@ -296,6 +329,75 @@ mod tests {
         assert_eq!(
             check_request("https", many, Some(UA), None, None),
             Err(Refusal::TooManyHeaders)
+        );
+    }
+
+    #[test]
+    fn onion_and_i2p_hosts_are_refused() {
+        for host in [
+            "example.onion",
+            "example.onion.",
+            "EXAMPLE.ONION",
+            "onion",
+            "www.example.i2p",
+            "I2P",
+            "a.b.i2p.",
+        ] {
+            assert_eq!(
+                check_request(
+                    "https",
+                    ["Accept"],
+                    Some(UA),
+                    Some("example.com"),
+                    Some(host)
+                ),
+                Err(Refusal::HiddenNetwork),
+                "{host}"
+            );
+            assert!(hidden_network_host(host), "{host}");
+        }
+        assert!(hidden_network_host("  x.onion  "));
+        assert!(!hidden_network_host(""));
+        assert!(!hidden_network_host("..."));
+        // The hidden-network name is the reason, even if a header would
+        // also have been refused.
+        assert_eq!(
+            check_request("https", ["Referer"], Some(UA), None, Some("x.onion")),
+            Err(Refusal::HiddenNetwork)
+        );
+        // The page itself is on a hidden network: its clearnet subresources
+        // are refused too. Servo must not be rendering that page.
+        assert_eq!(
+            check_request(
+                "https",
+                [],
+                Some(UA),
+                Some("foo.onion"),
+                Some("example.com")
+            ),
+            Err(Refusal::HiddenNetwork)
+        );
+        // Not hidden-network names. `.invalid` and private addresses stay
+        // the proxy's job, so they pass this gate.
+        for host in [
+            "example.com",
+            "notonion.com",
+            "onion.example.com",
+            "i2p.example.com",
+            "frihart-test.invalid",
+            "10.1.2.3",
+        ] {
+            assert_eq!(
+                check_request("https", [], Some(UA), Some("example.com"), Some(host)),
+                Ok(()),
+                "{host}"
+            );
+            assert!(!hidden_network_host(host), "{host}");
+        }
+        // In-memory loads are not fetches of the host.
+        assert_eq!(
+            check_request("data", [], None, None, Some("x.onion")),
+            Ok(())
         );
     }
 
