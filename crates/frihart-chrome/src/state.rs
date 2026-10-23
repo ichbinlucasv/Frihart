@@ -2,6 +2,7 @@
 
 use frihart_autofill::Identity;
 use frihart_blocker::FilterEngine;
+use frihart_config::ClearnetDns;
 use frihart_content::{
     Block, Document, FetchRequest, InternalPage, PageItem, PrefToggle, SessionHistory, fetch, load,
 };
@@ -164,6 +165,12 @@ impl Browser {
         let url_text = tab.url_display();
         let identity = Identity::load(&profile.root().join("autofill.toml")).unwrap_or_default();
         let enabled = profile.prefs().privacy.blocker;
+        let dns_mode = profile.prefs().network.doh_mode.clone();
+        let dns_url = profile.prefs().network.doh_url.clone();
+        let dns_fallback = profile.prefs().network.dns_system_fallback;
+        let mut servo = ServoEngine::default();
+        servo.set_clearnet_dns(&dns_mode, &dns_url, dns_fallback);
+        let client = RustlsClient::with_plan(ClearnetDns::from_prefs(profile.prefs()));
         let jar = if profile.is_ephemeral() || !profile.prefs().privacy.persist_cookies {
             CookieJar::default()
         } else {
@@ -185,10 +192,10 @@ impl Browser {
             find_focused: false,
             find_text: String::new(),
             find_status: String::new(),
-            client: RustlsClient::new(),
+            client,
             jar,
             compat_jars: SiteCookieJars::default(),
-            servo: ServoEngine::default(),
+            servo,
             blocker: FilterEngine::new(enabled),
             field_focus: None,
             identity,
@@ -1129,8 +1136,18 @@ impl Browser {
             return;
         }
         self.blocker = FilterEngine::new(self.profile.prefs().privacy.blocker);
+        self.sync_dns();
         self.reload();
         self.status.clear();
+    }
+
+    fn sync_dns(&mut self) {
+        let mode = self.profile.prefs().network.doh_mode.clone();
+        let url = self.profile.prefs().network.doh_url.clone();
+        let fallback = self.profile.prefs().network.dns_system_fallback;
+        self.client
+            .set_plan(ClearnetDns::from_prefs(self.profile.prefs()));
+        self.servo.set_clearnet_dns(&mode, &url, fallback);
     }
 
     pub fn scroll(&mut self, delta: f32) {

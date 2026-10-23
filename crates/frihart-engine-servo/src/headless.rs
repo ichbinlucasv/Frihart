@@ -3,10 +3,10 @@
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use frihart_engine::EngineError;
-use std::sync::Arc;
 
 use servo::{
     EventLoopWaker, LoadStatus, Preferences, RenderingContext, RgbaImage, Servo, ServoBuilder,
@@ -14,6 +14,7 @@ use servo::{
     WebViewBuilder, WebViewDelegate,
 };
 
+use frihart_net::SharedClearnetDns;
 use frihart_net::compat_proxy::{CompatPolicy, CompatProxy};
 
 use crate::gate::{GateStats, check_request};
@@ -120,14 +121,19 @@ pub(crate) struct Headless {
 }
 
 impl Headless {
-    pub fn new(w: u32, h: u32) -> Result<Self, EngineError> {
+    pub fn new(w: u32, h: u32, dns: SharedClearnetDns) -> Result<Self, EngineError> {
         // One TLS provider for the whole process (ring, as frihart-net).
         // Err means one is already installed, which is fine.
         let _ = rustls::crypto::ring::default_provider().install_default();
         // HTTPS goes through Frihart's Compat proxy (policy + DNS in
-        // Frihart); plain HTTP stays on the dead proxy and fails closed.
-        let proxy = CompatProxy::spawn(CompatPolicy::new(frihart_blocker::FilterEngine::builtin()))
-            .map_err(|e| EngineError::Failed(format!("compat proxy: {e}")))?;
+        // Frihart). Clearnet names use the shared plan (Quad9 DoH unless
+        // the user opted into the system resolver). Plain HTTP stays on
+        // the dead proxy and fails closed.
+        let proxy = CompatProxy::spawn(CompatPolicy::sharing_dns(
+            frihart_blocker::FilterEngine::builtin(),
+            dns,
+        ))
+        .map_err(|e| EngineError::Failed(format!("compat proxy: {e}")))?;
         // Baseline is JS-off (fail closed). Per-render script stripping
         // enforces the site override; leak surfaces stay locked here.
         let prefs = HardenedPrefs {

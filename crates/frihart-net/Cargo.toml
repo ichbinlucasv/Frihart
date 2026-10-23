@@ -10,8 +10,10 @@ publish.workspace = true
 
 [dependencies]
 frihart-blocker.workspace = true
+frihart-config.workspace = true
 frihart-core.workspace = true
 frihart-privacy.workspace = true
+idna = "1.1"
 serde.workspace = true
 serde_json.workspace = true
 ureq.workspace = true
@@ -22,6 +24,3 @@ subtle = "2.6"
 getrandom = "0.2"
 zeroize = "1"
 libc.workspace = true
-
-[dev-dependencies]
-frihart-config.workspace = true

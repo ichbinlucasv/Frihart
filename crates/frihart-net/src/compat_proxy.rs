@@ -18,15 +18,18 @@
 //! Compat tabs (out of scope by design).
 
 use std::io::{self, Read, Write};
-use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
+use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::Duration;
 
 use frihart_blocker::FilterEngine;
+#[cfg(test)]
+use frihart_config::ClearnetDns;
 
 use crate::addr::{HostClass, classify_host, classify_ip};
+use crate::dns::{DnsError, DnsExchange, LiveExchange, SharedClearnetDns, resolve_clearnet};
 
 /// Largest request head accepted, in bytes.
 pub const MAX_HEAD_BYTES: usize = 8 * 1024;
@@ -105,13 +108,23 @@ fn special_use(host: &str) -> bool {
 pub struct CompatPolicy {
     blocker: FilterEngine,
     allow_private: bool,
+    dns: SharedClearnetDns,
+    exchange: Arc<dyn DnsExchange>,
 }
 
 impl CompatPolicy {
+    /// Quad9 DoH, no system resolver, unless `dns` is later updated.
     pub fn new(blocker: FilterEngine) -> Self {
+        Self::sharing_dns(blocker, SharedClearnetDns::quad9())
+    }
+
+    /// Compat proxy that follows `dns` (settings can change it in place).
+    pub fn sharing_dns(blocker: FilterEngine, dns: SharedClearnetDns) -> Self {
         Self {
             blocker,
             allow_private: false,
+            dns,
+            exchange: Arc::new(LiveExchange::new()),
         }
     }
 
@@ -122,6 +135,22 @@ impl CompatPolicy {
         Self {
             blocker,
             allow_private: true,
+            dns: SharedClearnetDns::quad9(),
+            exchange: Arc::new(LiveExchange::new()),
+        }
+    }
+
+    #[cfg(test)]
+    fn with_exchange(
+        blocker: FilterEngine,
+        dns: ClearnetDns,
+        exchange: Arc<dyn DnsExchange>,
+    ) -> Self {
+        Self {
+            blocker,
+            allow_private: false,
+            dns: SharedClearnetDns::new(dns),
+            exchange,
         }
     }
 
@@ -157,15 +186,26 @@ impl CompatPolicy {
         }
     }
 
-    /// Resolve and drop any address that is not public (DNS rebinding).
+    /// Resolve through the clearnet plan. `.onion` and `.i2p` never reach it.
+    /// A private answer is dropped (DNS rebinding). The system resolver runs
+    /// only when the plan says the user opted in.
     pub fn resolve(&self, host: &str, port: u16) -> Result<Vec<SocketAddr>, &'static str> {
-        let addrs: Vec<SocketAddr> = (host, port)
-            .to_socket_addrs()
-            .map_err(|_| "DNS lookup failed")?
-            .collect();
-        if addrs.is_empty() {
-            return Err("DNS lookup returned nothing");
-        }
+        let plan = self.dns.get();
+        let addrs =
+            resolve_clearnet(&plan, host, port, self.exchange.as_ref()).map_err(
+                |err| match err {
+                    DnsError::Hidden => "hidden name refused before DNS",
+                    DnsError::Private => "name resolves to a private or loopback address",
+                    DnsError::Empty => "DNS lookup returned nothing",
+                    DnsError::SpecialUse => "special-use name refused before DNS",
+                    DnsError::BadName
+                    | DnsError::BadUrl
+                    | DnsError::Refused
+                    | DnsError::Transport => "DNS lookup failed",
+                    #[cfg(test)]
+                    DnsError::NoLocalDns => "DNS lookup failed",
+                },
+            )?;
         if !self.allow_private
             && addrs
                 .iter()
@@ -374,6 +414,67 @@ mod tests {
             }),
             ProxyVerdict::Refuse(_)
         ));
+    }
+
+    #[test]
+    fn compat_resolve_uses_quad9_and_skips_hidden_names() {
+        use std::net::{IpAddr, Ipv4Addr};
+        use std::sync::Arc;
+
+        use frihart_config::{ClearnetDns, QUAD9_DOH_URL};
+
+        use crate::dns::ScriptedExchange;
+
+        let ex = ScriptedExchange::answering(vec![IpAddr::V4(Ipv4Addr::new(93, 184, 216, 34))]);
+        let policy = CompatPolicy::with_exchange(
+            FilterEngine::new(true),
+            ClearnetDns::quad9(),
+            Arc::new(ex.clone()),
+        );
+        let addrs = policy.resolve("example.org", 443).unwrap();
+        assert_eq!(addrs, vec!["93.184.216.34:443".parse().unwrap()]);
+        assert!(ex.doh_calls().iter().all(|url| url == QUAD9_DOH_URL));
+        assert!(ex.system_calls().is_empty());
+
+        let hidden = ScriptedExchange::doh_fails();
+        let policy = CompatPolicy::with_exchange(
+            FilterEngine::new(true),
+            ClearnetDns::quad9(),
+            Arc::new(hidden.clone()),
+        );
+        assert_eq!(
+            policy.resolve("www.example.onion", 443).unwrap_err(),
+            "hidden name refused before DNS"
+        );
+        assert_eq!(
+            policy.resolve("zzz.i2p", 443).unwrap_err(),
+            "hidden name refused before DNS"
+        );
+        assert!(hidden.doh_calls().is_empty());
+        assert!(hidden.system_calls().is_empty());
+
+        let fallback = ScriptedExchange::doh_fails();
+        let mut opted = ClearnetDns::quad9();
+        let ClearnetDns::Doh {
+            system_fallback, ..
+        } = &mut opted
+        else {
+            panic!("quad9 is DoH");
+        };
+        *system_fallback = true;
+        let policy =
+            CompatPolicy::with_exchange(FilterEngine::new(true), opted, Arc::new(fallback.clone()));
+        assert!(policy.resolve("example.org", 443).is_ok());
+        assert_eq!(fallback.system_calls(), vec!["example.org".to_string()]);
+
+        let no_fallback = ScriptedExchange::doh_fails();
+        let policy = CompatPolicy::with_exchange(
+            FilterEngine::new(true),
+            ClearnetDns::quad9(),
+            Arc::new(no_fallback.clone()),
+        );
+        assert!(policy.resolve("example.org", 443).is_err());
+        assert!(no_fallback.system_calls().is_empty());
     }
 
     fn ask(proxy: &CompatProxy, head: &[u8]) -> String {

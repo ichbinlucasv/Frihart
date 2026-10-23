@@ -14,7 +14,7 @@ default = []
 # Campaign S. Pulls in Servo (crates.io, MPL-2.0, ~700 crates, SpiderMonkey
 # through mozjs). Never part of the default build. Build and test with:
 #   cargo test -p frihart-engine-servo --features servo
-servo = ["dep:servo", "dep:url", "dep:dpi", "dep:frihart-net", "dep:frihart-blocker", "dep:rustls"]
+servo = ["dep:servo", "dep:url", "dep:dpi", "dep:frihart-net", "dep:frihart-blocker", "dep:frihart-config", "dep:rustls"]
 
 [dependencies]
 frihart-engine = { path = "../frihart-engine" }
@@ -28,6 +28,7 @@ url = { workspace = true, optional = true }
 dpi = { version = "0.1", optional = true }
 frihart-net = { workspace = true, optional = true }
 frihart-blocker = { workspace = true, optional = true }
+frihart-config = { workspace = true, optional = true }
 # Servo's TLS (aws-lc-rs) and frihart-net's (ring) both enable rustls
 # providers, so the process default must be chosen explicitly: ring.
 rustls = { version = "0.23.45", default-features = false, features = ["ring"], optional = true }

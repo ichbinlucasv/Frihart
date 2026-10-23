@@ -27,10 +27,22 @@ pub const DEFAULT_VIEWPORT_H: u32 = 768;
 /// Largest viewport side accepted, in pixels (bounds the frame buffer).
 pub const MAX_VIEWPORT_SIDE: u32 = 8192;
 
-#[derive(Default)]
+#[cfg_attr(not(feature = "servo"), derive(Default))]
 pub struct ServoEngine {
     #[cfg(feature = "servo")]
     inner: Option<headless::Headless>,
+    #[cfg(feature = "servo")]
+    dns: frihart_net::SharedClearnetDns,
+}
+
+#[cfg(feature = "servo")]
+impl Default for ServoEngine {
+    fn default() -> Self {
+        Self {
+            inner: None,
+            dns: frihart_net::SharedClearnetDns::quad9(),
+        }
+    }
 }
 
 impl ServoEngine {
@@ -52,6 +64,24 @@ impl ServoEngine {
             return h.gate_counts();
         }
         (0, 0)
+    }
+
+    /// Clearnet DNS for the Compat proxy. No effect until this build
+    /// includes Servo. Tor and I2P tabs never reach that proxy.
+    pub fn set_clearnet_dns(&mut self, mode: &str, url: &str, system_fallback: bool) {
+        #[cfg(feature = "servo")]
+        {
+            let mut prefs = frihart_config::Prefs::default();
+            prefs.network.doh_mode = mode.to_string();
+            prefs.network.doh_url = url.to_string();
+            prefs.network.dns_system_fallback = system_fallback;
+            self.dns
+                .set(frihart_config::ClearnetDns::from_prefs(&prefs));
+        }
+        #[cfg(not(feature = "servo"))]
+        {
+            let _ = (mode, url, system_fallback);
+        }
     }
 
     /// Clamp a requested viewport to what the adapter accepts.
@@ -88,7 +118,7 @@ impl ServoEngine {
     ) -> Result<Rendered, EngineError> {
         let (w, h) = Self::clamp_viewport(viewport_w, DEFAULT_VIEWPORT_H);
         if self.inner.is_none() {
-            self.inner = Some(headless::Headless::new(w, h)?);
+            self.inner = Some(headless::Headless::new(w, h, self.dns.clone())?);
         }
         let frame = self
             .inner

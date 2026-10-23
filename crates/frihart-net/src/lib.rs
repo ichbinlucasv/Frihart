@@ -9,6 +9,7 @@ mod clean;
 mod client;
 pub mod compat_proxy;
 mod cookie;
+mod dns;
 mod download;
 mod headers;
 pub mod tor_control;
@@ -20,6 +21,7 @@ pub use client::{
     refuse_wrong_net,
 };
 pub use cookie::{CookieJar, SiteCookieJars, StoredCookie};
+pub use dns::SharedClearnetDns;
 pub use download::{DownloadLog, DownloadRecord, filename_for, save_download, should_save};
 pub use headers::apply_identity_headers;
 

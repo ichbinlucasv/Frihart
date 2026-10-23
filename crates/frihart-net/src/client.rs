@@ -1,14 +1,17 @@
 use std::io::{self, Read};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::sync::Arc;
 use std::time::Duration;
 
 use frihart_blocker::FilterEngine;
+use frihart_config::ClearnetDns;
 use frihart_core::{
     CircuitKind, ContainerId, FrihartError, HiddenNet, Result, hidden_net, sanitize_error,
 };
 use frihart_privacy::{Policy, ResourceKind};
 
 use crate::cookie::CookieJar;
+use crate::dns::{LiveExchange, PlanResolver, SharedClearnetDns};
 use crate::headers::apply_identity_headers;
 use crate::{HttpClient, Request, Response};
 
@@ -89,6 +92,7 @@ pub enum FetchMode {
 
 #[derive(Clone, Debug)]
 pub struct RustlsClient {
+    plan: SharedClearnetDns,
     agent: ureq::Agent,
 }
 
@@ -99,13 +103,36 @@ impl Default for RustlsClient {
 }
 
 impl RustlsClient {
+    /// Clearnet agent. Names go to Quad9 DoH. Nothing is sent to the
+    /// operating-system resolver.
     pub fn new() -> Self {
+        Self::with_plan(ClearnetDns::quad9())
+    }
+
+    /// Clearnet agent using `plan`. Tor and I2P fetches build a separate
+    /// agent that refuses every name and sends it to SOCKS.
+    pub fn with_plan(plan: ClearnetDns) -> Self {
+        let plan = SharedClearnetDns::new(plan);
+        let resolver = PlanResolver {
+            plan: plan.clone(),
+            exchange: Arc::new(LiveExchange::new()),
+        };
         let agent = ureq::AgentBuilder::new()
             .timeout(Duration::from_secs(TIMEOUT_SECS))
             .redirects(0)
             .user_agent("Frihart")
+            .resolver(resolver)
             .build();
-        Self { agent }
+        Self { plan, agent }
+    }
+
+    pub fn plan(&self) -> ClearnetDns {
+        self.plan.get()
+    }
+
+    /// Settings changed. Later clearnet lookups use `plan`.
+    pub fn set_plan(&self, plan: ClearnetDns) {
+        self.plan.set(plan);
     }
 }
 
@@ -194,7 +221,7 @@ pub fn refuse_wrong_net(mode: &FetchMode, url: &url::Url) -> Result<()> {
 ///
 /// Every hop goes through [`refuse_wrong_net`], not only the first URL: a
 /// clearnet page must not bounce a Direct tab to a `.onion` (that name would
-/// reach the system resolver), and an `.i2p` site must not bounce an I2P tab
+/// reach clearnet DNS), and an `.i2p` site must not bounce an I2P tab
 /// to clearnet through an outproxy.
 pub fn redirect_target(mode: &FetchMode, current: &url::Url, location: &str) -> Result<url::Url> {
     let next = current
@@ -371,6 +398,15 @@ mod tests {
     use frihart_config::Prefs;
     use frihart_privacy::Policy;
     use url::Url;
+
+    #[test]
+    fn clearnet_client_defaults_to_quad9() {
+        let client = RustlsClient::new();
+        assert_eq!(client.plan(), frihart_config::ClearnetDns::quad9());
+        assert!(!client.plan().allows_system_resolver());
+        client.set_plan(frihart_config::ClearnetDns::System);
+        assert!(client.plan().allows_system_resolver());
+    }
 
     #[test]
     fn https_only_blocks_cleartext() {
