@@ -258,6 +258,8 @@ pub fn is_known_about(url: &Url) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use frihart_config::ClearnetDns;
+
     use super::*;
 
     #[test]
@@ -290,6 +292,36 @@ mod tests {
         let url = Url::parse("http://example.com").unwrap();
         let doc = load(&url, &profile);
         assert_eq!(doc.title(), "HTTPS-only");
+    }
+
+    #[test]
+    fn about_dns_defaults_to_quad9_and_system_is_opt_in() {
+        let profile = Profile::ephemeral().unwrap();
+        let text = load(&about_url("dns"), &profile).searchable_text();
+        assert!(text.contains("https://dns.quad9.net/dns-query"));
+        assert!(text.contains("no system fallback"));
+        assert!(text.contains(".onion"));
+        assert!(text.contains(".i2p"));
+        assert!(text.contains("Tor and I2P"));
+        let settings = load(&about_url("settings"), &profile).searchable_text();
+        assert!(settings.contains("System resolver"));
+        assert!(settings.contains("System fallback"));
+        let mut prefs = profile.prefs().clone();
+        assert_eq!(prefs.network.doh_mode, "quad9");
+        assert!(!prefs.network.dns_system_fallback);
+        PrefToggle::DnsUseSystem.apply(&mut prefs);
+        assert_eq!(prefs.network.doh_mode, "system");
+        assert!(ClearnetDns::from_prefs(&prefs).allows_system_resolver());
+        PrefToggle::DnsUseSystem.apply(&mut prefs);
+        assert_eq!(prefs.network.doh_mode, "quad9");
+        assert!(!ClearnetDns::from_prefs(&prefs).allows_system_resolver());
+        PrefToggle::DnsSystemFallback.apply(&mut prefs);
+        assert!(prefs.network.dns_system_fallback);
+        assert!(ClearnetDns::from_prefs(&prefs).allows_system_resolver());
+        assert_eq!(
+            ClearnetDns::from_prefs(&prefs).doh_url(),
+            Some("https://dns.quad9.net/dns-query")
+        );
     }
 
     #[test]

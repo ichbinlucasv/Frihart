@@ -1,4 +1,4 @@
-use frihart_config::{Prefs, QUAD9_DNS_V4, QUAD9_DOH_URL};
+use frihart_config::{ClearnetDns, Prefs, QUAD9_DNS_V4, QUAD9_DOH_URL};
 use frihart_core::{APP_NAME, FROZEN_USER_AGENT, VERSION};
 use frihart_privacy::Policy;
 use frihart_profile::Profile;
@@ -37,6 +37,10 @@ pub enum PrefToggle {
     Autoplay,
     PunycodeHosts,
     RequireBridges,
+    /// `network.doh_mode = system` when on, Quad9 when off.
+    DnsUseSystem,
+    /// `network.dns_system_fallback`.
+    DnsSystemFallback,
 }
 
 impl PrefToggle {
@@ -71,6 +75,8 @@ impl PrefToggle {
             Self::Autoplay => "content.autoplay",
             Self::PunycodeHosts => "privacy.punycode_hosts",
             Self::RequireBridges => "tor.require_bridges",
+            Self::DnsUseSystem => "network.doh_mode",
+            Self::DnsSystemFallback => "network.dns_system_fallback",
         }
     }
 
@@ -114,6 +120,21 @@ impl PrefToggle {
             Self::Autoplay => prefs.content.autoplay = !prefs.content.autoplay,
             Self::PunycodeHosts => prefs.privacy.punycode_hosts = !prefs.privacy.punycode_hosts,
             Self::RequireBridges => prefs.tor.require_bridges = !prefs.tor.require_bridges,
+            Self::DnsUseSystem => {
+                if prefs.network.doh_mode == "system" {
+                    if prefs.network.doh_url.is_empty() || prefs.network.doh_url == QUAD9_DOH_URL {
+                        prefs.network.doh_mode = "quad9".into();
+                        prefs.network.doh_url = QUAD9_DOH_URL.into();
+                    } else {
+                        prefs.network.doh_mode = "custom".into();
+                    }
+                } else {
+                    prefs.network.doh_mode = "system".into();
+                }
+            }
+            Self::DnsSystemFallback => {
+                prefs.network.dns_system_fallback = !prefs.network.dns_system_fallback;
+            }
         }
     }
 }
@@ -1182,6 +1203,25 @@ fn settings(url: &Url, prefs: &Prefs) -> Document {
                 "DeepL default. Your key. No Google.",
                 prefs.translate.enabled,
             ),
+            Block::Heading("DNS".into()),
+            toggle(
+                PrefToggle::DnsUseSystem,
+                "System resolver",
+                "Clearnet names use the operating system. Off: Quad9 DNS-over-HTTPS, and a failed lookup does not ask the system.",
+                prefs.network.doh_mode == "system",
+            ),
+            toggle(
+                PrefToggle::DnsSystemFallback,
+                "System fallback",
+                "If Quad9 does not answer, ask the operating system. Off unless you turn this on. A block or NXDOMAIN still fails. Tor and I2P never use local DNS.",
+                prefs.network.dns_system_fallback,
+            ),
+            Block::Note(
+                "Custom DoH: in prefs.toml set network.doh_mode to custom and \
+                 network.doh_url to an https URL. The default URL is \
+                 https://dns.quad9.net/dns-query."
+                    .into(),
+            ),
             Block::Heading("Locked off".into()),
             kv("telemetry", "false — no section, no ping, no crash upload"),
             kv("safe_browsing", "false — no Google Safe Browsing"),
@@ -1191,10 +1231,6 @@ fn settings(url: &Url, prefs: &Prefs) -> Document {
                 "false — Proton Pass / KeePassXC / pass only",
             ),
             kv("captive_portal", "false — no connectivity probe"),
-            kv(
-                "doh_vendor",
-                "none — system DNS; DoH is opt-in, you pick the resolver",
-            ),
             kv("client_hints", "false"),
             Block::Note(
                 "about:privacy is the constitution. about:config is the full \
@@ -1260,12 +1296,8 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
             value: format!("{:?}", prefs.privacy.timezone).to_ascii_lowercase(),
         },
         Block::KeyValue {
-            key: "DoH".into(),
-            value: if prefs.network.doh_url.is_empty() {
-                format!("{} (no resolver configured)", prefs.network.doh_mode)
-            } else {
-                prefs.network.doh_mode.clone()
-            },
+            key: "DNS".into(),
+            value: dns_summary(prefs),
         },
         Block::Heading("LibreWolf map".into()),
         Block::List(vec![
@@ -1279,7 +1311,7 @@ fn privacy(url: &Url, prefs: &Prefs) -> Document {
             "No Google Safe Browsing — absent".into(),
             "No DRM / Widevine — absent".into(),
             "No Pocket, no sponsored tiles — absent".into(),
-            "DoH — off; you pick a resolver if you want one".into(),
+            "Clearnet DNS — Quad9 over HTTPS; system resolver is opt-in".into(),
             "GPC on, DNT off".into(),
             "JS off (LibreWolf leaves JS on; we are stricter)".into(),
         ]),
@@ -1389,6 +1421,10 @@ fn config(url: &Url, prefs: &Prefs) -> Document {
             } else {
                 &prefs.network.doh_url
             },
+        ),
+        kv(
+            "dns_system_fallback",
+            bool_str(prefs.network.dns_system_fallback),
         ),
         kv("http2", bool_str(prefs.network.http2)),
         kv("http3", bool_str(prefs.network.http3)),
@@ -2117,6 +2153,22 @@ fn i2p(url: &Url, prefs: &Prefs) -> Document {
     })
 }
 
+fn dns_summary(prefs: &Prefs) -> String {
+    match ClearnetDns::from_prefs(prefs) {
+        ClearnetDns::System => "system resolver (opt-in)".into(),
+        ClearnetDns::Doh {
+            url,
+            system_fallback,
+        } => {
+            if system_fallback {
+                format!("{url} — system fallback on")
+            } else {
+                format!("{url} — no system fallback")
+            }
+        }
+    }
+}
+
 fn dns(url: &Url, prefs: &Prefs) -> Document {
     Document::internal(InternalPage {
         title: "DNS".into(),
@@ -2124,14 +2176,20 @@ fn dns(url: &Url, prefs: &Prefs) -> Document {
         blocks: vec![
             Block::Hero {
                 title: "DNS".into(),
-                subtitle: "System resolver by default. No forced DoH vendor.".into(),
+                subtitle: "Quad9 over HTTPS for clearnet. System DNS is opt-in.".into(),
             },
             Block::Paragraph(
-                "Frihart uses the operating system's DNS. Tails, Qubes, and Tor \
-                 already own name resolution. We will not phone a DoH vendor for \
-                 every Frihart user — that is a fingerprint."
+                "Clearnet tabs, including Servo Compat and the own engine, \
+                 resolve names with Quad9 DNS-over-HTTPS. Frihart connects to \
+                 Quad9's published addresses, so that name is not looked up on \
+                 the system resolver. A failed lookup stops. It does not fall \
+                 through to the operating system unless you opt in."
                     .into(),
             ),
+            Block::KeyValue {
+                key: "clearnet".into(),
+                value: dns_summary(prefs),
+            },
             Block::KeyValue {
                 key: "doh_mode".into(),
                 value: prefs.network.doh_mode.clone(),
@@ -2139,31 +2197,42 @@ fn dns(url: &Url, prefs: &Prefs) -> Document {
             Block::KeyValue {
                 key: "doh_url".into(),
                 value: if prefs.network.doh_url.is_empty() {
-                    "(empty — opt-in only)".into()
+                    "(empty)".into()
                 } else {
                     prefs.network.doh_url.clone()
                 },
             },
-            Block::Heading("Named recommendation".into()),
-            Block::Paragraph(
-                "On Arch, Fedora, and Mint, set the *system* resolver to Quad9 \
-                 for malware/C2 blocking without Google Safe Browsing:"
-                    .into(),
-            ),
             Block::KeyValue {
-                key: "Quad9 IPv4".into(),
-                value: QUAD9_DNS_V4.into(),
+                key: "dns_system_fallback".into(),
+                value: bool_str(prefs.network.dns_system_fallback).into(),
             },
+            Block::Heading("Quad9".into()),
             Block::KeyValue {
-                key: "Quad9 DoH (opt-in later)".into(),
+                key: "DoH".into(),
                 value: QUAD9_DOH_URL.into(),
             },
+            Block::KeyValue {
+                key: "IPv4".into(),
+                value: QUAD9_DNS_V4.into(),
+            },
+            Block::Heading("What never uses local DNS".into()),
+            Block::List(vec![
+                ".onion opens on a Tor tab. The name is not sent to Quad9 or the system resolver.".into(),
+                ".i2p opens on an I2P tab. Same rule.".into(),
+                "Tor and I2P tabs send every other name to SOCKS. The proxy address must be an IP.".into(),
+                "Servo refuses .onion and .i2p before any lookup. Those names stay off clearnet DNS.".into(),
+            ]),
             Block::Note(
-                "DoH is not wired in the fetch stack yet. Enabling a preset \
-                 stores the URL in prefs.toml. It does not send queries until \
-                 DoH is implemented. Default stays off."
+                "On Tails the system resolver is Tor. Quad9 on a clearnet tab \
+                 asks Quad9 directly, outside Tor. Turn on System resolver in \
+                 settings if this profile should follow Tails. A name Quad9 \
+                 blocks does not fall through, even when fallback is on."
                     .into(),
             ),
+            Block::Link {
+                label: "Change settings".into(),
+                href: "about:settings".into(),
+            },
         ],
     })
 }
