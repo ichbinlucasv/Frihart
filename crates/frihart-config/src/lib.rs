@@ -155,9 +155,18 @@ impl Default for PrivacyPrefs {
 pub struct NetworkPrefs {
     pub user_agent: String,
     pub client_hints: bool,
-    /// `off`, `optional`, or `always`. No vendor is configured.
+    /// Clearnet DNS. `quad9` (default), `custom` (`doh_url`), or `system`
+    /// (the operating-system resolver, opt-in). Legacy `off` loads as
+    /// `quad9`. Legacy `always` / `optional` with a URL load as `custom`.
     pub doh_mode: String,
+    /// DoH URL. Quad9 when `doh_mode` is `quad9`. Used as written in
+    /// `custom` mode. Not used in `system` mode.
     pub doh_url: String,
+    /// When true, a failed encrypted lookup may use the OS resolver.
+    /// Default false. A reply from the encrypted resolver, including a
+    /// block or NXDOMAIN, does not fall through. Tor and I2P tabs ignore
+    /// this and never use local DNS.
+    pub dns_system_fallback: bool,
     pub http2: bool,
     pub http3: bool,
     pub captive_portal: bool,
@@ -170,8 +179,9 @@ impl Default for NetworkPrefs {
         Self {
             user_agent: FROZEN_USER_AGENT.into(),
             client_hints: false,
-            doh_mode: "off".into(),
-            doh_url: String::new(),
+            doh_mode: "quad9".into(),
+            doh_url: QUAD9_DOH_URL.into(),
+            dns_system_fallback: false,
             http2: true,
             http3: false,
             captive_portal: false,
@@ -306,10 +316,108 @@ impl Default for I2pPrefs {
     }
 }
 
-/// Named DoH URL for Quad9. Stored only if the user opts in. Never the default.
+/// Quad9 DNS-over-HTTPS. Default clearnet resolver. The client connects
+/// to Quad9's published addresses, so this name is not looked up first.
 pub const QUAD9_DOH_URL: &str = "https://dns.quad9.net/dns-query";
-/// Quad9 recursive IPv4 (malware/C2 blocking). Set this on the OS, not as forced DoH.
+/// Quad9 recursive IPv4 (malware and C2 blocking, DNSSEC). One of the
+/// addresses used to reach [`QUAD9_DOH_URL`] without the system resolver.
 pub const QUAD9_DNS_V4: &str = "9.9.9.9";
+
+/// How a clearnet tab resolves names. Tor and I2P tabs do not use this.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ClearnetDns {
+    /// Encrypted DNS. `system_fallback` is false unless the user opted in.
+    Doh { url: String, system_fallback: bool },
+    /// The user opted into the operating-system resolver.
+    System,
+}
+
+impl Default for ClearnetDns {
+    fn default() -> Self {
+        Self::quad9()
+    }
+}
+
+impl ClearnetDns {
+    /// Quad9 DoH, and no system resolver.
+    pub fn quad9() -> Self {
+        Self::Doh {
+            url: QUAD9_DOH_URL.into(),
+            system_fallback: false,
+        }
+    }
+
+    /// Plan for the current preferences. Unknown modes use Quad9.
+    pub fn from_prefs(prefs: &Prefs) -> Self {
+        let mode = prefs.network.doh_mode.trim();
+        let fallback = prefs.network.dns_system_fallback;
+        if mode.eq_ignore_ascii_case("system") {
+            return Self::System;
+        }
+        if mode.eq_ignore_ascii_case("custom") {
+            let url = prefs.network.doh_url.trim();
+            if !url.is_empty() {
+                return Self::Doh {
+                    url: url.to_string(),
+                    system_fallback: fallback,
+                };
+            }
+        }
+        Self::Doh {
+            url: QUAD9_DOH_URL.into(),
+            system_fallback: fallback,
+        }
+    }
+
+    /// True when a clearnet lookup may call the operating system.
+    /// False for the Quad9 default.
+    pub fn allows_system_resolver(&self) -> bool {
+        match self {
+            Self::System => true,
+            Self::Doh {
+                system_fallback, ..
+            } => *system_fallback,
+        }
+    }
+
+    pub fn doh_url(&self) -> Option<&str> {
+        match self {
+            Self::System => None,
+            Self::Doh { url, .. } => Some(url.as_str()),
+        }
+    }
+}
+
+/// Map saved preferences onto the current DNS modes.
+///
+/// `off` was the old product default (system DNS, DoH not wired). It now
+/// loads as Quad9. Choosing the system resolver is `doh_mode = "system"`.
+fn normalize_dns(prefs: &mut Prefs) {
+    let mode = prefs.network.doh_mode.trim().to_ascii_lowercase();
+    let url = prefs.network.doh_url.trim().to_string();
+    match mode.as_str() {
+        "system" => {
+            prefs.network.doh_mode = "system".into();
+        }
+        "custom" | "always" | "optional" => {
+            if url.is_empty() {
+                prefs.network.doh_mode = "quad9".into();
+                prefs.network.doh_url = QUAD9_DOH_URL.into();
+            } else {
+                prefs.network.doh_mode = "custom".into();
+                prefs.network.doh_url = url;
+            }
+        }
+        "quad9" => {
+            prefs.network.doh_mode = "quad9".into();
+            prefs.network.doh_url = QUAD9_DOH_URL.into();
+        }
+        _ => {
+            prefs.network.doh_mode = "quad9".into();
+            prefs.network.doh_url = QUAD9_DOH_URL.into();
+        }
+    }
+}
 
 /// Official-client hooks. Frihart is not a VPN vendor.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -388,6 +496,7 @@ impl Prefs {
         prefs.privacy.telemetry = false;
         prefs.privacy.safe_browsing = false;
         prefs.privacy.drm = false;
+        normalize_dns(&mut prefs);
         Ok(prefs)
     }
 
@@ -422,8 +531,13 @@ mod tests {
         assert!(!p.privacy.javascript);
         assert!(!p.privacy.webrtc);
         assert!(!p.network.client_hints);
-        assert_eq!(p.network.doh_mode, "off");
-        assert!(p.network.doh_url.is_empty());
+        assert_eq!(p.network.doh_mode, "quad9");
+        assert_eq!(p.network.doh_url, QUAD9_DOH_URL);
+        assert!(!p.network.dns_system_fallback);
+        let dns = ClearnetDns::from_prefs(&p);
+        assert_eq!(dns, ClearnetDns::quad9());
+        assert!(!dns.allows_system_resolver());
+        assert_eq!(dns.doh_url(), Some(QUAD9_DOH_URL));
         assert!(p.general.search_url.is_empty());
         assert_eq!(p.search.primary, "swisscows");
         assert_eq!(p.search.secondary, "duckduckgo");
@@ -473,5 +587,45 @@ mod tests {
         assert!(!parsed.privacy.https_only);
         assert!(parsed.privacy.resist_fingerprinting);
         assert_eq!(parsed.general.homepage, "about:home");
+        assert_eq!(parsed.network.doh_mode, "quad9");
+        assert!(!parsed.network.dns_system_fallback);
+        assert!(!ClearnetDns::from_prefs(&parsed).allows_system_resolver());
+    }
+
+    #[test]
+    fn old_doh_off_loads_as_quad9_without_system_fallback() {
+        let parsed = Prefs::from_toml(
+            "[network]\ndoh_mode = \"off\"\ndoh_url = \"\"\ndns_system_fallback = false\n",
+        )
+        .unwrap();
+        assert_eq!(parsed.network.doh_mode, "quad9");
+        assert_eq!(parsed.network.doh_url, QUAD9_DOH_URL);
+        assert!(!parsed.network.dns_system_fallback);
+        assert_eq!(ClearnetDns::from_prefs(&parsed), ClearnetDns::quad9());
+    }
+
+    #[test]
+    fn system_resolver_and_fallback_are_opt_in() {
+        let system = Prefs::from_toml("[network]\ndoh_mode = \"system\"\n").unwrap();
+        assert_eq!(system.network.doh_mode, "system");
+        assert!(ClearnetDns::from_prefs(&system).allows_system_resolver());
+        assert!(ClearnetDns::from_prefs(&system).doh_url().is_none());
+
+        let mut fallback = Prefs::default();
+        fallback.network.dns_system_fallback = true;
+        let plan = ClearnetDns::from_prefs(&fallback);
+        assert!(plan.allows_system_resolver());
+        assert_eq!(plan.doh_url(), Some(QUAD9_DOH_URL));
+
+        let custom = Prefs::from_toml(
+            "[network]\ndoh_mode = \"always\"\ndoh_url = \"https://dns.example/dns-query\"\n",
+        )
+        .unwrap();
+        assert_eq!(custom.network.doh_mode, "custom");
+        assert_eq!(
+            ClearnetDns::from_prefs(&custom).doh_url(),
+            Some("https://dns.example/dns-query")
+        );
+        assert!(!ClearnetDns::from_prefs(&custom).allows_system_resolver());
     }
 }

@@ -112,8 +112,9 @@ Also shipped, selectable: Startpage, Mojeek, Qwant, MetaGer, Brave Search.
 | --- | --- | --- |
 | `network.user_agent` | frozen Frihart UA | No OS micro-version, no engine version salad. |
 | `network.client_hints` | `false` | Client hints exist to fingerprint. |
-| `network.doh_mode` | `off` | System DNS first. DoH is opt-in and user-chosen. |
-| `network.doh_url` | empty | We do not pick a national or corporate resolver for you. Quad9 is the named *system* recommendation (`9.9.9.9` / `dns.quad9.net`), not a forced DoH vendor. See `about:dns`. |
+| `network.doh_mode` | `quad9` | Clearnet DNS is Quad9 over HTTPS. `custom` uses `doh_url`. `system` is the operating-system resolver and is opt-in. |
+| `network.doh_url` | `https://dns.quad9.net/dns-query` | Quad9 DoH. Frihart connects to Quad9's published addresses (`9.9.9.9` and the others), so this name is not resolved on the system. |
+| `network.dns_system_fallback` | `false` | A failed encrypted lookup does not ask the OS. Turn this on to opt in. A block or NXDOMAIN still fails. Tor and I2P tabs ignore it. |
 | `network.http2` | `true` (when implemented) | Performance without a privacy cost by itself. |
 | `network.http3` | `false` until reviewed | QUIC exposes a different fingerprint; later. |
 
