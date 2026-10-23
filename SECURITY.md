@@ -47,7 +47,7 @@ threats are:
 ## Things we will not do "for security"
 
 - Phone home to check a blocklist on Frihart servers
-- Force a single DoH vendor
+- Send clearnet DNS to whatever the operating system is using, unless you opt in. The default is Quad9 over HTTPS. Tor and I2P tabs do not use it.
 - Ship a closed binary module (DRM, widevine, etc.)
 - Hide preferences that weaken protection — we document them instead
 

@@ -163,7 +163,9 @@ Trade-offs to know:
 
 `frihart_net::compat_proxy` is a loopback `CONNECT` proxy started per
 Servo instance. Servo's HTTPS proxy preference points at it, so Frihart
-does the DNS lookup and the policy check, and Servo only ever talks to
+does the DNS lookup (Quad9 DoH by default, same plan as clearnet
+own-engine tabs; the system resolver only if the user opted in) and the
+policy check, and Servo only ever talks to
 127.0.0.1: only port 443; `.onion`, `.i2p`, `.local`, `.internal`,
 `.invalid`, `localhost` refused; IP literals and names resolving to
 loopback, link-local or private ranges refused (DNS rebinding);

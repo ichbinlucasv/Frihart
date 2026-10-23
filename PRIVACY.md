@@ -4,7 +4,7 @@ Frihart does not collect personal data. There is no account, no sign-in, no tele
 
 ## What the browser contacts
 
-Only what you ask for: the sites you open, and the DNS, proxy or VPN you set up yourself. Startup makes no connections. Tor and I2P tabs go through your own system daemons and refuse to fall back to a direct connection. DoH is off unless you give your own URL. The translator and search contact their providers only when you use them; the provider is shown in the settings.
+Only what you ask for: the sites you open, and the DNS, proxy or VPN you set up. Startup makes no connections. Clearnet name lookups go to Quad9 over HTTPS (`https://dns.quad9.net/dns-query`) unless you opt into the system resolver in settings. Tor and I2P tabs go through your own system daemons, resolve only inside those networks, and refuse to fall back to a direct connection. `.onion` and `.i2p` are not sent to Quad9 or the system resolver. The translator and search contact their providers only when you use them; the provider is shown in the settings.
 
 ## What is stored on your machine
 

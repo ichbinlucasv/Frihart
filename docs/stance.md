@@ -77,16 +77,22 @@ not a product tier. See [pricing.md](pricing.md) and [SUPPORT.md](SUPPORT.md).
 
 ## DNS and malware
 
-- Default resolver: **the system**. Tails, Qubes, and Tor already own DNS.
-- We will **not** force a DoH vendor (that is a fingerprint and a
-  dependency). See [opsec.md](opsec.md).
-- **Quad9** (`9.9.9.9`, `dns.quad9.net`) is the named recommendation for
-  a *system* resolver on Arch/Fedora/Mint: malware/C2 blocking without
-  Google Safe Browsing.
-- A Quad9 DoH URL may be stored as an opt-in preset. DoH stays off until
-  the user chooses it and the stack actually speaks DoH.
+- Clearnet tabs (Servo Compat and the own engine) resolve with **Quad9
+  DNS-over-HTTPS** (`https://dns.quad9.net/dns-query`). The connection is
+  pinned to Quad9's published addresses, so the name is not looked up on
+  the system resolver.
+- The system resolver is **opt-in**: `network.doh_mode = system`, or
+  `network.dns_system_fallback = true` for when Quad9 does not answer.
+  A block or NXDOMAIN does not fall through.
+- Tor and I2P tabs never use local DNS. Names go to SOCKS. `.onion` and
+  `.i2p` are refused before any clearnet lookup. Servo refuses those
+  names itself; the own engine still opens them on the matching tab.
+- On Tails, the system resolver is Tor. A clearnet tab on Quad9 asks
+  Quad9 outside Tor. Opt into the system resolver there if that tab
+  should follow Tails.
 - Malware blocking in-browser is the **native blocker**, lists local,
-  no Frihart list server, no Google.
+  no Frihart list server, no Google. Quad9's malware filtering is the
+  resolver, not a Frihart list.
 
 ## Quantum
 
@@ -112,8 +118,8 @@ We will not ship a “quantum anonymous” badge. Honesty is the feature.
 
 1. Document this stance (this file).
 2. I2P tabs that fail closed, same shape as Tor.
-3. Quad9 as a documented system-DNS recommendation and a named DoH
-   preset, default still `network.doh_mode = off`.
+3. Clearnet DNS is Quad9 DoH. System DNS is opt-in
+   (`network.doh_mode = system` or `network.dns_system_fallback`).
 4. Keep claiming static documents (Campaign D). Then CSS leftovers.
    Then an Arch package that actually installs (Campaign F).
 5. Campaign G (script) stays refuse. H/I stay parked.

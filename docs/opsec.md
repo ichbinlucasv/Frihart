@@ -32,8 +32,9 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
   every http(s) URL. Native ClearURLs. No list server.
 - A public-name page that redirects to loopback, link-local, or
   RFC1918 / ULA is refused (no IMDS, no LAN scan).
-- Dual-stack: IPv4 and IPv6 literals and names. System resolver
-  (A + AAAA). No IPv4-only force.
+- Dual-stack: IPv4 and IPv6 literals and names. Clearnet names use
+  Quad9 DoH (A and AAAA). No IPv4-only force. The system resolver is
+  opt-in.
 - Zero connections on startup.
 - rustls only. No system CA surprises as the product default.
 - Frozen User-Agent. No Client Hints.
@@ -70,7 +71,8 @@ Until then, crate seams are written as if IPC already existed.
 ## What we will not do "for security"
 
 - Phone home to refresh a blocklist.
-- Force a DoH vendor.
+- Send clearnet DNS to the system resolver unless the user opted in.
+  Quad9 DoH is the default. Tor and I2P never use local DNS.
 - Ship DRM or any closed module.
 - Hide prefs that weaken protection. Document them instead.
 - Impersonate Chrome's fingerprint to "blend in."

@@ -223,9 +223,11 @@ request leaves the machine.
 Talks to the network and to `frihart-privacy`. Never to chrome widgets.
 
 Phase 1: types and a client trait.
-Phase 2: rustls + HTTP/1.1, then HTTP/2; DNS via the system resolver
-first, then optional DNS-over-HTTPS **chosen by the user**.
-No default DoH provider that we have a relationship with.
+Phase 2: rustls + HTTP/1.1, then HTTP/2. Clearnet DNS is Quad9
+DNS-over-HTTPS (`https://dns.quad9.net/dns-query`), pinned to Quad9's
+published addresses. The system resolver is opt-in
+(`network.doh_mode = system` or `network.dns_system_fallback`).
+Tor and I2P tabs do not use local DNS.
 
 Cookie jar, cache, and HSTS store live here and ask privacy before every
 read or write.

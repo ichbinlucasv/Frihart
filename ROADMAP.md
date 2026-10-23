@@ -188,7 +188,7 @@ before it can paint a page.
 - Downloads to a user-chosen directory, no execute-on-download
 - Referrer policy implementation matching prefs
 - User-Agent frozen; no Client Hints
-- Optional DoH, user-supplied URL only
+- Clearnet DNS-over-HTTPS. Quad9 is the default (2026-10-23); a custom URL or the system resolver is opt-in
 - Certificate error pages that are honest
 - Local integration tests against a test listener (no live web in CI)
 
@@ -197,7 +197,7 @@ before it can paint a page.
 - `frihart-net` never imports chrome
 - Every request is a `privacy::RequestContext`
 - No HTTP/3 until fingerprinting and middlebox behavior are reviewed
-- No default DoH vendor
+- No Frihart DNS server. Clearnet default is Quad9 DoH (2026-10-23); system DNS is opt-in. Tor and I2P stay off local DNS
 - Cookies and cache are not world-readable files
 
 ### Success criteria
@@ -609,7 +609,7 @@ A sustainable rhythm for a long project:
 - [x] First-party partitioned cookies, 0600 profile files
 - [x] Tor tabs refuse clearnet (no silent fallback)
 - [x] I2P tabs refuse clearnet (system i2pd/I2P, SOCKS 4447)
-- [x] Quad9 named as system-DNS recommendation; DoH stays off by default
+- [x] Clearnet DNS defaults to Quad9 DoH (`https://dns.quad9.net/dns-query`); system resolver is opt-in (`network.doh_mode = system` or `network.dns_system_fallback`). Tor and I2P tabs still use no local DNS. `.onion` / `.i2p` never reach the clearnet resolver. Still open: an in-memory DNS cache, DNS-over-TLS as a second transport, and a decision on whether Tails and Whonix clearnet tabs should force the system resolver so they stay inside Tor. A custom DoH URL is `network.doh_mode = custom` in prefs.toml (no text field in the chrome yet).
 - [x] `.onion` / `.i2p` fail closed on the wrong circuit (no clearnet DNS)
 - [x] `about:stack` detects local Tor/I2P/GPG/SimpleX/Session/Meshtastic/XMR
 - [x] HTML subset + arena DOM + CSS/layout/gfx pipeline

@@ -16,7 +16,7 @@ Frihart is the **browser** in that stack. It is not the stack.
 | SimpleX, Session | Launch if on PATH. Not embedded. |
 | Meshtastic | Radio stays on the radio. Detected, not vendored. |
 | Tails / Qubes | First-class homes. Amnesia and compartments win. |
-| Quad9 | System DNS recommendation. Not forced DoH. |
+| Quad9 | Default clearnet DNS, over HTTPS. System DNS is opt-in. Not used by Tor or I2P tabs. |
 | SearXNG | Your instance URL in `search.searxng`. We do not pick a public one. |
 
 ## Hard rules for this audience
