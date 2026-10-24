@@ -53,16 +53,23 @@ impl WebViewDelegate for Watch {
             .headers
             .get("user-agent")
             .map(|v| v.to_str().unwrap_or("\u{fffd}"));
+        let origin = req
+            .headers
+            .get("origin")
+            .map(|v| v.to_str().unwrap_or("\u{fffd}"));
         // The document is a data: URL (see `render`), so it has no host.
-        // A Cookie inside the TLS tunnel is refused until a real document
-        // host is known and shares a site with this request. A `.onion` or
-        // `.i2p` request host is refused here as well, before the proxy.
+        // A Cookie or Authorization inside the TLS tunnel is refused until
+        // a real document host is known and shares a site with this request.
+        // Origin may be `null`; any other origin needs that document host.
+        // A `.onion` or `.i2p` request or origin host is refused here as
+        // well, before the proxy.
         let verdict = self.gate.record(check_request(
             req.url.scheme(),
             names,
             ua,
             None,
             req.url.host_str(),
+            origin,
         ));
         if verdict.is_err() {
             let url = req.url.clone();

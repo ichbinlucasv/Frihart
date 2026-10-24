@@ -141,7 +141,10 @@ engine for clearnet speed and tests. Own engine stays Reader, Tor, and
 I2P. On 2026-10-17 the Servo request gate refuses `Referer` and a
 `Cookie` that is not same-site with the document. The Compat document
 is still a `data:` URL, so `Cookie` is refused. On 2026-10-22 the same
-gate refuses a `.onion` or `.i2p` host before the proxy. Do not embed
+gate refuses a `.onion` or `.i2p` host before the proxy. On 2026-10-24
+it also refuses `Authorization` that is not same-site, every
+`Proxy-Authorization`, and an `Origin` other than `null` or `https` on
+the document host (an onion or i2p origin included). Do not embed
 Servo as the product engine.
 **libsodium.org** Forbidden (apex/www 307 → doc.libsodium.org 302 →
 libsodium.gitbook.io/doc) — NeedsJs, left unclaimed.

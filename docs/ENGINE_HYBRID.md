@@ -199,6 +199,16 @@ intercepted response), allowed ones continue to the proxy:
   including a trailing DNS dot and the bare suffix. Servo never starts a
   Tor or I2P fetch. Other special-use names (`.invalid`, `.local`, …) and
   private addresses still pass this gate and are refused by the proxy
+- `Authorization` is allowed only when the document host and the request
+  host share a site, same rule as `Cookie` (2026-10-24). The Compat
+  document is still a `data:` URL, so both are refused. `Proxy-Authorization`
+  is always refused: the proxy does not use it, and the origin would see
+  it inside the tunnel
+- `Origin` may be `null` (the opaque `data:` origin). Any other value must
+  be `https` on the document host itself, with port 443 or no port. A
+  parent host, a sibling, `http`, a path, or a userinfo is refused. An
+  `.onion` or `.i2p` origin is refused even when the request host is
+  clearnet
 
 `GateStats` counts both outcomes (`ServoEngine::gate_counts`); the Servo
 feature test checks that a plain-HTTP image is refused by the gate and

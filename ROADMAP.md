@@ -756,10 +756,15 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   gate also refuses `Referer` / `Ping-From` / `Ping-To`, and a `Cookie`
   unless the document host and the request host are the same site. The
   Compat document is still a `data:` URL, so it has no host and `Cookie`
-  is refused. *2026-10-22:* the gate also refuses a `.onion` or `.i2p`
+  is refused.   *2026-10-22:* the gate also refuses a `.onion` or `.i2p`
   host on the document or the request (trailing dot included), so Servo
   never starts a hidden-network load. Other special-use names and private
-  addresses still reach the proxy, which refuses them. Still open: per-site partitioned
+  addresses still reach the proxy, which refuses them. *2026-10-24:* the
+  gate refuses `Authorization` unless the document and the request share
+  a site (same rule as `Cookie`; a `data:` document has no host, so it is
+  refused), refuses `Proxy-Authorization` always, and refuses `Origin`
+  unless it is `null` or `https` on the document host itself (port 443 or
+  omitted). An `.onion` or `.i2p` origin is refused too. Still open: per-site partitioned
   Servo jar (needed for Compat logins), leak test against a live page.
 - [x] **M4 — Per-site JS toggle** in the protections panel (2026-10-16).
   `SiteJsStore` (profile `site_js.toml`, 0600) maps first-party host →
