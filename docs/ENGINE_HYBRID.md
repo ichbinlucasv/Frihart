@@ -242,6 +242,11 @@ build Frihart; use rustup or a backport). The remaining audit output is
 (RUSTSEC-2026-0381/0383, emSign roots). `cargo audit` is back to
 unmaintained warnings only.
 
+*2026-10-24:* `ctutils` 0.4.3 → 0.4.5 (RUSTSEC-2026-0385, non-constant-time
+mask and `u128` compare). It is a Servo lockfile dependency
+(`crypto-bigint` / `servo-script`), not compiled into the default build.
+`cargo audit` is back to unmaintained warnings only.
+
 ## M2 step (2026-10-15): Compat mode in chrome
 
 `Tab` carries `TabMode::{Reader, Compat}`. `prepare_frame` calls
