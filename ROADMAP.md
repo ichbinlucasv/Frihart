@@ -674,6 +674,7 @@ A sustainable rhythm for a long project:
 - [x] privacyguides.org claimed (Privacy Guides, Knowledge Base/Articles/Videos/About; apex→www MkDocs Material SSR)
 - [x] tails.net claimed (Tails - Home, portable operating system, How Tails works / Install Tails / Who uses Tails)
 - [x] RFC 8439 claimed (ChaCha20 and Poly1305 for IETF Protocols, Abstract, AEAD, pre page)
+- [x] grapheneos.org claimed (GrapheneOS, private and secure mobile OS, Android app compatibility; www 301→apex; external CSS unused)
 - [x] CSS `font-family` engine slots (sans/serif/mono; no web fonts)
 - [x] CSS `list-style` / `list-style-type` (none/disc/circle/square/decimal)
 - [x] CSS `white-space` (normal/nowrap/pre/pre-wrap/pre-line)

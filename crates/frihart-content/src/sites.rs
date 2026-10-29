@@ -284,6 +284,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title ChaCha20 and Poly1305 for IETF Protocols, Abstract, AEAD, pre page; live HTML 2026-10-17",
         },
         SiteClaim {
+            url: "https://grapheneos.org/",
+            name: "grapheneos.org",
+            status: ClaimStatus::Claimed,
+            note: "title GrapheneOS, private and secure mobile OS, Android app compatibility, Features/Install/FAQ; www 301 to apex; external CSS unused; head redirect.js skipped; live HTML 2026-10-29",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -371,7 +377,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 40);
+        assert_eq!(public_claimed(), 41);
         assert!(
             claims()
                 .iter()
@@ -574,6 +580,11 @@ mod tests {
             s.status == ClaimStatus::Claimed
                 && s.url.contains("rfc8439")
                 && s.note.contains("ChaCha20")
+        }));
+        assert!(claims().iter().any(|s| {
+            s.status == ClaimStatus::Claimed
+                && s.url.contains("grapheneos.org")
+                && s.note.contains("Android app compatibility")
         }));
         assert!(claims().iter().any(|s| {
             s.status == ClaimStatus::NeedsJs

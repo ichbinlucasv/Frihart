@@ -3,7 +3,7 @@
 Frihart implements a documented subset. Unimplemented properties are
 ignored. They are never guessed into a broken layout.
 
-Honest coverage for Campaign D: **thirty-two** public static documents
+Honest coverage for Campaign D: **forty-one** public static documents
 are claimed (see [sites.md](sites.md) and `about:sites`). The first CSS
 subset needed for that named list is **in**. External stylesheets are
 still unused on most claims (nav stacks; that is honest, not a skip).

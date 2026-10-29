@@ -1464,4 +1464,28 @@ line2</pre>"#;
         let wide = layout_html_ex(html, "https://www.sequoia-pgp.org/", 5120.0, 1440.0);
         assert!(wide.title.contains("Sequoia"));
     }
+
+    #[test]
+    fn grapheneos_org_is_readable() {
+        let html = include_str!("../testdata/grapheneos.org.html");
+        let f = layout_html_ex(html, "https://grapheneos.org/", 1000.0, 800.0);
+        assert!(f.title.contains("GrapheneOS"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("private and secure"));
+        assert!(blob.contains("Android app compatibility"));
+        assert!(
+            blob.contains("sandboxing")
+                || blob.contains("non-profit")
+                || blob.contains("open source")
+        );
+        assert!(blob.contains("No Google") || blob.contains("Play services"));
+        assert!(blob.contains("Install") || blob.contains("Features"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/install") || h.contains("/features") || h.contains("/faq")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://grapheneos.org/", 5120.0, 1440.0);
+        assert_eq!(wide.title, f.title);
+    }
 }
