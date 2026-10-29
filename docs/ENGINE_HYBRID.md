@@ -247,6 +247,14 @@ mask and `u128` compare). It is a Servo lockfile dependency
 (`crypto-bigint` / `servo-script`), not compiled into the default build.
 `cargo audit` is back to unmaintained warnings only.
 
+*2026-10-29:* lockfile only. `crypto-bigint` 0.7.5 → 0.7.10
+(RUSTSEC-2026-0387, timing variability; `ctutils` 0.4.5 → 0.4.7 came
+along). `zstd` 0.14.2 → 0.14.3, `zstd-safe` 8.1.0 → 8.2.0, `zstd-sys`
+2.1.1 → 2.1.2 (RUSTSEC-2026-0391/0398/0403/0410, plus the unsound
+`zstd-safe` warnings on 8.1.0). Both are Servo lockfile dependencies
+(`servo-script`, `async-compression`), not compiled into the default
+build. `cargo audit` is back to unmaintained warnings only.
+
 ## M2 step (2026-10-15): Compat mode in chrome
 
 `Tab` carries `TabMode::{Reader, Compat}`. `prepare_frame` calls
