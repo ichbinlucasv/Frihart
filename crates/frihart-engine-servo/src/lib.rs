@@ -66,6 +66,26 @@ impl ServoEngine {
         (0, 0)
     }
 
+    /// Leak transcript for this engine (empty before the first render or
+    /// without Servo). Header values are not included.
+    pub fn gate_log(&self) -> Vec<gate::ObservedLoad> {
+        #[cfg(feature = "servo")]
+        if let Some(h) = &self.inner {
+            return h.gate_log();
+        }
+        Vec::new()
+    }
+
+    /// Audit the leak transcript. `Ok` before the first render: nothing
+    /// was allowed. A truncated log fails closed.
+    pub fn gate_audit(&self) -> Result<(), gate::AuditFail> {
+        #[cfg(feature = "servo")]
+        if let Some(h) = &self.inner {
+            return h.gate_audit();
+        }
+        Ok(())
+    }
+
     /// Clearnet DNS for the Compat proxy. No effect until this build
     /// includes Servo. Tor and I2P tabs never reach that proxy.
     pub fn set_clearnet_dns(&mut self, mode: &str, url: &str, system_fallback: bool) {
@@ -277,6 +297,72 @@ mod tests {
         assert!(
             e.gate_counts().0 >= gate_allowed_before + 2,
             "Servo's HTTPS requests failed the header audit"
+        );
+        assert_eq!(e.gate_audit(), Ok(()), "earlier loads leaked");
+
+        // Synthetic leak page: plain HTTP (must not connect), a special-use
+        // name, a private address, and hidden-network hosts. The document
+        // is still a data: URL, so a cookie set by script must not leave
+        // on an allowed load. This is not a public-site soak; M5 stays off.
+        let log_before = e.gate_log().len();
+        let (_, gate_refused_mid) = e.gate_counts();
+        let html = format!(
+            "<title>leak2</title><script>document.cookie='sid=1'</script>\
+            <img src=\"http://127.0.0.1:{port}/x.png\">\
+            <img src=\"https://frihart-test.invalid/a.png\">\
+            <img src=\"https://10.1.2.3/b.png\">\
+            <img src=\"https://example.onion/c.png\">\
+            <img src=\"https://secret.i2p/d.png\">"
+        );
+        let r5 = e.render_html_with_js(&html, 120.0, true).unwrap();
+        assert_eq!(r5.title, "leak2");
+        assert!(
+            target.accept().is_err(),
+            "the leak page connected to the local listener"
+        );
+        let fresh = e.gate_log().split_off(log_before);
+        assert!(
+            fresh.len() >= 4,
+            "the gate did not see the leak page ({})",
+            fresh.len()
+        );
+        assert!(
+            fresh
+                .iter()
+                .any(|l| l.verdict == Err(gate::Refusal::NotHttps)),
+            "plain HTTP was not refused"
+        );
+        assert!(
+            fresh
+                .iter()
+                .any(|l| l.verdict == Err(gate::Refusal::HiddenNetwork)),
+            "onion or i2p was not refused"
+        );
+        assert!(
+            fresh.iter().any(|l| {
+                l.verdict.is_ok() && l.host.as_deref() == Some("frihart-test.invalid")
+            }),
+            "the special-use name did not reach the gate as an allowed https load"
+        );
+        assert!(
+            fresh
+                .iter()
+                .filter(|l| l.verdict.is_ok())
+                .all(|l| l.user_agent != gate::UaCheck::Foreign),
+            "an allowed load carried a foreign user agent"
+        );
+        assert!(
+            fresh.iter().filter(|l| l.verdict.is_ok()).all(|l| {
+                !l.header_names
+                    .iter()
+                    .any(|n| n.eq_ignore_ascii_case("cookie"))
+            }),
+            "an allowed load carried a cookie"
+        );
+        assert_eq!(e.gate_audit(), Ok(()));
+        assert!(
+            e.gate_counts().1 > gate_refused_mid,
+            "the leak page did not refuse anything"
         );
     }
 }

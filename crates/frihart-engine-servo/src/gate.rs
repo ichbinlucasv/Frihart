@@ -10,7 +10,8 @@
 //! Allowed without checks: in-memory `data:`, `blob:` and `about:` loads.
 //! Refused: any other scheme than `https` (`http`, `ws`, `file`, …); User-Agent Client Hints
 //! (`Sec-CH-*`) and other identifying headers (`X-Client-Data`,
-//! `X-Requested-With`, `Referer`, `Ping-From`, `Ping-To`); a User-Agent other
+//! `X-Requested-With`, `Referer`, `Ping-From`, `Ping-To`, legacy client
+//! hints, Network Information, `Sec-Purpose`); a User-Agent other
 //! than Frihart's frozen one; an oversized header list; a `Cookie` or
 //! `Authorization` whose document host and request host are not the same
 //! site; `Proxy-Authorization` always (that credential belongs to a proxy,
@@ -24,7 +25,13 @@
 //! blocker lists stay with the Compat proxy (an `.invalid` name still
 //! reaches it, which is how the Servo feature test shows the proxy is on
 //! the path).
+//!
+//! Every decision is also kept as an [`ObservedLoad`] (scheme, host,
+//! header names, verdict — no header values and no URL path). [`audit_loads`]
+//! fails closed if a load that was allowed breaks that policy. The log is
+//! capped; a truncated log is itself a failure.
 
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Schemes served from memory, never from the network.
@@ -42,6 +49,20 @@ const FORBIDDEN_NAMES: &[&str] = &[
     "referrer",
     "ping-from",
     "ping-to",
+    // Legacy client hints (the `Sec-CH-*` forms are covered by the prefix).
+    "dpr",
+    "device-memory",
+    "viewport-width",
+    // Network Information API. `width` is intentionally not here: cancelling
+    // a request because of a header with that common name would drop images
+    // if Servo ever sent it, and it is not a default request header.
+    "downlink",
+    "rtt",
+    "ect",
+    "save-data",
+    // Speculative prefetch (`prefetch`, `prerender`). Compat does not prefetch.
+    "sec-purpose",
+    "purpose",
 ];
 
 /// Why a load was refused.
@@ -65,7 +86,7 @@ impl Refusal {
     pub fn label(self) -> &'static str {
         match self {
             Self::NotHttps => "not https",
-            Self::IdentifyingHeader => "identifying header (client hints)",
+            Self::IdentifyingHeader => "identifying header",
             Self::UserAgent => "user agent is not the frozen one",
             Self::TooManyHeaders => "too many request headers",
             Self::Cookie => "cookie is not same-site with the document",
@@ -294,11 +315,86 @@ fn hosts_equal(a: &str, b: &str) -> bool {
             .any(|c| matches!(c, b'/' | b' ' | b'@' | b'\\' | b'?' | b'#' | b'[' | b']'))
 }
 
-/// Counters for one Servo instance (shared with Servo's delegate).
+/// How the User-Agent on one load compared to Frihart's frozen value.
+/// The header text itself is not stored.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UaCheck {
+    /// The request had no User-Agent header.
+    Absent,
+    /// The request carried [`frihart_core::FROZEN_USER_AGENT`].
+    Frozen,
+    /// The request carried some other User-Agent.
+    Foreign,
+}
+
+/// One load the gate saw. Header values and the URL path are not kept.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ObservedLoad {
+    pub scheme: String,
+    pub host: Option<String>,
+    pub header_names: Vec<String>,
+    pub user_agent: UaCheck,
+    pub origin: Option<String>,
+    pub document_host: Option<String>,
+    pub verdict: Result<(), Refusal>,
+}
+
+/// Why a transcript cannot be trusted.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AuditFail {
+    /// More loads arrived than the log keeps. Treat that as a leak: the
+    /// missing ones were not checked.
+    Truncated,
+    /// A load was allowed even though policy refuses it.
+    Allowed(Refusal),
+}
+
+/// Most loads kept for one Servo instance. Past this the audit fails closed.
+pub const MAX_OBSERVED_LOADS: usize = 64;
+
+/// Longest `Origin` value copied into the log. Longer values are stored as
+/// a marker the origin check refuses, so a huge header cannot hide.
+const MAX_STORED_ORIGIN: usize = 256;
+
+/// Re-run policy on a recorded load. An allowed load that policy refuses
+/// is a leak. A refused load is not: the request never left Servo.
+pub fn audit_loads(loads: &[ObservedLoad]) -> Result<(), AuditFail> {
+    for load in loads {
+        if load.verdict.is_err() {
+            continue;
+        }
+        let ua = match load.user_agent {
+            UaCheck::Absent => None,
+            UaCheck::Frozen => Some(frihart_core::FROZEN_USER_AGENT),
+            UaCheck::Foreign => Some("foreign"),
+        };
+        if let Err(reason) = check_request(
+            &load.scheme,
+            load.header_names.iter().map(String::as_str),
+            ua,
+            load.document_host.as_deref(),
+            load.host.as_deref(),
+            load.origin.as_deref(),
+        ) {
+            return Err(AuditFail::Allowed(reason));
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Default)]
+struct GateLog {
+    loads: Vec<ObservedLoad>,
+    truncated: bool,
+}
+
+/// Counters and the leak transcript for one Servo instance (shared with
+/// Servo's delegate).
 #[derive(Debug, Default)]
 pub struct GateStats {
     pub allowed: AtomicU64,
     pub refused: AtomicU64,
+    log: Mutex<GateLog>,
 }
 
 impl GateStats {
@@ -313,11 +409,85 @@ impl GateStats {
         r
     }
 
+    /// Decide one load, count it, and append it to the transcript.
+    ///
+    /// `header_names` are stored as sent (the check itself is
+    /// case-insensitive). `origin` longer than [`MAX_STORED_ORIGIN`] is
+    /// replaced with a marker that does not parse as a document origin.
+    pub fn observe<'a>(
+        &self,
+        scheme: &str,
+        header_names: impl IntoIterator<Item = &'a str>,
+        user_agent: Option<&str>,
+        document_host: Option<&str>,
+        request_host: Option<&str>,
+        origin: Option<&str>,
+    ) -> Result<(), Refusal> {
+        let header_names: Vec<String> = header_names.into_iter().map(str::to_string).collect();
+        let verdict = check_request(
+            scheme,
+            header_names.iter().map(String::as_str),
+            user_agent,
+            document_host,
+            request_host,
+            origin,
+        );
+        let user_agent = match user_agent {
+            None => UaCheck::Absent,
+            Some(ua) if ua == frihart_core::FROZEN_USER_AGENT => UaCheck::Frozen,
+            Some(_) => UaCheck::Foreign,
+        };
+        let origin = origin.map(|o| {
+            if o.len() <= MAX_STORED_ORIGIN {
+                o.to_string()
+            } else {
+                "too-long".to_string()
+            }
+        });
+        let observed = ObservedLoad {
+            scheme: scheme.to_string(),
+            host: request_host.map(str::to_string),
+            header_names,
+            user_agent,
+            origin,
+            document_host: document_host.map(str::to_string),
+            verdict,
+        };
+        {
+            let mut log = self.log.lock().unwrap_or_else(|e| e.into_inner());
+            if log.loads.len() >= MAX_OBSERVED_LOADS {
+                log.truncated = true;
+            } else {
+                log.loads.push(observed);
+            }
+        }
+        self.record(verdict)
+    }
+
     pub fn counts(&self) -> (u64, u64) {
         (
             self.allowed.load(Ordering::Relaxed),
             self.refused.load(Ordering::Relaxed),
         )
+    }
+
+    /// Copy of the transcript so far, oldest first.
+    pub fn observed(&self) -> Vec<ObservedLoad> {
+        self.log
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .loads
+            .clone()
+    }
+
+    /// Fail closed when the transcript was truncated or an allowed load
+    /// breaks policy.
+    pub fn audit(&self) -> Result<(), AuditFail> {
+        let log = self.log.lock().unwrap_or_else(|e| e.into_inner());
+        if log.truncated {
+            return Err(AuditFail::Truncated);
+        }
+        audit_loads(&log.loads)
     }
 }
 
@@ -372,6 +542,15 @@ mod tests {
             "Referrer",
             "Ping-From",
             "Ping-To",
+            "DPR",
+            "Device-Memory",
+            "Viewport-Width",
+            "Downlink",
+            "RTT",
+            "ECT",
+            "Save-Data",
+            "Sec-Purpose",
+            "Purpose",
         ] {
             assert_eq!(
                 check_request("https", ["Accept", h], Some(UA), None, None, None),
@@ -683,5 +862,174 @@ mod tests {
         let _ = s.record(Err(Refusal::NotHttps));
         let _ = s.record(Err(Refusal::UserAgent));
         assert_eq!(s.counts(), (1, 2));
+    }
+
+    fn observed(
+        scheme: &str,
+        host: Option<&str>,
+        headers: &[&str],
+        ua: UaCheck,
+        origin: Option<&str>,
+        document: Option<&str>,
+        verdict: Result<(), Refusal>,
+    ) -> ObservedLoad {
+        ObservedLoad {
+            scheme: scheme.to_string(),
+            host: host.map(str::to_string),
+            header_names: headers.iter().map(|h| (*h).to_string()).collect(),
+            user_agent: ua,
+            origin: origin.map(str::to_string),
+            document_host: document.map(str::to_string),
+            verdict,
+        }
+    }
+
+    #[test]
+    fn audit_accepts_refusals_and_a_clean_https_load() {
+        let loads = [
+            observed(
+                "http",
+                Some("127.0.0.1"),
+                &[],
+                UaCheck::Frozen,
+                None,
+                None,
+                Err(Refusal::NotHttps),
+            ),
+            observed(
+                "https",
+                Some("example.onion"),
+                &[],
+                UaCheck::Frozen,
+                None,
+                Some("example.com"),
+                Err(Refusal::HiddenNetwork),
+            ),
+            observed(
+                "https",
+                Some("frihart-test.invalid"),
+                &["Accept", "User-Agent"],
+                UaCheck::Frozen,
+                Some("null"),
+                None,
+                Ok(()),
+            ),
+            observed(
+                "data",
+                Some("example.onion"),
+                &["Sec-CH-UA"],
+                UaCheck::Foreign,
+                None,
+                None,
+                Ok(()),
+            ),
+        ];
+        assert_eq!(audit_loads(&loads), Ok(()));
+    }
+
+    #[test]
+    fn audit_fails_closed_on_an_allowed_leak() {
+        let onion = observed(
+            "https",
+            Some("secret.onion"),
+            &["Accept"],
+            UaCheck::Frozen,
+            None,
+            Some("example.com"),
+            Ok(()),
+        );
+        assert_eq!(
+            audit_loads(&[onion]),
+            Err(AuditFail::Allowed(Refusal::HiddenNetwork))
+        );
+        let hinted = observed(
+            "https",
+            Some("example.com"),
+            &["Accept", "Save-Data"],
+            UaCheck::Frozen,
+            None,
+            Some("example.com"),
+            Ok(()),
+        );
+        assert_eq!(
+            audit_loads(&[hinted]),
+            Err(AuditFail::Allowed(Refusal::IdentifyingHeader))
+        );
+        let foreign = observed(
+            "https",
+            Some("example.com"),
+            &["User-Agent"],
+            UaCheck::Foreign,
+            None,
+            Some("example.com"),
+            Ok(()),
+        );
+        assert_eq!(
+            audit_loads(&[foreign]),
+            Err(AuditFail::Allowed(Refusal::UserAgent))
+        );
+        let cookie = observed(
+            "https",
+            Some("cdn.example.com"),
+            &["Cookie"],
+            UaCheck::Frozen,
+            None,
+            Some("www.example.com"),
+            Ok(()),
+        );
+        assert_eq!(
+            audit_loads(&[cookie]),
+            Err(AuditFail::Allowed(Refusal::Cookie))
+        );
+    }
+
+    #[test]
+    fn observe_logs_the_verdict_and_drops_header_values() {
+        let s = GateStats::default();
+        let verdict = s.observe(
+            "https",
+            ["Accept", "Save-Data"],
+            Some(UA),
+            None,
+            Some("example.com"),
+            Some("null"),
+        );
+        assert_eq!(verdict, Err(Refusal::IdentifyingHeader));
+        assert_eq!(s.counts(), (0, 1));
+        let log = s.observed();
+        assert_eq!(log.len(), 1);
+        assert_eq!(log[0].header_names, ["Accept", "Save-Data"]);
+        assert_eq!(log[0].user_agent, UaCheck::Frozen);
+        assert_eq!(log[0].verdict, Err(Refusal::IdentifyingHeader));
+        assert_eq!(s.audit(), Ok(()));
+
+        let _ = s.observe(
+            "https",
+            ["User-Agent"],
+            Some("Mozilla/5.0 somewhere"),
+            Some("example.com"),
+            Some("example.com"),
+            None,
+        );
+        assert_eq!(s.observed()[1].user_agent, UaCheck::Foreign);
+        assert!(s.audit().is_ok(), "a refused foreign UA is not a leak");
+    }
+
+    #[test]
+    fn a_full_transcript_fails_the_audit() {
+        let s = GateStats::default();
+        for _ in 0..=MAX_OBSERVED_LOADS {
+            let _ = s.observe(
+                "https",
+                ["Accept"],
+                Some(UA),
+                Some("example.com"),
+                Some("example.com"),
+                None,
+            );
+        }
+        assert_eq!(s.observed().len(), MAX_OBSERVED_LOADS);
+        assert_eq!(s.audit(), Err(AuditFail::Truncated));
+        assert_eq!(s.counts().0, MAX_OBSERVED_LOADS as u64 + 1);
     }
 }

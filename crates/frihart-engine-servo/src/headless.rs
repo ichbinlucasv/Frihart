@@ -17,7 +17,7 @@ use servo::{
 use frihart_net::SharedClearnetDns;
 use frihart_net::compat_proxy::{CompatPolicy, CompatProxy};
 
-use crate::gate::{GateStats, check_request};
+use crate::gate::GateStats;
 use crate::prefs::HardenedPrefs;
 
 /// Longest a single render may take before it is abandoned.
@@ -48,7 +48,7 @@ impl WebViewDelegate for Watch {
     /// loads that break policy are cancelled (a network error for the page).
     fn load_web_resource(&self, _: WebView, load: WebResourceLoad) {
         let req = load.request();
-        let names = req.headers.keys().map(|k| k.as_str());
+        let names: Vec<&str> = req.headers.keys().map(|k| k.as_str()).collect();
         let ua = req
             .headers
             .get("user-agent")
@@ -62,15 +62,15 @@ impl WebViewDelegate for Watch {
         // a real document host is known and shares a site with this request.
         // Origin may be `null`; any other origin needs that document host.
         // A `.onion` or `.i2p` request or origin host is refused here as
-        // well, before the proxy.
-        let verdict = self.gate.record(check_request(
+        // well, before the proxy. The decision is kept on the leak transcript.
+        let verdict = self.gate.observe(
             req.url.scheme(),
             names,
             ua,
             None,
             req.url.host_str(),
             origin,
-        ));
+        );
         if verdict.is_err() {
             let url = req.url.clone();
             load.intercept(WebResourceResponse::new(url)).cancel();
@@ -182,6 +182,17 @@ impl Headless {
     /// Requests the in-Servo gate allowed and refused so far.
     pub fn gate_counts(&self) -> (u64, u64) {
         self.gate.counts()
+    }
+
+    /// Loads the in-Servo gate has recorded, oldest first.
+    pub fn gate_log(&self) -> Vec<crate::gate::ObservedLoad> {
+        self.gate.observed()
+    }
+
+    /// Fail closed when the transcript is truncated or an allowed load
+    /// breaks policy.
+    pub fn gate_audit(&self) -> Result<(), crate::gate::AuditFail> {
+        self.gate.audit()
     }
 
     /// Forget everything Servo stored while rendering: cookies, local and
