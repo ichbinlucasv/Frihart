@@ -765,8 +765,18 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   a site (same rule as `Cookie`; a `data:` document has no host, so it is
   refused), refuses `Proxy-Authorization` always, and refuses `Origin`
   unless it is `null` or `https` on the document host itself (port 443 or
-  omitted). An `.onion` or `.i2p` origin is refused too. Still open: per-site partitioned
-  Servo jar (needed for Compat logins), leak test against a live page.
+  omitted). An `.onion` or `.i2p` origin is refused too. *2026-11-01:*
+  the gate also refuses legacy client hints (`DPR`, `Device-Memory`,
+  `Viewport-Width`), Network Information headers (`Downlink`, `RTT`,
+  `ECT`, `Save-Data`) and prefetch (`Sec-Purpose`, `Purpose`). It keeps
+  a transcript of each decision (no header values, no URL path) and
+  `audit_loads` fails closed if an allowed load breaks that policy or
+  the log is truncated. The Servo feature test drives a synthetic page
+  at a local listener, a special-use name, a private address, `.onion`
+  and `.i2p`: nothing connects locally, and no allowed load carries a
+  cookie or a foreign User-Agent. That is not a public-site soak.
+  Still open: per-site partitioned Servo jar (needed for Compat logins),
+  and the same audit against a public page before M5 turns the default on.
 - [x] **M4 — Per-site JS toggle** in the protections panel (2026-10-16).
   `SiteJsStore` (profile `site_js.toml`, 0600) maps first-party host →
   allow; inherits global `privacy.javascript` (default false). Shields
@@ -780,8 +790,9 @@ Own engine keeps Tor, I2P and reader tabs; Servo renders clearnet
   picks Compat only for clearnet, with the pref on, Servo compiled in, and a
   site the own engine does not claim (`frihart_content::is_claimed_url`).
   Each clearnet navigation re-applies it unless the user picked the mode
-  with Shift+E (`Tab::mode_pinned`); Tor/I2P stay Reader. Still open: the
-  live-page leak test, then turning the default on.
+  with Shift+E (`Tab::mode_pinned`); Tor/I2P stay Reader. *2026-11-01:*
+  the in-process leak audit of a synthetic page passes (see M3); the
+  public-page check is still open, so the default stays off.
 
 ## Campaign B-JS — Boa light JS (opt-in, per site)
 

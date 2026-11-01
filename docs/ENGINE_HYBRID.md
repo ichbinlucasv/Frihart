@@ -209,6 +209,25 @@ intercepted response), allowed ones continue to the proxy:
   parent host, a sibling, `http`, a path, or a userinfo is refused. An
   `.onion` or `.i2p` origin is refused even when the request host is
   clearnet
+- legacy client hints (`DPR`, `Device-Memory`, `Viewport-Width`), Network
+  Information (`Downlink`, `RTT`, `ECT`, `Save-Data`) and prefetch
+  (`Sec-Purpose`, `Purpose`) are refused the same way as `Sec-CH-*`
+  (2026-11-01). `Width` is not on that list: cancelling every request
+  that carried a header of that name would drop images if Servo sent it
+
+`GateStats` keeps a transcript of each decision (`ObservedLoad`: scheme,
+host, header names, a User-Agent class, origin, verdict). Header values
+and the URL path are not stored. `audit_loads` fails closed if any
+*allowed* load breaks the policy above, or if the log was truncated
+(64 loads). The Servo feature test loads a synthetic page that tries
+plain HTTP against a local listener, a special-use name, a private
+address, `.onion` and `.i2p`, and sets `document.cookie`. The listener
+accepts nothing, hidden-network and non-HTTPS loads are refused, and no
+allowed load carries a cookie or a foreign User-Agent. This is an
+in-process audit of a page Frihart handed Servo as a `data:` URL, not a
+soak of a public site. `content.compat_default` stays off until that
+public check is done. The partitioned Servo jar is still open: Servo's
+jar is wiped before and after every render.
 
 `GateStats` counts both outcomes (`ServoEngine::gate_counts`); the Servo
 feature test checks that a plain-HTTP image is refused by the gate and
@@ -254,6 +273,12 @@ along). `zstd` 0.14.2 → 0.14.3, `zstd-safe` 8.1.0 → 8.2.0, `zstd-sys`
 `zstd-safe` warnings on 8.1.0). Both are Servo lockfile dependencies
 (`servo-script`, `async-compression`), not compiled into the default
 build. `cargo audit` is back to unmaintained warnings only.
+
+*2026-11-01:* lockfile only. `libz-sys` 1.1.30 → 1.1.31
+(RUSTSEC-2026-0418, the build script wrote environment variables into
+the build directory). It is a Servo lockfile dependency (`mozjs_sys`,
+`freetype-sys`, `fontsan`), not compiled into the default build.
+`cargo audit` is back to unmaintained warnings only.
 
 ## M2 step (2026-10-15): Compat mode in chrome
 
