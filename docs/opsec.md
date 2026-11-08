@@ -41,6 +41,9 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
 - No `Referer` path. No DNT bit. GPC may be sent.
 - First-party cookies, partitioned by isolation key (scheme + host +
   container + circuit). Tor and I2P never share the clearnet jar.
+  A `Domain` attribute that is not this host, or a single label such as
+  `com`, is refused. A cookie with no `Domain` stays on the host that
+  set it. `Path=/foo` does not match `/foobar`.
 - Blocker on at install. Lists are local. No Frihart list server.
 
 ## Memory and process

@@ -27,6 +27,7 @@ threats are:
 | --- | --- |
 | Malicious profile files | Strict parsers, no `unwrap` on disk data, lockfile, 0600 |
 | Hostile HTML | Rust parser, no panic on junk, subset only |
+| Cookie scope | `Domain` must be this host or a dotted parent; no `Domain` stays host-only; `Path` is a segment prefix |
 | User-assisted code exec | Downloads `0600`, never executed; no extension runtime |
 | Tor leak | SOCKS only. Empty/dead SOCKS refuses. No clearnet fallback |
 | Supply-chain crates | Minimal deps, no upload/telemetry SDKs |

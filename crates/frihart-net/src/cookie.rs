@@ -19,6 +19,11 @@ pub struct StoredCookie {
     /// `direct` / `tor` / `i2p`. Missing in old jars means direct.
     #[serde(default)]
     pub circuit: String,
+    /// Set when the cookie had no `Domain` attribute. It is then sent only
+    /// to the host that set it. Missing in old jars means the previous,
+    /// wider match (the stored domain and its subdomains).
+    #[serde(default)]
+    pub host_only: bool,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -83,6 +88,7 @@ impl CookieJar {
             path: parsed.path,
             secure: parsed.secure,
             http_only: parsed.http_only,
+            host_only: parsed.host_only,
             partition_host: first_party.to_ascii_lowercase(),
             container: container.0,
             circuit: circuit.slug().into(),
@@ -90,6 +96,8 @@ impl CookieJar {
         self.cookies.retain(|c| {
             !(c.name == stored.name
                 && c.domain == stored.domain
+                && c.path == stored.path
+                && c.host_only == stored.host_only
                 && c.container == stored.container
                 && c.partition_host == stored.partition_host
                 && CircuitKind::from_slug(&c.circuit) == circuit)
@@ -131,10 +139,14 @@ impl CookieJar {
             if c.secure && !https {
                 continue;
             }
-            if !domain_matches(&c.domain, &host) {
+            if c.host_only {
+                if host != c.domain {
+                    continue;
+                }
+            } else if !domain_matches(&c.domain, &host) {
                 continue;
             }
-            if !path.starts_with(&c.path) {
+            if !path_matches(&c.path, path) {
                 continue;
             }
             pairs.push(format!("{}={}", c.name, c.value));
@@ -154,22 +166,27 @@ struct ParsedCookie {
     path: String,
     secure: bool,
     http_only: bool,
+    host_only: bool,
 }
 
 fn parse_set_cookie(header: &str, request_url: &Url) -> Option<ParsedCookie> {
     let mut parts = header.split(';');
     let nv = parts.next()?.trim();
     let (name, value) = nv.split_once('=')?;
-    if name.trim().is_empty() {
+    let name = name.trim();
+    let value = value.trim();
+    if !cookie_pair_ok(name, value) {
         return None;
     }
+    let host = request_url.host_str()?.to_ascii_lowercase();
     let mut cookie = ParsedCookie {
-        name: name.trim().to_string(),
-        value: value.trim().to_string(),
-        domain: request_url.host_str()?.to_ascii_lowercase(),
+        name: name.to_string(),
+        value: value.to_string(),
+        domain: host.clone(),
         path: "/".into(),
         secure: false,
         http_only: false,
+        host_only: true,
     };
     for attr in parts {
         let attr = attr.trim();
@@ -180,12 +197,14 @@ fn parse_set_cookie(header: &str, request_url: &Url) -> Option<ParsedCookie> {
         match k.to_ascii_lowercase().as_str() {
             "domain" => {
                 let d = v.trim_start_matches('.').to_ascii_lowercase();
-                if !d.is_empty() {
-                    cookie.domain = d;
+                if !domain_attribute_ok(&host, &d) {
+                    return None;
                 }
+                cookie.domain = d;
+                cookie.host_only = false;
             }
             "path" => {
-                if v.starts_with('/') {
+                if v.starts_with('/') && !v.chars().any(|c| c.is_ascii_control()) {
                     cookie.path = v.to_string();
                 }
             }
@@ -197,8 +216,44 @@ fn parse_set_cookie(header: &str, request_url: &Url) -> Option<ParsedCookie> {
     Some(cookie)
 }
 
+/// `Domain` must be this host, or a dotted parent of it (`www.example.com`
+/// may set `example.com`). A single label such as `com` is refused: it is
+/// not a registrable parent, and accepting it would send the cookie to
+/// every host under that label after a redirect.
+fn domain_attribute_ok(host: &str, domain: &str) -> bool {
+    if domain.is_empty() || domain.parse::<std::net::IpAddr>().is_ok() {
+        return false;
+    }
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return false;
+    }
+    let parent = host == domain || host.ends_with(&format!(".{domain}"));
+    parent && (domain.contains('.') || domain == host)
+}
+
+fn cookie_pair_ok(name: &str, value: &str) -> bool {
+    !name.is_empty()
+        && !name
+            .chars()
+            .any(|c| c.is_ascii_control() || matches!(c, ' ' | ';' | ',' | '='))
+        && !value.chars().any(|c| c.is_ascii_control() || c == ';')
+}
+
 fn domain_matches(cookie_domain: &str, host: &str) -> bool {
     host == cookie_domain || host.ends_with(&format!(".{cookie_domain}"))
+}
+
+/// RFC 6265 path-match: `/foo` matches `/foo` and `/foo/bar`, not `/foobar`.
+fn path_matches(cookie_path: &str, request_path: &str) -> bool {
+    if cookie_path.is_empty() {
+        return true;
+    }
+    if !request_path.starts_with(cookie_path) {
+        return false;
+    }
+    request_path.len() == cookie_path.len()
+        || cookie_path.ends_with('/')
+        || request_path.as_bytes().get(cookie_path.len()) == Some(&b'/')
 }
 
 /// Per first-party host cookie jars for Compat clearnet tabs (Campaign S M3).
@@ -391,5 +446,114 @@ mod tests {
         assert_eq!(sites.site_count(), 1);
         sites.clear();
         assert_eq!(sites.site_count(), 0);
+    }
+
+    fn store_on<'a>(
+        jar: &'a mut CookieJar,
+        set: &str,
+        url: &str,
+        party: &str,
+    ) -> &'a mut CookieJar {
+        let policy = Policy::new(Prefs::default());
+        jar.store(
+            set,
+            &Url::parse(url).unwrap(),
+            party,
+            ContainerId(1),
+            CircuitKind::Direct,
+            &policy,
+            false,
+        );
+        jar
+    }
+
+    fn sent(jar: &CookieJar, url: &str, party: &str) -> Option<String> {
+        let policy = Policy::new(Prefs::default());
+        jar.header_for(
+            &Url::parse(url).unwrap(),
+            party,
+            ContainerId(1),
+            CircuitKind::Direct,
+            &policy,
+            false,
+        )
+    }
+
+    #[test]
+    fn domain_attribute_must_be_this_host() {
+        let mut jar = CookieJar::default();
+        store_on(
+            &mut jar,
+            "a=1; Domain=com",
+            "https://evil.example/",
+            "evil.example",
+        );
+        assert!(jar.is_empty(), "Domain=com is not a parent of this host");
+        store_on(
+            &mut jar,
+            "a=1; Domain=bank.com",
+            "https://evil.example/",
+            "evil.example",
+        );
+        assert!(jar.is_empty(), "a foreign Domain is refused");
+        store_on(
+            &mut jar,
+            "a=1; Domain=example.com",
+            "https://www.example.com/",
+            "www.example.com",
+        );
+        assert_eq!(
+            sent(&jar, "https://example.com/", "www.example.com").as_deref(),
+            Some("a=1")
+        );
+        assert_eq!(
+            sent(&jar, "https://api.example.com/", "www.example.com").as_deref(),
+            Some("a=1")
+        );
+        assert!(sent(&jar, "https://bank.com/", "www.example.com").is_none());
+    }
+
+    #[test]
+    fn host_only_cookies_do_not_leak_to_siblings() {
+        let mut jar = CookieJar::default();
+        store_on(
+            &mut jar,
+            "sid=1",
+            "https://www.example.com/",
+            "www.example.com",
+        );
+        assert_eq!(
+            sent(&jar, "https://www.example.com/app", "www.example.com").as_deref(),
+            Some("sid=1")
+        );
+        assert!(sent(&jar, "https://example.com/", "www.example.com").is_none());
+        assert!(sent(&jar, "https://other.example.com/", "www.example.com").is_none());
+        store_on(
+            &mut jar,
+            "sid=bad\r\nX: 1",
+            "https://www.example.com/",
+            "www.example.com",
+        );
+        assert_eq!(
+            sent(&jar, "https://www.example.com/", "www.example.com").as_deref(),
+            Some("sid=1"),
+            "a control character in the value is not stored"
+        );
+    }
+
+    #[test]
+    fn cookie_path_does_not_match_a_prefix_of_the_name() {
+        let mut jar = CookieJar::default();
+        store_on(
+            &mut jar,
+            "sid=1; Path=/foo",
+            "https://example.com/foo",
+            "example.com",
+        );
+        assert!(sent(&jar, "https://example.com/foobar", "example.com").is_none());
+        assert_eq!(
+            sent(&jar, "https://example.com/foo/bar", "example.com").as_deref(),
+            Some("sid=1")
+        );
     }
 }
