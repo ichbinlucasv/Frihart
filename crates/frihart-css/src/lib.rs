@@ -68,7 +68,16 @@ pub struct Compound {
 pub enum Combinator {
     Descendant,
     Child,
+    /// `+` — the immediate preceding element sibling.
+    Adjacent,
+    /// `~` — a preceding element sibling.
+    General,
 }
+
+/// Selectors longer than this are ignored (the rule does not apply).
+pub const MAX_SELECTOR_BYTES: usize = 1024;
+/// Compounds in one selector. Longer chains are ignored.
+pub const MAX_SELECTOR_COMPOUNDS: usize = 32;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Selector {
@@ -646,37 +655,54 @@ fn range_feature(inner: &str, env: MediaEnv) -> Option<bool> {
 
 pub fn parse_selector(input: &str) -> Option<Selector> {
     let s = input.trim();
-    if s.is_empty() {
+    if s.is_empty() || s.len() > MAX_SELECTOR_BYTES {
         return None;
     }
     let bytes = s.as_bytes();
     let mut i = 0;
     let mut parts = Vec::new();
-    let mut pending = None;
+    // `pending` is a combinator already seen. Whitespace alone is not one
+    // until the next compound, so `p > b` and `p  b` both stay valid.
+    let mut pending: Option<Combinator> = None;
+    let mut saw_ws = false;
     while i < bytes.len() {
-        while i < bytes.len() && bytes[i].is_ascii_whitespace() {
-            i += 1;
-            if pending.is_none() && !parts.is_empty() {
-                pending = Some(Combinator::Descendant);
-            }
-        }
-        if i >= bytes.len() {
-            break;
-        }
-        if bytes[i] == b'>' {
-            pending = Some(Combinator::Child);
+        if bytes[i].is_ascii_whitespace() {
+            saw_ws = true;
             i += 1;
             continue;
         }
-        if bytes[i] == b'+' || bytes[i] == b'~' {
-            return None;
+        if matches!(bytes[i], b'>' | b'+' | b'~') {
+            // A second combinator (`p + > b`, `>>`) or a leading one is invalid.
+            if pending.is_some() || parts.is_empty() {
+                return None;
+            }
+            pending = Some(match bytes[i] {
+                b'>' => Combinator::Child,
+                b'+' => Combinator::Adjacent,
+                b'~' => Combinator::General,
+                _ => return None,
+            });
+            saw_ws = false;
+            i += 1;
+            continue;
+        }
+        if !parts.is_empty() && pending.is_none() {
+            if !saw_ws {
+                return None;
+            }
+            pending = Some(Combinator::Descendant);
         }
         let (compound, next) = parse_compound(s, i)?;
+        if parts.len() >= MAX_SELECTOR_COMPOUNDS {
+            return None;
+        }
         parts.push((pending, compound));
         pending = None;
+        saw_ws = false;
         i = next;
     }
-    if parts.is_empty() {
+    // A trailing combinator (`p +`) is not a selector.
+    if parts.is_empty() || pending.is_some() {
         return None;
     }
     Some(Selector { parts })
@@ -965,6 +991,12 @@ mod tests {
                 .any(|s| matches!(s, Simple::Pseudo(p) if p == "link"))
         );
         assert!(parse_selector("a:hover").is_none());
+        assert!(parse_selector("h1 + p").is_some());
+        assert!(parse_selector("h1~p").is_some());
+        assert!(parse_selector("h1 + > p").is_none());
+        assert!(parse_selector("+ p").is_none());
+        assert!(parse_selector("p +").is_none());
+        assert!(parse_selector("p++p").is_none());
         assert!(parse_selector("a[href]").is_some());
         assert!(parse_selector("a[*|href]").is_none());
         assert!(parse_selector(r#"a[title="\41"]"#).is_none());
@@ -1060,6 +1092,10 @@ mod tests {
             ("(color: red) and (width: 1px) or (gap: 0)", false),
             ("((display: grid) or (color: red)) and (width: 1px)", true),
             ("selector(.a > b)", true),
+            ("selector(h1 + p)", true),
+            ("selector(h1 ~ p)", true),
+            ("selector(h1 + > p)", false),
+            ("selector(+ h1)", false),
             ("selector(a[href])", true),
             ("selector(a[href^=https])", true),
             ("selector(a[*|href])", false),

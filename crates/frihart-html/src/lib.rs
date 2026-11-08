@@ -5,8 +5,15 @@
 mod token;
 mod tree;
 
+use std::rc::Rc;
+
 pub use token::{Token, tokenize};
 pub use tree::{Node, parse, serialize};
+
+/// Preceding element siblings a fragment keeps for `+` and `~`.
+/// The nearest sibling is always included. Older ones past this window
+/// are dropped so a wide parent cannot make layout quadratic.
+pub const MAX_PRECEDING_SIBLINGS: usize = 1024;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FormField {
@@ -17,14 +24,66 @@ pub struct FormField {
     pub label: String,
 }
 
-/// Tag + id + class + attributes, plus ancestors from root toward the parent.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+/// One element sibling. No nested axis, so debug and equality stay bounded.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SiblingName {
+    pub tag: String,
+    pub id: String,
+    pub classes: Vec<String>,
+    /// HTML attributes, names already lowercased.
+    pub attrs: Vec<(String, String)>,
+}
+
+/// Tag + id + class + attributes. Ancestors live on [`Fragment`].
+/// The sibling axis is the parent's element children (text nodes are not
+/// elements); [`Qual::preceding_siblings`] is the window before this one.
+#[derive(Clone, PartialEq, Eq)]
 pub struct Qual {
     pub tag: String,
     pub id: String,
     pub classes: Vec<String>,
     /// HTML attributes, names already lowercased.
     pub attrs: Vec<(String, String)>,
+    /// Element children of the parent, shared by those siblings.
+    sibling_axis: Rc<[SiblingName]>,
+    /// Index of this element in `sibling_axis`. Zero when it has no axis.
+    sibling_index: usize,
+}
+
+impl Default for Qual {
+    fn default() -> Self {
+        Self {
+            tag: String::new(),
+            id: String::new(),
+            classes: Vec::new(),
+            attrs: Vec::new(),
+            sibling_axis: Rc::from(Vec::new()),
+            sibling_index: 0,
+        }
+    }
+}
+
+impl std::fmt::Debug for Qual {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Qual")
+            .field("tag", &self.tag)
+            .field("id", &self.id)
+            .field("classes", &self.classes)
+            .field("attrs", &self.attrs)
+            .field("sibling_index", &self.sibling_index)
+            .field("siblings", &self.sibling_axis.len())
+            .finish()
+    }
+}
+
+impl Qual {
+    /// Preceding element siblings, document order, nearest last.
+    /// At most [`MAX_PRECEDING_SIBLINGS`] entries.
+    pub fn preceding_siblings(&self) -> &[SiblingName] {
+        let end = self.sibling_index.min(self.sibling_axis.len());
+        let start = end.saturating_sub(MAX_PRECEDING_SIBLINGS);
+        &self.sibling_axis[start..end]
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -134,7 +193,7 @@ pub fn visible_blocks(root: &Node) -> Vec<Block> {
 
 pub fn visible_fragments(root: &Node) -> Vec<Fragment> {
     let mut out = Vec::new();
-    walk(root, &[], &mut out);
+    walk(root, &[], None, &mut out);
     out
 }
 
@@ -149,6 +208,51 @@ fn qual_of(node: &Node) -> Qual {
             .map(str::to_string)
             .collect(),
         attrs: node.attrs.clone(),
+        ..Qual::default()
+    }
+}
+
+fn sibling_name_of(node: &Node) -> SiblingName {
+    let q = qual_of(node);
+    SiblingName {
+        tag: q.tag,
+        id: q.id,
+        classes: q.classes,
+        attrs: q.attrs,
+    }
+}
+
+fn is_element_node(node: &Node) -> bool {
+    !node.is_text() && !node.name.is_empty()
+}
+
+/// Element children share one axis. Text nodes are absent from it and
+/// get `None`, so they do not separate `+` the way an element does.
+fn place_children(children: &[Node]) -> (Rc<[SiblingName]>, Vec<Option<usize>>) {
+    let mut names = Vec::new();
+    let mut idxs = Vec::with_capacity(children.len());
+    for child in children {
+        if is_element_node(child) {
+            idxs.push(Some(names.len()));
+            names.push(sibling_name_of(child));
+        } else {
+            idxs.push(None);
+        }
+    }
+    (Rc::from(names), idxs)
+}
+
+fn qual_placed(node: &Node, axis: &Rc<[SiblingName]>, index: usize) -> Qual {
+    let mut q = qual_of(node);
+    q.sibling_axis = Rc::clone(axis);
+    q.sibling_index = index;
+    q
+}
+
+fn placed_or_plain(node: &Node, axis: &Rc<[SiblingName]>, index: Option<usize>) -> Qual {
+    match index {
+        Some(index) => qual_placed(node, axis, index),
+        None => qual_of(node),
     }
 }
 
@@ -160,7 +264,12 @@ fn push_frag(out: &mut Vec<Fragment>, qual: Qual, ancestors: &[Qual], kind: Bloc
     });
 }
 
-fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
+fn walk(
+    node: &Node,
+    ancs: &[Qual],
+    sib: Option<(Rc<[SiblingName]>, usize)>,
+    out: &mut Vec<Fragment>,
+) {
     if node.is_text() {
         return;
     }
@@ -174,7 +283,10 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     if style_hides(node) {
         return;
     }
-    let qual = qual_of(node);
+    let qual = match &sib {
+        Some((axis, index)) => qual_placed(node, axis, *index),
+        None => qual_of(node),
+    };
     if name == "a" && is_headerlink(node) {
         return;
     }
@@ -182,11 +294,19 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         let t = heading_text(node);
         let links = collect_links(node);
         // One destination (link-only, or link plus extra title as on
-        // rfc-editor.org latest-RFC cards) stays a single hit.
+        // rfc-editor.org latest-RFC cards) stays a single hit. The
+        // fragment is that inner `a`, so its siblings are the heading's
+        // children, not the heading's siblings. `h2 + h3` does not see it.
         if links.len() == 1 && !t.trim().is_empty() {
+            let (axis, idxs) = place_children(&node.children);
+            let anchor = node.children.iter().zip(idxs).find(|(c, _)| c.name == "a");
+            let anchor_qual = match anchor {
+                Some((a, idx)) => placed_or_plain(a, &axis, idx),
+                None => qual.clone(),
+            };
             push_frag(
                 out,
-                qual_of(node.children.iter().find(|c| c.name == "a").unwrap_or(node)),
+                anchor_qual,
                 ancs,
                 Block::Link {
                     text: t,
@@ -216,10 +336,12 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         let ordered = name == "ol";
         let mut child_ancs = ancs.to_vec();
         child_ancs.push(qual);
+        let (axis, idxs) = place_children(&node.children);
         let mut index = 1usize;
-        for child in &node.children {
+        for (child, idx) in node.children.iter().zip(idxs) {
             if child.name == "li" {
-                emit_list_item(child, ordered, index, &child_ancs, out);
+                let li = placed_or_plain(child, &axis, idx);
+                emit_list_item(child, li, ordered, index, &child_ancs, out);
                 index += 1;
             }
         }
@@ -228,18 +350,32 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     if name == "table" {
         let mut child_ancs = ancs.to_vec();
         child_ancs.push(qual);
-        for child in &node.children {
+        let (axis, idxs) = place_children(&node.children);
+        for (child, idx) in node.children.iter().zip(idxs) {
             if child.name == "caption" {
                 let t = child.text_content();
                 if !t.is_empty() {
-                    push_frag(out, qual_of(child), &child_ancs, Block::Caption(t));
+                    push_frag(
+                        out,
+                        placed_or_plain(child, &axis, idx),
+                        &child_ancs,
+                        Block::Caption(t),
+                    );
                 }
             } else if child.name == "tr" {
-                emit_table_row(child, &child_ancs, out);
+                emit_table_row(child, placed_or_plain(child, &axis, idx), &child_ancs, out);
             } else if matches!(child.name.as_str(), "thead" | "tbody" | "tfoot") {
-                for tr in &child.children {
+                // Rows are siblings inside the section, not of the caption.
+                // The section stays out of the ancestor chain (same as before).
+                let (row_axis, row_idxs) = place_children(&child.children);
+                for (tr, tr_idx) in child.children.iter().zip(row_idxs) {
                     if tr.name == "tr" {
-                        emit_table_row(tr, &child_ancs, out);
+                        emit_table_row(
+                            tr,
+                            placed_or_plain(tr, &row_axis, tr_idx),
+                            &child_ancs,
+                            out,
+                        );
                     }
                 }
             }
@@ -290,25 +426,29 @@ fn walk(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         walk_inlines(node, &child_ancs, &qual, out);
         return;
     }
-    for child in &node.children {
-        walk(child, &child_ancs, out);
+    let (axis, idxs) = place_children(&node.children);
+    for (child, idx) in node.children.iter().zip(idxs) {
+        let sib = idx.map(|i| (Rc::clone(&axis), i));
+        walk(child, &child_ancs, sib, out);
     }
 }
 
 fn walk_inlines(node: &Node, ancs: &[Qual], container: &Qual, out: &mut Vec<Fragment>) {
+    let (axis, idxs) = place_children(&node.children);
     let mut buf = String::new();
-    for child in &node.children {
+    for (child, idx) in node.children.iter().zip(idxs) {
         if child.is_text() {
             append_collapsed(&mut buf, child.text.as_deref().unwrap_or(""));
             continue;
         }
+        let child_qual = placed_or_plain(child, &axis, idx);
         match child.name.as_str() {
             "br" => buf.push('\n'),
             "strong" | "b" | "em" | "i" | "code" | "mark" | "small" | "u" => {
                 flush_text(&mut buf, container, ancs, out);
                 let t = child.text_content();
                 if !t.is_empty() {
-                    push_frag(out, qual_of(child), ancs, Block::Inline(t));
+                    push_frag(out, child_qual, ancs, Block::Inline(t));
                 }
             }
             "a" => {
@@ -316,15 +456,16 @@ fn walk_inlines(node: &Node, ancs: &[Qual], container: &Qual, out: &mut Vec<Frag
                 let t = child.text_content();
                 let href = normalize_href(&child.attr("href").unwrap_or_default());
                 if !t.is_empty() {
-                    push_frag(out, qual_of(child), ancs, Block::Link { text: t, href });
+                    push_frag(out, child_qual.clone(), ancs, Block::Link { text: t, href });
                 }
-                for inner in &child.children {
+                let (img_axis, img_idxs) = place_children(&child.children);
+                for (inner, img_idx) in child.children.iter().zip(img_idxs) {
                     if inner.name == "img" {
                         let mut img_ancs = ancs.to_vec();
-                        img_ancs.push(qual_of(child));
+                        img_ancs.push(child_qual.clone());
                         push_frag(
                             out,
-                            qual_of(inner),
+                            placed_or_plain(inner, &img_axis, img_idx),
                             &img_ancs,
                             Block::Image {
                                 alt: inner.attr("alt").unwrap_or_default(),
@@ -338,7 +479,7 @@ fn walk_inlines(node: &Node, ancs: &[Qual], container: &Qual, out: &mut Vec<Frag
                 flush_text(&mut buf, container, ancs, out);
                 push_frag(
                     out,
-                    qual_of(child),
+                    child_qual,
                     ancs,
                     Block::Image {
                         alt: child.attr("alt").unwrap_or_default(),
@@ -349,13 +490,14 @@ fn walk_inlines(node: &Node, ancs: &[Qual], container: &Qual, out: &mut Vec<Frag
             "input" | "textarea" => {
                 flush_text(&mut buf, container, ancs, out);
                 if let Some(field) = field_from(child) {
-                    push_frag(out, qual_of(child), ancs, Block::Field(field));
+                    push_frag(out, child_qual, ancs, Block::Field(field));
                 }
             }
             "script" | "style" | "noscript" => {}
             name if is_block(name) || !is_phrasing(name) => {
                 flush_text(&mut buf, container, ancs, out);
-                walk(child, ancs, out);
+                let sib = idx.map(|i| (Rc::clone(&axis), i));
+                walk(child, ancs, sib, out);
             }
             _ => append_collapsed(&mut buf, &child.text_content()),
         }
@@ -469,10 +611,21 @@ fn is_phrasing(name: &str) -> bool {
     )
 }
 
-fn emit_list_item(li: &Node, ordered: bool, index: usize, ancs: &[Qual], out: &mut Vec<Fragment>) {
+fn emit_list_item(
+    li: &Node,
+    qual: Qual,
+    ordered: bool,
+    index: usize,
+    ancs: &[Qual],
+    out: &mut Vec<Fragment>,
+) {
     if has_block_child(li) {
-        for child in &li.children {
-            walk(child, ancs, out);
+        // Block children keep the list's ancestor chain (the item is not
+        // inserted). Their own siblings are still recorded.
+        let (axis, idxs) = place_children(&li.children);
+        for (child, idx) in li.children.iter().zip(idxs) {
+            let sib = idx.map(|i| (Rc::clone(&axis), i));
+            walk(child, ancs, sib, out);
         }
         return;
     }
@@ -486,7 +639,7 @@ fn emit_list_item(li: &Node, ordered: bool, index: usize, ancs: &[Qual], out: &m
         };
         push_frag(
             out,
-            qual_of(li),
+            qual,
             ancs,
             Block::Link {
                 text: format!("{prefix}{}", links[0].0),
@@ -498,7 +651,7 @@ fn emit_list_item(li: &Node, ordered: bool, index: usize, ancs: &[Qual], out: &m
     if !t.is_empty() {
         push_frag(
             out,
-            qual_of(li),
+            qual.clone(),
             ancs,
             Block::ListItem {
                 ordered,
@@ -511,7 +664,7 @@ fn emit_list_item(li: &Node, ordered: bool, index: usize, ancs: &[Qual], out: &m
         if text.is_empty() {
             continue;
         }
-        push_frag(out, qual_of(li), ancs, Block::Link { text, href });
+        push_frag(out, qual.clone(), ancs, Block::Link { text, href });
     }
 }
 
@@ -548,19 +701,20 @@ fn is_headerlink(node: &Node) -> bool {
 /// HTML5 lets a `dl` wrap `dt`/`dd` groups in `div`. Walk one level of
 /// those wrappers so W3C TR cards keep Tags / Deliverers.
 fn emit_dl_children(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
-    for child in &node.children {
+    let (axis, idxs) = place_children(&node.children);
+    for (child, idx) in node.children.iter().zip(idxs) {
         if child.name == "dt" || child.name == "dd" {
-            emit_dl_term(child, ancs, out);
+            emit_dl_term(child, placed_or_plain(child, &axis, idx), ancs, out);
         } else if child.name == "div" {
             let mut inner = ancs.to_vec();
-            inner.push(qual_of(child));
+            inner.push(placed_or_plain(child, &axis, idx));
             emit_dl_children(child, &inner, out);
         }
     }
 }
 
 /// A `dt`/`dd` that is only one link becomes that hit (W3C TR “This version”).
-fn emit_dl_term(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
+fn emit_dl_term(node: &Node, qual: Qual, ancs: &[Qual], out: &mut Vec<Fragment>) {
     let t = node.text_content();
     if t.is_empty() {
         return;
@@ -569,7 +723,7 @@ fn emit_dl_term(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
     if links.len() == 1 && t.trim() == links[0].0.trim() {
         push_frag(
             out,
-            qual_of(node),
+            qual,
             ancs,
             Block::Link {
                 text: links[0].0.clone(),
@@ -578,10 +732,10 @@ fn emit_dl_term(node: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         );
         return;
     }
-    push_frag(out, qual_of(node), ancs, Block::Text(t));
+    push_frag(out, qual, ancs, Block::Text(t));
 }
 
-fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
+fn emit_table_row(tr: &Node, qual: Qual, ancs: &[Qual], out: &mut Vec<Fragment>) {
     let cells: Vec<String> = tr
         .children
         .iter()
@@ -592,7 +746,7 @@ fn emit_table_row(tr: &Node, ancs: &[Qual], out: &mut Vec<Fragment>) {
         return;
     }
     let header = tr.children.iter().any(|c| c.name == "th");
-    push_frag(out, qual_of(tr), ancs, Block::TableRow { cells, header });
+    push_frag(out, qual, ancs, Block::TableRow { cells, header });
 }
 
 fn is_block(name: &str) -> bool {
@@ -1016,6 +1170,75 @@ line2</pre>
             blocks
                 .iter()
                 .any(|b| matches!(b, Block::Text(t) if t.contains("Latest version")))
+        );
+    }
+
+    fn tags_before(html: &str, tag: &str) -> Vec<String> {
+        let frags = visible_fragments(&parse(html));
+        let frag = frags.iter().find(|f| f.qual.tag == tag).expect(tag);
+        frag.qual
+            .preceding_siblings()
+            .iter()
+            .map(|s| s.tag.clone())
+            .collect()
+    }
+
+    #[test]
+    fn preceding_siblings_skip_text_and_count_elements() {
+        let before = tags_before("<div><h1>A</h1> gap <script></script><p>B</p></div>", "p");
+        assert_eq!(before, ["h1", "script"]);
+        let frags = visible_fragments(&parse("<div><h1>A</h1><p>B</p></div>"));
+        let h1 = frags.iter().find(|f| f.qual.tag == "h1").unwrap();
+        assert!(h1.qual.preceding_siblings().is_empty());
+    }
+
+    #[test]
+    fn hidden_and_break_elements_still_separate_siblings() {
+        let before = tags_before(
+            r#"<div><h1>A</h1><div style="display: none"></div><p>B</p></div>"#,
+            "p",
+        );
+        assert_eq!(before, ["h1", "div"]);
+        let frags = visible_fragments(&parse("<p><strong>a</strong><br><em>b</em></p>"));
+        let em = frags.iter().find(|f| f.qual.tag == "em").unwrap();
+        let prev: Vec<_> = em
+            .qual
+            .preceding_siblings()
+            .iter()
+            .map(|s| s.tag.as_str())
+            .collect();
+        assert_eq!(prev, ["strong", "br"]);
+    }
+
+    #[test]
+    fn list_items_and_definition_terms_are_siblings() {
+        let frags = visible_fragments(&parse("<ul><li>one</li><li>two</li></ul>"));
+        let items: Vec<_> = frags.iter().filter(|f| f.qual.tag == "li").collect();
+        assert_eq!(items.len(), 2);
+        assert!(items[0].qual.preceding_siblings().is_empty());
+        assert_eq!(items[1].qual.preceding_siblings()[0].tag, "li");
+        let frags = visible_fragments(&parse("<dl><dt>t</dt><dd>d</dd></dl>"));
+        let dd = frags.iter().find(|f| f.qual.tag == "dd").unwrap();
+        assert_eq!(dd.qual.preceding_siblings().last().unwrap().tag, "dt");
+    }
+
+    #[test]
+    fn preceding_window_keeps_the_nearest() {
+        let mut html = String::from("<div>");
+        let extra = 5usize;
+        let n = MAX_PRECEDING_SIBLINGS + extra;
+        for i in 0..n {
+            html.push_str(&format!("<span id=\"s{i}\"></span>"));
+        }
+        html.push_str("<p id=\"last\">x</p></div>");
+        let frags = visible_fragments(&parse(&html));
+        let p = frags.iter().find(|f| f.qual.id == "last").unwrap();
+        let prev = p.qual.preceding_siblings();
+        assert_eq!(prev.len(), MAX_PRECEDING_SIBLINGS);
+        assert_eq!(prev.last().unwrap().id, format!("s{}", n - 1));
+        assert_eq!(
+            prev.first().unwrap().id,
+            format!("s{}", n - MAX_PRECEDING_SIBLINGS)
         );
     }
 }

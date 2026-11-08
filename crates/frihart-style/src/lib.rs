@@ -169,8 +169,13 @@ pub struct Element {
     pub classes: Vec<String>,
     /// HTML attributes (names lowercased), including `id` and `class`.
     pub attrs: Vec<(String, String)>,
-    /// Root → parent.
+    /// Root → parent. Each ancestor carries its own preceding siblings.
     pub ancestors: Vec<Element>,
+    /// Preceding element siblings, document order, nearest last.
+    /// Entries are shallow (`ancestors` and `preceding` empty). The matcher
+    /// keeps this element's ancestor slice when it steps sideways, because
+    /// siblings share a parent.
+    pub preceding: Vec<Element>,
 }
 
 impl Element {
@@ -486,6 +491,7 @@ pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -
             classes: el.ancestors[i].classes.clone(),
             attrs: el.ancestors[i].attrs.clone(),
             ancestors: chain.clone(),
+            preceding: el.ancestors[i].preceding.clone(),
         });
     }
     chain.push(Element {
@@ -494,6 +500,7 @@ pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -
         classes: el.classes.clone(),
         attrs: el.attrs.clone(),
         ancestors: chain.clone(),
+        preceding: el.preceding.clone(),
     });
     for node in &chain {
         for sheet in [user, author] {
@@ -620,6 +627,7 @@ fn inherit_list_and_ws(
             classes: el.ancestors[i].classes.clone(),
             attrs: el.ancestors[i].attrs.clone(),
             ancestors: el.ancestors[..i].to_vec(),
+            preceding: el.ancestors[i].preceding.clone(),
         };
         let mut ac = ua_style(&anc.tag);
         if !matches!(anc.tag.as_str(), "ul" | "ol") {
@@ -684,38 +692,63 @@ pub fn selector_matches(sel: &Selector, el: &Element) -> bool {
     if sel.parts.is_empty() {
         return false;
     }
-    let last = sel.parts.last().expect("parts");
-    if !compound_matches(&last.1, el) {
+    // The combinator stored on a compound is the one *before* it
+    // (`div > p` is `(None, div), (Child, p)`). Taking the closest
+    // ancestor, or the nearest matching sibling, is enough: every
+    // constraint further left only looks at what remains on that side,
+    // and the closest match leaves the largest remainder.
+    match_at(&sel.parts, el, &el.ancestors, &el.preceding)
+}
+
+fn match_at(
+    parts: &[(Option<Combinator>, Compound)],
+    el: &Element,
+    ancestors: &[Element],
+    preceding: &[Element],
+) -> bool {
+    let Some((comb, compound)) = parts.last() else {
+        return false;
+    };
+    if !compound_matches(compound, el) {
         return false;
     }
-    let mut current_parent = el.ancestors.as_slice();
-    for (comb, compound) in sel.parts[..sel.parts.len() - 1].iter().rev() {
-        match comb.unwrap_or(Combinator::Descendant) {
-            Combinator::Child => {
-                let Some((parent, rest)) = current_parent.split_last() else {
-                    return false;
-                };
-                if !compound_matches(compound, parent) {
-                    return false;
+    if parts.len() == 1 {
+        return true;
+    }
+    let Some(comb) = *comb else {
+        return false;
+    };
+    let prefix = &parts[..parts.len() - 1];
+    match comb {
+        Combinator::Child => {
+            let Some((parent, rest)) = ancestors.split_last() else {
+                return false;
+            };
+            match_at(prefix, parent, rest, parent.preceding.as_slice())
+        }
+        Combinator::Descendant => {
+            for (i, anc) in ancestors.iter().enumerate().rev() {
+                if compound_matches(&prefix[prefix.len() - 1].1, anc) {
+                    return match_at(prefix, anc, &ancestors[..i], anc.preceding.as_slice());
                 }
-                current_parent = rest;
             }
-            Combinator::Descendant => {
-                let mut found = None;
-                for (i, anc) in current_parent.iter().enumerate().rev() {
-                    if compound_matches(compound, anc) {
-                        found = Some(i);
-                        break;
-                    }
+            false
+        }
+        Combinator::Adjacent => {
+            let Some((prev, rest)) = preceding.split_last() else {
+                return false;
+            };
+            match_at(prefix, prev, ancestors, rest)
+        }
+        Combinator::General => {
+            for (i, sib) in preceding.iter().enumerate().rev() {
+                if compound_matches(&prefix[prefix.len() - 1].1, sib) {
+                    return match_at(prefix, sib, ancestors, &preceding[..i]);
                 }
-                let Some(i) = found else {
-                    return false;
-                };
-                current_parent = &current_parent[..i];
             }
+            false
         }
     }
-    true
 }
 
 fn compound_matches(compound: &Compound, el: &Element) -> bool {
@@ -950,6 +983,15 @@ mod tests {
             classes: classes.iter().map(|c| c.to_string()).collect(),
             attrs: Vec::new(),
             ancestors: ancestors.iter().map(|t| Element::tag(t)).collect(),
+            preceding: Vec::new(),
+        }
+    }
+
+    fn sib(tag: &str, class: Option<&str>) -> Element {
+        Element {
+            tag: tag.into(),
+            classes: class.into_iter().map(str::to_string).collect(),
+            ..Element::default()
         }
     }
 
@@ -1056,6 +1098,7 @@ mod tests {
                     ..Element::default()
                 },
             ],
+            preceding: Vec::new(),
         };
         let c = style_element(&el, &user, &author);
         assert_eq!(c.font_size, 22.0);
@@ -1254,5 +1297,94 @@ mod tests {
         let first = el_attrs("a", &[("title", "nope"), ("title", "Hello")], vec![]);
         let first = style_element(&first, &none, &author);
         assert_eq!(first.max_width, None);
+    }
+
+    #[test]
+    fn child_combinator_is_the_parent_only() {
+        let child = frihart_css::parse_selector("nav > a").unwrap();
+        let desc = frihart_css::parse_selector("nav a").unwrap();
+        let direct = el_in("a", &[], &["nav"]);
+        let nested = el_in("a", &[], &["nav", "span"]);
+        assert!(selector_matches(&child, &direct));
+        assert!(!selector_matches(&child, &nested));
+        assert!(selector_matches(&desc, &direct));
+        assert!(selector_matches(&desc, &nested));
+    }
+
+    #[test]
+    fn sibling_combinators_use_preceding_elements() {
+        let adjacent = frihart_css::parse_selector("h1 + p").unwrap();
+        let general = frihart_css::parse_selector("h1 ~ p").unwrap();
+        let after_h1 = Element {
+            tag: "p".into(),
+            preceding: vec![sib("h1", None)],
+            ..Element::default()
+        };
+        assert!(selector_matches(&adjacent, &after_h1));
+        assert!(selector_matches(&general, &after_h1));
+        let gap = Element {
+            tag: "p".into(),
+            preceding: vec![sib("h1", None), sib("script", None)],
+            ..Element::default()
+        };
+        assert!(
+            !selector_matches(&adjacent, &gap),
+            "an element between them is not +"
+        );
+        assert!(selector_matches(&general, &gap));
+        let none = Element::tag("p");
+        assert!(!selector_matches(&adjacent, &none));
+        assert!(!selector_matches(&general, &none));
+
+        // `h1 + div p`: the div ancestor's preceding sibling is the h1.
+        let nested = Element {
+            tag: "p".into(),
+            ancestors: vec![Element {
+                tag: "div".into(),
+                preceding: vec![sib("h1", None)],
+                ..Element::default()
+            }],
+            ..Element::default()
+        };
+        let through = frihart_css::parse_selector("h1 + div p").unwrap();
+        assert!(selector_matches(&through, &nested));
+        let not_parent = frihart_css::parse_selector("h1 + p").unwrap();
+        assert!(!selector_matches(&not_parent, &nested));
+
+        // Nearest match: `span.b ~ div.a ~ p` must not take a later span.b
+        // that sits after the div.
+        let chain = frihart_css::parse_selector("span.b ~ div.a ~ p").unwrap();
+        let ok = Element {
+            tag: "p".into(),
+            preceding: vec![
+                sib("span", Some("b")),
+                sib("div", Some("a")),
+                sib("span", Some("b")),
+            ],
+            ..Element::default()
+        };
+        assert!(selector_matches(&chain, &ok));
+        let swapped = Element {
+            tag: "p".into(),
+            preceding: vec![
+                sib("div", Some("a")),
+                sib("span", Some("b")),
+                sib("span", Some("b")),
+            ],
+            ..Element::default()
+        };
+        assert!(!selector_matches(&chain, &swapped));
+
+        let sheet = parse_stylesheet("h1 + p { color: red } h1 ~ .later { color: #00ff00 }");
+        let red = style_element(&after_h1, &Stylesheet::default(), &sheet);
+        assert_eq!(red.color, 0x00C04040);
+        let later = Element {
+            tag: "p".into(),
+            classes: vec!["later".into()],
+            preceding: vec![sib("h1", None), sib("hr", None)],
+            ..Element::default()
+        };
+        let green = style_element(&later, &Stylesheet::default(), &sheet);
+        assert_eq!(green.color, 0x0000ff00);
     }
 }

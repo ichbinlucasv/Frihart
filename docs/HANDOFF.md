@@ -43,7 +43,7 @@ a column grid. `hr`, caption, definition lists (HTML5 `div` wrappers;
 a `dt`/`dd` that is one link is that hit). `dfn`/`acronym`/`cite` stay
 visible. CSS: `em`/`rem`/`vw`/
 `vh`/`%`, `font-weight`, `font-family` (engine slots), `list-style`,
-`white-space`, `border`, `:link`. Nested `<strong>` is its
+`white-space`, `border`, `:link`, sibling combinators (`+`, `~`). Nested `<strong>` is its
 own fragment. Forms GET/POST (secrets skipped). JS off. Img is a box.
 UTF-8 text (not Latin-1 bytes). Heading with one destination (link-only
 or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
@@ -136,9 +136,10 @@ X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
 
 ## Next session — start here
 
-**Own engine: one more static document, or the next CSS slice** (sibling
-combinators are still the documented selector gap). Not Wikipedia /
-GitHub / mail. Forty-one public sites (grapheneos.org last Claimed).
+**Own engine: one more static document, or the next CSS slice** (pseudo-classes
+other than `:link`, `:visited` and `:root` are the documented selector gap).
+Sibling combinators (`+`, `~`) are in, and `>` matches the parent only.
+Not Wikipedia / GitHub / mail. Forty-one public sites (grapheneos.org last Claimed).
 Servo stays the Compat engine for clearnet speed and tests. Own engine
 stays Reader, Tor, and I2P. The Servo request gate refuses `Referer`, a
 `Cookie` or `Authorization` that is not same-site with the document,

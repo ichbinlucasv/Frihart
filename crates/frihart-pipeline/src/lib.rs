@@ -174,6 +174,7 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
         id: frag.qual.id.clone(),
         classes: frag.qual.classes.clone(),
         attrs: frag.qual.attrs.clone(),
+        preceding: preceding_of(&frag.qual),
         ancestors: frag
             .ancestors
             .iter()
@@ -182,10 +183,25 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
                 id: q.id.clone(),
                 classes: q.classes.clone(),
                 attrs: q.attrs.clone(),
+                preceding: preceding_of(q),
                 ancestors: Vec::new(),
             })
             .collect(),
     }
+}
+
+fn preceding_of(qual: &frihart_html::Qual) -> Vec<Element> {
+    qual.preceding_siblings()
+        .iter()
+        .map(|s| Element {
+            tag: s.tag.clone(),
+            id: s.id.clone(),
+            classes: s.classes.clone(),
+            attrs: s.attrs.clone(),
+            ancestors: Vec::new(),
+            preceding: Vec::new(),
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -224,6 +240,34 @@ mod tests {
         assert_eq!(color("https://example.com/a"), 0x00112233);
         assert_eq!(color("http://example.com/b"), 0x00abcdef);
         assert_eq!(color("mailto:a@example.com"), 0x00F5C400);
+    }
+
+    #[test]
+    fn sibling_combinators_reach_the_painted_boxes() {
+        let html = r#"<style>
+            h1 + p { color: #112233 }
+            dt + dd { color: #445566 }
+            h1 ~ .later { color: #778899 }
+          </style>
+          <h1>Title</h1>
+          <p>next</p>
+          <script></script>
+          <p class="later">after</p>
+          <dl><dt>term</dt><dd>def</dd></dl>"#;
+        let f = layout_html(html, "", 400.0);
+        let color = |text: &str| {
+            f.boxes
+                .iter()
+                .find(|b| b.text.contains(text))
+                .unwrap_or_else(|| panic!("missing {text}"))
+                .style
+                .color
+        };
+        assert_eq!(color("next"), 0x00112233, "adjacent sibling");
+        assert_eq!(color("after"), 0x00778899, "general sibling across script");
+        assert_ne!(color("after"), 0x00112233, "script breaks +");
+        assert_eq!(color("def"), 0x00445566, "dt + dd");
+        assert_ne!(color("term"), 0x00445566);
     }
 
     #[test]

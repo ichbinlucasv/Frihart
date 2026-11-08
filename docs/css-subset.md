@@ -19,7 +19,14 @@ host files.
 - class (`.lead`, `p.lead`)
 - id (`#main`)
 - descendant (`article p`)
-- child (`nav > a`)
+- child (`nav > a`) — the parent only. A grandchild does not match
+- adjacent sibling (`h1 + p`) and general sibling (`h1 ~ p`)
+  - text nodes do not count; `script`, `br`, and `display: none`
+    elements do
+  - the nearest 1024 element siblings are visible to `~`. The immediate
+    predecessor is always in that window, so `+` still sees it
+  - a heading that collapses to its single link is that inner `a`, so
+    `h2 + h3` does not see it
 - universal (`*`)
 - comma lists (`h1, h2`)
 - `:link` and `:visited` (same color; no history leak)
@@ -62,7 +69,8 @@ when the own engine cannot render the modern one:
 - `(prop: value)` is true only for declarations `frihart-style` applies;
   `display` answers true for `none`, `inline` and `block` only, so
   `(display: grid)` and `(display: flex)` are false today
-- `selector(...)` is true when the selector grammar above accepts it
+- `selector(...)` is true when the selector grammar above accepts it,
+  including `h1 + p` and `h1 ~ p`. A broken combinator (`h1 + > p`) is false
 - `not`, `and`, `or`, nested parentheses; `and` mixed with `or` at one
   level is invalid and false, as are unknown functions such as
   `font-tech()`; conditions longer than 512 bytes are false
@@ -75,8 +83,9 @@ with their nested rules.
 
 ## Selectors (later)
 
-Sibling combinators (`+`, `~`) and pseudo-classes other than `:link`,
-`:visited` and `:root` are not accepted; the selector is ignored.
+Pseudo-classes other than `:link`, `:visited` and `:root` are not
+accepted; the selector is ignored. A selector longer than 1024 bytes,
+or with more than 32 compounds, is ignored the same way.
 
 ## Properties (now)
 
