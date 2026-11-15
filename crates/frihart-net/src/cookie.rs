@@ -139,11 +139,12 @@ impl CookieJar {
             if c.secure && !https {
                 continue;
             }
+            let domain = c.domain.to_ascii_lowercase();
             if c.host_only {
-                if host != c.domain {
+                if host != domain {
                     continue;
                 }
-            } else if !domain_matches(&c.domain, &host) {
+            } else if !domain_attribute_ok(&host, &domain) {
                 continue;
             }
             if !path_matches(&c.path, path) {
@@ -237,10 +238,6 @@ fn cookie_pair_ok(name: &str, value: &str) -> bool {
             .chars()
             .any(|c| c.is_ascii_control() || matches!(c, ' ' | ';' | ',' | '='))
         && !value.chars().any(|c| c.is_ascii_control() || c == ';')
-}
-
-fn domain_matches(cookie_domain: &str, host: &str) -> bool {
-    host == cookie_domain || host.ends_with(&format!(".{cookie_domain}"))
 }
 
 /// RFC 6265 path-match: `/foo` matches `/foo` and `/foo/bar`, not `/foobar`.
@@ -511,6 +508,28 @@ mod tests {
             Some("a=1")
         );
         assert!(sent(&jar, "https://bank.com/", "www.example.com").is_none());
+    }
+
+    #[test]
+    fn a_stored_public_suffix_domain_is_not_sent() {
+        // A jar written before the Domain check, or edited on disk, must
+        // not attach `Domain=com` to every host under `.com`.
+        let path =
+            std::env::temp_dir().join(format!("frihart-cookies-{}.json", std::process::id()));
+        std::fs::write(
+            &path,
+            r#"[{"name":"a","value":"1","domain":"com","path":"/","secure":true,"http_only":false,"partition_host":"com","container":1,"circuit":"direct","host_only":false}]"#,
+        )
+        .unwrap();
+        let jar = CookieJar::load(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert!(sent(&jar, "https://evil.example/", "com").is_none());
+        assert!(sent(&jar, "https://bank.com/", "com").is_none());
+        assert_eq!(
+            sent(&jar, "https://com/", "com").as_deref(),
+            Some("a=1"),
+            "the single label only matches that exact host"
+        );
     }
 
     #[test]
