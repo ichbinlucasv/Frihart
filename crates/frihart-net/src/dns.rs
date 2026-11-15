@@ -183,7 +183,14 @@ fn resolve_doh(
     match doh_addresses(exchange, url, name) {
         Ok(ips) => public_sockets(&ips, port),
         Err(DnsError::Transport) if system_fallback => {
-            exchange.system(name, port).map_err(|_| DnsError::Transport)
+            // The OS answer is not trusted just because DoH failed. A blocked
+            // Quad9 plus a hostile resolver is how a name is rebound onto
+            // metadata. Keep the same public-address filter as a DoH answer.
+            let addrs = exchange
+                .system(name, port)
+                .map_err(|_| DnsError::Transport)?;
+            let ips: Vec<IpAddr> = addrs.into_iter().map(|addr| addr.ip()).collect();
+            public_sockets(&ips, port)
         }
         Err(other) => Err(other),
     }
@@ -675,6 +682,15 @@ impl ScriptedExchange {
         Self::build(true, None, Vec::new())
     }
 
+    pub(crate) fn with_system_addrs(self, addrs: Vec<SocketAddr>) -> Self {
+        *self
+            .inner
+            .system_addrs
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = addrs;
+        self
+    }
+
     pub(crate) fn nxdomain() -> Self {
         Self::build(false, Some(3), Vec::new())
     }
@@ -863,6 +879,23 @@ mod tests {
             DnsError::Private
         );
         assert!(ex.system_calls().is_empty());
+    }
+
+    #[test]
+    fn system_fallback_refuses_a_private_answer() {
+        let opted = ClearnetDns::Doh {
+            url: QUAD9_DOH_URL.into(),
+            system_fallback: true,
+        };
+        let ex = ScriptedExchange::doh_fails().with_system_addrs(vec![SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::new(169, 254, 169, 254)),
+            443,
+        )]);
+        assert_eq!(
+            lookup(&opted, "rebind.example", &ex).unwrap_err(),
+            DnsError::Private
+        );
+        assert_eq!(ex.system_calls(), vec!["rebind.example".to_string()]);
     }
 
     #[test]
