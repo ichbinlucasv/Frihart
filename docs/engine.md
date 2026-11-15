@@ -27,6 +27,8 @@ not mutate it.
 - CSS: `em`/`rem`/`vw`/`vh`/`%`, `font-weight`, `font-family` (engine
   sans/serif/mono slots), `list-style`, `white-space`, `border`,
   `height`, `:link`, child / adjacent / general sibling combinators,
+  structural pseudo-classes (`:first-child`, `:nth-child(An+B)`,
+  `:*-of-type`, `:not` of one simple selector),
   attribute selectors (`[attr]`, `=`, `~=`, `|=`,
   `^=`, `$=`, `*=`)
 - Nested `<strong>`/`<em>`/`<code>` as their own fragments (UA bold paints)

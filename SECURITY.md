@@ -27,7 +27,8 @@ threats are:
 | --- | --- |
 | Malicious profile files | Strict parsers, no `unwrap` on disk data, lockfile, 0600 |
 | Hostile HTML | Rust parser, no panic on junk, subset only |
-| Cookie scope | `Domain` must be this host or a dotted parent; no `Domain` stays host-only; `Path` is a segment prefix |
+| Cookie scope | `Domain` must be this host or a dotted parent, checked again on send; no `Domain` stays host-only; `Path` is a segment prefix |
+| DNS rebinding | Quad9 answers that are not public addresses are refused. A DoH failure with system fallback on is held to the same filter. `doh_mode = system` is the opt-in OS resolver and may return LAN addresses |
 | User-assisted code exec | Downloads `0600`, never executed; no extension runtime |
 | Tor leak | SOCKS only. Empty/dead SOCKS refuses. No clearnet fallback |
 | Supply-chain crates | Minimal deps, no upload/telemetry SDKs |
@@ -51,6 +52,19 @@ threats are:
 - Send clearnet DNS to whatever the operating system is using, unless you opt in. The default is Quad9 over HTTPS. Tor and I2P tabs do not use it.
 - Ship a closed binary module (DRM, widevine, etc.)
 - Hide preferences that weaken protection — we document them instead
+
+## Known advisories
+
+`cargo audit` (2026-11-15) reports one vulnerability that this tree cannot
+patch yet: `libsqlite3-sys` 0.36.0 (RUSTSEC-2026-0459). It arrives through
+Servo 0.7.0, which requires `rusqlite ^0.38`. That major does not allow
+`libsqlite3-sys` 0.39. The default build leaves the `servo` feature off,
+so the library is not linked until Compat is compiled. The fix waits on
+a Servo release.
+
+Unmaintained-crate warnings (bincode, paste, rustybuzz, ttf-parser, the
+`unic-*` crates) have no fixed upgrade. `rustix` 1.1.6 clears
+RUSTSEC-2026-0486.
 
 ## Update policy
 

@@ -34,7 +34,10 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
   RFC1918 / ULA is refused (no IMDS, no LAN scan).
 - Dual-stack: IPv4 and IPv6 literals and names. Clearnet names use
   Quad9 DoH (A and AAAA). No IPv4-only force. The system resolver is
-  opt-in.
+  opt-in. A DoH answer that is not a public address is refused. If DoH
+  fails and `network.dns_system_fallback` is on, the OS answer is held
+  to that same filter. `doh_mode = system` is the explicit OS resolver
+  and can still return a LAN address.
 - Zero connections on startup.
 - rustls only. No system CA surprises as the product default.
 - Frozen User-Agent. No Client Hints.
@@ -42,7 +45,9 @@ LibreWolf's stance is the ethic. Frihart's job is to make that ethic
 - First-party cookies, partitioned by isolation key (scheme + host +
   container + circuit). Tor and I2P never share the clearnet jar.
   A `Domain` attribute that is not this host, or a single label such as
-  `com`, is refused. A cookie with no `Domain` stays on the host that
+  `com`, is refused. The same rule is applied when the cookie is sent,
+  so a jar edited on disk cannot widen it to every host under that
+  label. A cookie with no `Domain` stays on the host that
   set it. `Path=/foo` does not match `/foobar`.
 - Blocker on at install. Lists are local. No Frihart list server.
 

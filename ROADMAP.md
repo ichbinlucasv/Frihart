@@ -271,7 +271,12 @@ before it can paint a page.
 
 ### First CSS subset (must)
 
-- Selectors: type, class, id, descendant, child, `:root`, `:link`, `:visited` (partitioned)
+- Selectors: type, class, id, descendant, child, sibling (`+`, `~`),
+  `:root`, `:link`, `:visited` (same color; no history leak),
+  structural (`:first-child`, `:last-child`, `:only-child`,
+  `:nth-child(An+B)`, `:nth-last-child`, `:first-of-type`,
+  `:last-of-type`, `:only-of-type`, `:nth-of-type`, `:nth-last-of-type`),
+  `:not` of one simple selector
 - Properties: `display`, `margin`, `padding`, `border`, `width`, `height`,
   `color`, `background-color`, `font-size`, `font-weight`, `font-family`
   (mapped to engine fonts), `text-align`, `line-height`, `list-style`,
@@ -606,10 +611,10 @@ A sustainable rhythm for a long project:
 - [ ] Multi-window (WindowId exists; one window still)
 - [x] Bookmarks / history as about: pages
 - [x] rustls fetch + view-source (Phase 2)
-- [x] First-party partitioned cookies, 0600 profile files
+- [x] First-party partitioned cookies, 0600 profile files. A `Domain` that is not this host or a dotted parent is refused on store and again on send, so a jar on disk cannot widen `Domain=com` (2026-11-15)
 - [x] Tor tabs refuse clearnet (no silent fallback)
 - [x] I2P tabs refuse clearnet (system i2pd/I2P, SOCKS 4447)
-- [x] Clearnet DNS defaults to Quad9 DoH (`https://dns.quad9.net/dns-query`); system resolver is opt-in (`network.doh_mode = system` or `network.dns_system_fallback`). Tor and I2P tabs still use no local DNS. `.onion` / `.i2p` never reach the clearnet resolver. Still open: an in-memory DNS cache, DNS-over-TLS as a second transport, and a decision on whether Tails and Whonix clearnet tabs should force the system resolver so they stay inside Tor. A custom DoH URL is `network.doh_mode = custom` in prefs.toml (no text field in the chrome yet).
+- [x] Clearnet DNS defaults to Quad9 DoH (`https://dns.quad9.net/dns-query`); system resolver is opt-in (`network.doh_mode = system` or `network.dns_system_fallback`). Tor and I2P tabs still use no local DNS. `.onion` / `.i2p` never reach the clearnet resolver. A private or link-local DoH answer is refused, and the same filter applies when DoH fails and system fallback is on (2026-11-15). `doh_mode = system` can still return a LAN address. Still open: an in-memory DNS cache, DNS-over-TLS as a second transport, and a decision on whether Tails and Whonix clearnet tabs should force the system resolver so they stay inside Tor. A custom DoH URL is `network.doh_mode = custom` in prefs.toml (no text field in the chrome yet).
 - [x] `.onion` / `.i2p` fail closed on the wrong circuit (no clearnet DNS)
 - [x] `about:stack` detects local Tor/I2P/GPG/SimpleX/Session/Meshtastic/XMR
 - [x] HTML subset + arena DOM + CSS/layout/gfx pipeline
@@ -687,6 +692,7 @@ A sustainable rhythm for a long project:
 - [x] CSS `@supports` evaluation (honest answers from the applied declaration list; `selector()`) (2026-10-18)
 - [x] CSS attribute selectors (`[attr]`, `=`, `~=`, `|=`, `^=`, `$=`, `*=`, `i`/`s` flags) (2026-10-21)
 - [x] CSS sibling combinators (`+`, `~`); `>` matches the parent only (2026-11-08)
+- [x] CSS structural pseudo-classes: `:first-child`, `:last-child`, `:only-child`, `:nth-child(An+B)` and the of-type / nth-last forms, plus `:not()` of one simple selector. A node with no sibling position matches none of them, including `:not(:first-child)`. `:hover`, `:focus`, `:active`, `:empty`, `:is`, `:where` stay out (2026-11-15)
 - [ ] Distro packages for Tails/Qubes beyond the notes
 - [ ] Fedora + Mint packages published (spec/debian exist)
 

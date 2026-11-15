@@ -31,6 +31,19 @@ host files.
 - comma lists (`h1, h2`)
 - `:link` and `:visited` (same color; no history leak)
 - `:root` (the `html` root element)
+- structural (2026-11-15): `:first-child`, `:last-child`, `:only-child`,
+  `:first-of-type`, `:last-of-type`, `:only-of-type`, and
+  `:nth-child()` / `:nth-last-child()` / `:nth-of-type()` /
+  `:nth-last-of-type()` with the `An+B` microsyntax (`odd`, `even`,
+  `2n+1`, `-n+3`, `2n + 1`). Text nodes do not count. `script`, `br`,
+  and `display: none` elements do. The index is the real one on the
+  parent's element children, not the 1024-sibling window used by `~`.
+  A node the tree did not place (no sibling axis) matches none of
+  these, and it does not match `:not()` of them either
+- `:not()` of exactly one simple selector (Selectors Level 3):
+  `:not(p)`, `:not(.skip)`, `:not([href])`, `:not(:link)`,
+  `:not(:nth-child(2n))`. A compound (`:not(p.a)`), a combinator,
+  a selector list, and a nested `:not` are ignored
 - attribute (2026-10-21): `[href]`, `[type="text"]`, `[rel~="nofollow"]`,
   `[lang|="en"]`, `[href^="https"]`, `[href$=".pdf"]`, `[href*="example"]`
   - names are ASCII case-insensitive (HTML). The first attribute of that
@@ -70,7 +83,8 @@ when the own engine cannot render the modern one:
   `display` answers true for `none`, `inline` and `block` only, so
   `(display: grid)` and `(display: flex)` are false today
 - `selector(...)` is true when the selector grammar above accepts it,
-  including `h1 + p` and `h1 ~ p`. A broken combinator (`h1 + > p`) is false
+  including `h1 + p`, `h1 ~ p`, `:nth-child(odd)` and `:not(p)`.
+  A broken combinator (`h1 + > p`) or a nested `:not` is false
 - `not`, `and`, `or`, nested parentheses; `and` mixed with `or` at one
   level is invalid and false, as are unknown functions such as
   `font-tech()`; conditions longer than 512 bytes are false
@@ -83,9 +97,12 @@ with their nested rules.
 
 ## Selectors (later)
 
-Pseudo-classes other than `:link`, `:visited` and `:root` are not
-accepted; the selector is ignored. A selector longer than 1024 bytes,
-or with more than 32 compounds, is ignored the same way.
+Interactive pseudo-classes (`:hover`, `:focus`, `:active`) are not
+accepted: the own engine has no input state on a static document.
+`:empty`, `:is()` and `:where()` are not accepted either. A selector
+that uses one of them is ignored. So is a selector longer than 1024
+bytes, or with more than 32 compounds. `:nth-child(An+B of S)` is
+ignored; the `of` syntax is not this subset.
 
 ## Properties (now)
 
