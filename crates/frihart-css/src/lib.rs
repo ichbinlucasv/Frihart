@@ -49,13 +49,64 @@ pub struct AttrTest {
     pub insensitive: bool,
 }
 
+/// `An+B` as in `:nth-child(2n+1)`. `a == 0` is a single index (`:nth-child(3)`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AnB {
+    pub a: i32,
+    pub b: i32,
+}
+
+impl AnB {
+    /// `position` is 1-based, the way CSS counts children.
+    pub fn matches_position(self, position: u32) -> bool {
+        if position == 0 {
+            return false;
+        }
+        let pos = i64::from(position);
+        let a = i64::from(self.a);
+        let b = i64::from(self.b);
+        if a == 0 {
+            return pos == b;
+        }
+        let diff = pos - b;
+        diff.rem_euclid(a) == 0 && diff.div_euclid(a) >= 0
+    }
+
+    /// `index` is 0-based among the siblings the pseudo counts.
+    pub fn matches_index(self, index: u32) -> bool {
+        self.matches_position(index.saturating_add(1))
+    }
+}
+
+/// A pseudo-class this subset accepts. Interactive ones (`:hover`,
+/// `:focus`, `:active`) stay out: there is no input state on the
+/// static document. `:empty`, `:is` and `:where` stay out too.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Pseudo {
+    Link,
+    Visited,
+    Root,
+    FirstChild,
+    LastChild,
+    OnlyChild,
+    FirstOfType,
+    LastOfType,
+    OnlyOfType,
+    NthChild(AnB),
+    NthLastChild(AnB),
+    NthOfType(AnB),
+    NthLastOfType(AnB),
+    /// Selectors Level 3: exactly one simple selector, not another `:not`.
+    Not(Box<Simple>),
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Simple {
     Universal,
     Type(String),
     Class(String),
     Id(String),
-    Pseudo(String),
+    Pseudo(Pseudo),
     Attr(AttrTest),
 }
 
@@ -749,11 +800,18 @@ fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
                     return None;
                 }
                 let (name, n) = read_ident(s, i);
-                if !matches!(name.as_str(), "link" | "visited" | "root") {
+                if name.is_empty() {
                     return None;
                 }
-                simples.push(Simple::Pseudo(name));
                 i = n;
+                let pseudo = if i < bytes.len() && bytes[i] == b'(' {
+                    let (inner, n) = read_function(s, i)?;
+                    i = n;
+                    parse_functional_pseudo(&name, inner)?
+                } else {
+                    parse_pseudo_ident(&name)?
+                };
+                simples.push(Simple::Pseudo(pseudo));
             }
             b'[' => {
                 let (attr, n) = parse_attr(s, i)?;
@@ -767,6 +825,206 @@ fn parse_compound(s: &str, start: usize) -> Option<(Compound, usize)> {
         return None;
     }
     Some((Compound { simples }, i))
+}
+
+fn parse_pseudo_ident(name: &str) -> Option<Pseudo> {
+    Some(match name {
+        "link" => Pseudo::Link,
+        "visited" => Pseudo::Visited,
+        "root" => Pseudo::Root,
+        "first-child" => Pseudo::FirstChild,
+        "last-child" => Pseudo::LastChild,
+        "only-child" => Pseudo::OnlyChild,
+        "first-of-type" => Pseudo::FirstOfType,
+        "last-of-type" => Pseudo::LastOfType,
+        "only-of-type" => Pseudo::OnlyOfType,
+        _ => return None,
+    })
+}
+
+fn parse_functional_pseudo(name: &str, inner: &str) -> Option<Pseudo> {
+    match name {
+        "nth-child" => Some(Pseudo::NthChild(parse_an_b(inner)?)),
+        "nth-last-child" => Some(Pseudo::NthLastChild(parse_an_b(inner)?)),
+        "nth-of-type" => Some(Pseudo::NthOfType(parse_an_b(inner)?)),
+        "nth-last-of-type" => Some(Pseudo::NthLastOfType(parse_an_b(inner)?)),
+        "not" => Some(Pseudo::Not(Box::new(parse_not_argument(inner)?))),
+        _ => None,
+    }
+}
+
+/// One simple selector. A compound (`p.a`), a combinator, or a nested
+/// `:not` makes the whole selector invalid so the rule is ignored.
+fn parse_not_argument(inner: &str) -> Option<Simple> {
+    let bytes = inner.as_bytes();
+    let start = skip_ws(bytes, 0);
+    if start >= bytes.len() {
+        return None;
+    }
+    let (compound, next) = parse_compound(inner, start)?;
+    if !inner[next..].trim().is_empty() || compound.simples.len() != 1 {
+        return None;
+    }
+    let simple = compound.simples.into_iter().next()?;
+    if matches!(simple, Simple::Pseudo(Pseudo::Not(_))) {
+        return None;
+    }
+    Some(simple)
+}
+
+/// `open` points at `(`. Returns the interior and the index after `)`.
+/// Quotes hide parentheses so `:not([title=")"])` stays one argument.
+fn read_function(s: &str, open: usize) -> Option<(&str, usize)> {
+    let bytes = s.as_bytes();
+    if open >= bytes.len() || bytes[open] != b'(' {
+        return None;
+    }
+    let mut i = open + 1;
+    let start = i;
+    let mut depth = 1u32;
+    let mut quote: Option<u8> = None;
+    while i < bytes.len() {
+        let c = bytes[i];
+        if let Some(q) = quote {
+            if c == b'\\' {
+                i += 1;
+                if i < bytes.len() {
+                    i += 1;
+                }
+                continue;
+            }
+            if c == q {
+                quote = None;
+            }
+            i += 1;
+            continue;
+        }
+        match c {
+            b'\'' | b'"' => {
+                quote = Some(c);
+                i += 1;
+            }
+            b'(' => {
+                depth = depth.checked_add(1)?;
+                i += 1;
+            }
+            b')' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some((&s[start..i], i + 1));
+                }
+                i += 1;
+            }
+            _ => i += 1,
+        }
+    }
+    None
+}
+
+/// CSS An+B microsyntax. Whitespace is allowed around the `B` sign
+/// (`2n + 1`) and nowhere else (`2 n` is rejected, not repaired).
+fn parse_an_b(input: &str) -> Option<AnB> {
+    let s = input.trim();
+    if s.is_empty() || s.len() > 64 {
+        return None;
+    }
+    if s.eq_ignore_ascii_case("odd") {
+        return Some(AnB { a: 2, b: 1 });
+    }
+    if s.eq_ignore_ascii_case("even") {
+        return Some(AnB { a: 2, b: 0 });
+    }
+    if !s.bytes().all(|b| {
+        b.is_ascii_whitespace() || b.is_ascii_digit() || matches!(b, b'+' | b'-' | b'n' | b'N')
+    }) {
+        return None;
+    }
+    let lower: String = s.chars().map(|c| c.to_ascii_lowercase()).collect();
+    let Some(n_pos) = lower.find('n') else {
+        return Some(AnB {
+            a: 0,
+            b: parse_css_int(&lower)?,
+        });
+    };
+    if lower[n_pos + 1..].contains('n') {
+        return None;
+    }
+    let a_raw = &lower[..n_pos];
+    if a_raw.chars().any(char::is_whitespace) {
+        return None;
+    }
+    let a = match a_raw {
+        "" | "+" => 1,
+        "-" => -1,
+        other => parse_css_int(other)?,
+    };
+    let b_raw = lower[n_pos + 1..].trim();
+    let b = if b_raw.is_empty() {
+        0
+    } else {
+        parse_b_term(b_raw)?
+    };
+    Some(AnB { a, b })
+}
+
+/// The `B` of `An+B`: an operator sign, optional whitespace, then an
+/// integer. `2n+-1` is `+` applied to `-1`. A space inside that integer
+/// (`2n+ - 1`) is rejected.
+fn parse_b_term(s: &str) -> Option<i32> {
+    let s = s.trim();
+    let mut chars = s.chars();
+    let sign = chars.next()?;
+    if sign != '+' && sign != '-' {
+        return None;
+    }
+    let rest: String = chars.collect();
+    let rest = rest.trim();
+    if rest.is_empty() {
+        return None;
+    }
+    let (neg_mag, digits) = if let Some(stripped) = rest.strip_prefix('+') {
+        (false, stripped)
+    } else if let Some(stripped) = rest.strip_prefix('-') {
+        (true, stripped)
+    } else {
+        (false, rest)
+    };
+    if digits.is_empty() || digits.chars().any(|c| !c.is_ascii_digit()) {
+        return None;
+    }
+    let mag = parse_css_int(digits)?;
+    let value = if neg_mag { mag.checked_neg()? } else { mag };
+    if sign == '-' {
+        value.checked_neg()
+    } else {
+        Some(value)
+    }
+}
+
+fn parse_css_int(s: &str) -> Option<i32> {
+    let s = s.trim();
+    if s.is_empty() {
+        return None;
+    }
+    let (neg, digits) = if let Some(rest) = s.strip_prefix('+') {
+        (false, rest)
+    } else if let Some(rest) = s.strip_prefix('-') {
+        (true, rest)
+    } else {
+        (false, s)
+    };
+    if digits.is_empty()
+        || digits.chars().any(char::is_whitespace)
+        || !digits.bytes().all(|b| b.is_ascii_digit())
+    {
+        return None;
+    }
+    if digits.len() > 10 {
+        return None;
+    }
+    let mag: i64 = digits.parse().ok()?;
+    let signed = if neg { -mag } else { mag };
+    i32::try_from(signed).ok()
 }
 
 /// `[attr]`, `[attr=value]`, and the `~=` `|=` `^=` `$=` `*=` matchers.
@@ -988,7 +1246,7 @@ mod tests {
                 .1
                 .simples
                 .iter()
-                .any(|s| matches!(s, Simple::Pseudo(p) if p == "link"))
+                .any(|s| matches!(s, Simple::Pseudo(Pseudo::Link)))
         );
         assert!(parse_selector("a:hover").is_none());
         assert!(parse_selector("h1 + p").is_some());
@@ -1099,6 +1357,12 @@ mod tests {
             ("selector(a[href])", true),
             ("selector(a[href^=https])", true),
             ("selector(a[*|href])", false),
+            ("selector(:first-child)", true),
+            ("selector(:nth-child(2n+1))", true),
+            ("selector(:nth-last-of-type(odd))", true),
+            ("selector(:not(p))", true),
+            ("selector(:not())", false),
+            ("selector(:not(:not(p)))", false),
             ("selector(:has(a))", false),
             ("font-tech(color-COLRv1)", false),
             ("", false),
@@ -1155,6 +1419,73 @@ mod tests {
             assert_eq!(media_matches(q, e), want, "{q}");
         }
         assert!(!media_matches(&"(min-width: 1px) and ".repeat(40), e));
+    }
+
+    #[test]
+    fn parses_structural_pseudos_and_not() {
+        let odd = parse_selector("li:nth-child(odd)").unwrap();
+        assert!(matches!(
+            &odd.parts[0].1.simples[1],
+            Simple::Pseudo(Pseudo::NthChild(AnB { a: 2, b: 1 }))
+        ));
+        let func = parse_selector("h2:nth-of-type( 2n + 1 )").unwrap();
+        assert!(matches!(
+            &func.parts[0].1.simples[1],
+            Simple::Pseudo(Pseudo::NthOfType(AnB { a: 2, b: 1 }))
+        ));
+        let neg = parse_selector("p:nth-last-child(-n+3)").unwrap();
+        assert!(matches!(
+            &neg.parts[0].1.simples[1],
+            Simple::Pseudo(Pseudo::NthLastChild(AnB { a: -1, b: 3 }))
+        ));
+        let not_attr = parse_selector(r#"a:not([title=")"])"#).unwrap();
+        assert!(matches!(
+            &not_attr.parts[0].1.simples[1],
+            Simple::Pseudo(Pseudo::Not(inner))
+                if matches!(inner.as_ref(), Simple::Attr(a) if a.value == ")")
+        ));
+        assert!(parse_selector("p:first-child").is_some());
+        assert!(parse_selector("p:last-of-type").is_some());
+        assert!(parse_selector("p:only-child").is_some());
+        assert!(parse_selector(":not( :link )").is_some());
+        assert!(parse_selector("p:nth-child(2n+-1)").is_some());
+        // A compound, a combinator, or a nested :not is not one simple.
+        assert!(parse_selector(":not(.a.b)").is_none());
+        assert!(parse_selector(":not(p > a)").is_none());
+        assert!(parse_selector(":not(:not(p))").is_none());
+        assert!(parse_selector("p:nth-child()").is_none());
+        assert!(parse_selector("p:nth-child(2 n)").is_none());
+        assert!(parse_selector("p:nth-child(2n+)").is_none());
+        assert!(parse_selector("p:nth-child(2n+1 of p)").is_none());
+        assert!(parse_selector("p:hover").is_none());
+        assert!(parse_selector("p:empty").is_none());
+        assert!(parse_selector("p::before").is_none());
+    }
+
+    #[test]
+    fn an_b_matches_one_based_positions() {
+        let odd = AnB { a: 2, b: 1 };
+        assert!(odd.matches_position(1) && odd.matches_position(5));
+        assert!(!odd.matches_position(2) && !odd.matches_position(0));
+        let even = parse_an_b("even").unwrap();
+        assert!(even.matches_index(1) && !even.matches_index(0));
+        let third = parse_an_b("3").unwrap();
+        assert_eq!(third, AnB { a: 0, b: 3 });
+        assert!(third.matches_position(3) && !third.matches_position(1));
+        let from_end = parse_an_b("-n+3").unwrap();
+        assert!(from_end.matches_position(1) && from_end.matches_position(3));
+        assert!(!from_end.matches_position(4));
+        assert_eq!(parse_an_b("2N + 1"), Some(AnB { a: 2, b: 1 }));
+        assert_eq!(parse_an_b("+n"), Some(AnB { a: 1, b: 0 }));
+        assert_eq!(parse_an_b("-n"), Some(AnB { a: -1, b: 0 }));
+        assert_eq!(parse_an_b("2n+-1"), Some(AnB { a: 2, b: -1 }));
+        assert_eq!(parse_an_b("+5"), Some(AnB { a: 0, b: 5 }));
+        assert!(parse_an_b("+ 5").is_none());
+        assert!(parse_an_b("2 n+1").is_none());
+        assert!(parse_an_b("2n+ - 1").is_none());
+        assert!(parse_an_b("99999999999").is_none());
+        assert!(parse_an_b("").is_none());
+        assert!(!parse_an_b("0").unwrap().matches_position(1));
     }
 
     #[test]
