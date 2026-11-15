@@ -32,6 +32,21 @@ pub struct SiblingName {
     pub classes: Vec<String>,
     /// HTML attributes, names already lowercased.
     pub attrs: Vec<(String, String)>,
+    /// 0-based index among element siblings with the same tag.
+    pub of_type_index: u32,
+    /// Element siblings with this tag, including this one.
+    /// Zero means the count was not filled in.
+    pub of_type_count: u32,
+}
+
+/// Where an element sits among its parent's element children.
+/// Indexes are 0-based. Counts include this element.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SiblingStats {
+    pub index: u32,
+    pub count: u32,
+    pub of_type_index: u32,
+    pub of_type_count: u32,
 }
 
 /// Tag + id + class + attributes. Ancestors live on [`Fragment`].
@@ -77,12 +92,52 @@ impl std::fmt::Debug for Qual {
 }
 
 impl Qual {
+    /// This element was placed on a parent's element-child axis.
+    pub fn on_sibling_axis(&self) -> bool {
+        !self.sibling_axis.is_empty()
+    }
+
+    /// Index of this element on that axis. Zero when it was not placed.
+    pub fn sibling_index(&self) -> usize {
+        self.sibling_index
+    }
+
+    pub fn sibling_count(&self) -> usize {
+        self.sibling_axis.len()
+    }
+
     /// Preceding element siblings, document order, nearest last.
     /// At most [`MAX_PRECEDING_SIBLINGS`] entries.
+    ///
+    /// The window can drop older siblings. [`Self::sibling_stats`] still
+    /// uses the full axis, so `:nth-child` does not restart inside the window.
     pub fn preceding_siblings(&self) -> &[SiblingName] {
         let end = self.sibling_index.min(self.sibling_axis.len());
         let start = end.saturating_sub(MAX_PRECEDING_SIBLINGS);
         &self.sibling_axis[start..end]
+    }
+
+    /// Position of this element. `None` when it was not placed, or when
+    /// a count does not fit in `u32` (structural selectors then do not match).
+    pub fn sibling_stats(&self) -> Option<SiblingStats> {
+        if !self.on_sibling_axis() {
+            return None;
+        }
+        self.sibling_stats_at(self.sibling_index)
+    }
+
+    /// Position of the element at `index` on this element's axis.
+    pub fn sibling_stats_at(&self, index: usize) -> Option<SiblingStats> {
+        let sib = self.sibling_axis.get(index)?;
+        if sib.of_type_count == 0 {
+            return None;
+        }
+        Some(SiblingStats {
+            index: u32::try_from(index).ok()?,
+            count: u32::try_from(self.sibling_axis.len()).ok()?,
+            of_type_index: sib.of_type_index,
+            of_type_count: sib.of_type_count,
+        })
     }
 }
 
@@ -219,6 +274,41 @@ fn sibling_name_of(node: &Node) -> SiblingName {
         id: q.id,
         classes: q.classes,
         attrs: q.attrs,
+        of_type_index: 0,
+        of_type_count: 0,
+    }
+}
+
+/// Fill of-type index and count in one pass. A count that cannot be
+/// represented stays zero, and [`Qual::sibling_stats`] then returns `None`.
+fn assign_of_type(names: &mut [SiblingName]) {
+    let mut totals: Vec<(String, u32)> = Vec::new();
+    for name in names.iter_mut() {
+        if let Some((_, n)) = totals
+            .iter_mut()
+            .find(|(t, _)| t.eq_ignore_ascii_case(&name.tag))
+        {
+            name.of_type_index = *n;
+            match n.checked_add(1) {
+                Some(next) => *n = next,
+                None => *n = u32::MAX,
+            }
+        } else {
+            name.of_type_index = 0;
+            totals.push((name.tag.clone(), 1));
+        }
+    }
+    for name in names.iter_mut() {
+        let total = totals
+            .iter()
+            .find(|(t, _)| t.eq_ignore_ascii_case(&name.tag))
+            .map(|(_, n)| *n)
+            .unwrap_or(0);
+        if total == u32::MAX {
+            name.of_type_count = 0;
+        } else {
+            name.of_type_count = total;
+        }
     }
 }
 
@@ -239,6 +329,7 @@ fn place_children(children: &[Node]) -> (Rc<[SiblingName]>, Vec<Option<usize>>) 
             idxs.push(None);
         }
     }
+    assign_of_type(&mut names);
     (Rc::from(names), idxs)
 }
 
@@ -1240,5 +1331,61 @@ line2</pre>
             prev.first().unwrap().id,
             format!("s{}", n - MAX_PRECEDING_SIBLINGS)
         );
+    }
+
+    #[test]
+    fn sibling_stats_count_type_and_the_full_axis() {
+        let frags = visible_fragments(&parse("<div><h2>one</h2><p>mid</p><h2>two</h2></div>"));
+        let h2s: Vec<_> = frags.iter().filter(|f| f.qual.tag == "h2").collect();
+        let first = h2s[0].qual.sibling_stats().unwrap();
+        assert_eq!(
+            first,
+            SiblingStats {
+                index: 0,
+                count: 3,
+                of_type_index: 0,
+                of_type_count: 2,
+            }
+        );
+        let second = h2s[1].qual.sibling_stats().unwrap();
+        assert_eq!(second.index, 2);
+        assert_eq!(second.of_type_index, 1);
+        assert_eq!(second.of_type_count, 2);
+        let mid = frags.iter().find(|f| f.qual.tag == "p").unwrap();
+        assert_eq!(mid.qual.sibling_stats().unwrap().index, 1);
+        assert_eq!(mid.qual.sibling_stats().unwrap().of_type_count, 1);
+
+        // script and display:none stay on the axis even though they are not painted.
+        let hidden = visible_fragments(&parse(
+            r#"<div><script></script><p style="display:none">no</p><p id="shown">yes</p></div>"#,
+        ));
+        let shown = hidden.iter().find(|f| f.qual.id == "shown").unwrap();
+        assert_eq!(shown.qual.sibling_stats().unwrap().index, 2);
+        assert!(
+            hidden.iter().all(|f| f.qual.id != "no"),
+            "the hidden paragraph is not a fragment"
+        );
+
+        let mut wide = String::from("<div>");
+        let n = MAX_PRECEDING_SIBLINGS + 2;
+        for i in 0..n {
+            wide.push_str(&format!("<p id=\"p{i}\">x</p>"));
+        }
+        wide.push_str("</div>");
+        let frags = visible_fragments(&parse(&wide));
+        let last = frags
+            .iter()
+            .find(|f| f.qual.id == format!("p{}", n - 1))
+            .unwrap();
+        let stats = last.qual.sibling_stats().unwrap();
+        assert_eq!(stats.index, (n - 1) as u32);
+        assert_eq!(stats.count, n as u32);
+        assert_eq!(stats.of_type_index, (n - 1) as u32);
+        assert_eq!(last.qual.preceding_siblings().len(), MAX_PRECEDING_SIBLINGS);
+        assert_eq!(
+            last.qual.sibling_stats_at(0).unwrap().of_type_count,
+            n as u32
+        );
+        assert!(Qual::default().sibling_stats().is_none());
     }
 }
