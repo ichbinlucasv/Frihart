@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use frihart_css::{
-    AttrOp, AttrTest, Combinator, Compound, Declaration, Selector, Simple, Stylesheet,
+    AttrOp, AttrTest, Combinator, Compound, Declaration, Pseudo, Selector, Simple, Stylesheet,
 };
 
 /// Custom properties (`--name` → raw value) visible to one element.
@@ -176,6 +176,19 @@ pub struct Element {
     /// keeps this element's ancestor slice when it steps sideways, because
     /// siblings share a parent.
     pub preceding: Vec<Element>,
+    /// Position among element siblings. `None` when the tree did not
+    /// place this node: structural pseudo-classes then do not match.
+    pub place: Option<SiblingPlace>,
+}
+
+/// 0-based sibling position. Counts include this element.
+/// Filled from `frihart_html::SiblingStats` by the pipeline.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SiblingPlace {
+    pub index: u32,
+    pub count: u32,
+    pub of_type_index: u32,
+    pub of_type_count: u32,
 }
 
 impl Element {
@@ -484,14 +497,15 @@ pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -
     if el.ancestors.first().is_none_or(|a| a.tag != "html") && el.tag != "html" {
         chain.push(Element::tag("html"));
     }
-    for i in 0..el.ancestors.len() {
+    for anc in &el.ancestors {
         chain.push(Element {
-            tag: el.ancestors[i].tag.clone(),
-            id: el.ancestors[i].id.clone(),
-            classes: el.ancestors[i].classes.clone(),
-            attrs: el.ancestors[i].attrs.clone(),
+            tag: anc.tag.clone(),
+            id: anc.id.clone(),
+            classes: anc.classes.clone(),
+            attrs: anc.attrs.clone(),
             ancestors: chain.clone(),
-            preceding: el.ancestors[i].preceding.clone(),
+            preceding: anc.preceding.clone(),
+            place: anc.place,
         });
     }
     chain.push(Element {
@@ -501,6 +515,7 @@ pub fn custom_properties(el: &Element, user: &Stylesheet, author: &Stylesheet) -
         attrs: el.attrs.clone(),
         ancestors: chain.clone(),
         preceding: el.preceding.clone(),
+        place: el.place,
     });
     for node in &chain {
         for sheet in [user, author] {
@@ -628,6 +643,7 @@ fn inherit_list_and_ws(
             attrs: el.ancestors[i].attrs.clone(),
             ancestors: el.ancestors[..i].to_vec(),
             preceding: el.ancestors[i].preceding.clone(),
+            place: el.ancestors[i].place,
         };
         let mut ac = ua_style(&anc.tag);
         if !matches!(anc.tag.as_str(), "ul" | "ol") {
@@ -761,12 +777,73 @@ fn simple_matches(simple: &Simple, el: &Element) -> bool {
         Simple::Type(t) => el.tag.eq_ignore_ascii_case(t),
         Simple::Class(c) => el.classes.iter().any(|have| have.eq_ignore_ascii_case(c)),
         Simple::Id(id) => el.id.eq_ignore_ascii_case(id),
-        Simple::Pseudo(p) => match p.as_str() {
-            "link" | "visited" => el.tag.eq_ignore_ascii_case("a"),
-            "root" => el.tag.eq_ignore_ascii_case("html") && el.ancestors.is_empty(),
-            _ => false,
-        },
+        Simple::Pseudo(p) => pseudo_matches(p, el),
         Simple::Attr(attr) => attr_matches(attr, el),
+    }
+}
+
+/// Structural pseudos need a sibling position. Without one they do not
+/// match, and neither does a `:not()` wrapped around them: an unknown
+/// position is not "not first".
+fn pseudo_matches(pseudo: &Pseudo, el: &Element) -> bool {
+    match pseudo {
+        Pseudo::Link | Pseudo::Visited => el.tag.eq_ignore_ascii_case("a"),
+        Pseudo::Root => el.tag.eq_ignore_ascii_case("html") && el.ancestors.is_empty(),
+        Pseudo::FirstChild => el.place.is_some_and(|p| p.index == 0 && p.count > 0),
+        Pseudo::LastChild => el
+            .place
+            .is_some_and(|p| p.count > 0 && p.index.checked_add(1) == Some(p.count)),
+        Pseudo::OnlyChild => el.place.is_some_and(|p| p.count == 1),
+        Pseudo::FirstOfType => el
+            .place
+            .is_some_and(|p| p.of_type_count > 0 && p.of_type_index == 0),
+        Pseudo::LastOfType => el.place.is_some_and(|p| {
+            p.of_type_count > 0 && p.of_type_index.checked_add(1) == Some(p.of_type_count)
+        }),
+        Pseudo::OnlyOfType => el.place.is_some_and(|p| p.of_type_count == 1),
+        Pseudo::NthChild(n) => el
+            .place
+            .is_some_and(|p| p.count > 0 && n.matches_index(p.index)),
+        Pseudo::NthLastChild(n) => el
+            .place
+            .is_some_and(|p| p.count > p.index && n.matches_position(p.count - p.index)),
+        Pseudo::NthOfType(n) => el
+            .place
+            .is_some_and(|p| p.of_type_count > 0 && n.matches_index(p.of_type_index)),
+        Pseudo::NthLastOfType(n) => el.place.is_some_and(|p| {
+            p.of_type_count > p.of_type_index
+                && n.matches_position(p.of_type_count - p.of_type_index)
+        }),
+        Pseudo::Not(inner) => pseudo_argument_known(inner, el) && !simple_matches(inner, el),
+    }
+}
+
+fn pseudo_argument_known(simple: &Simple, el: &Element) -> bool {
+    match simple {
+        Simple::Pseudo(Pseudo::Not(_)) => false,
+        Simple::Pseudo(inner) => pseudo_is_decidable(inner, el),
+        Simple::Universal
+        | Simple::Type(_)
+        | Simple::Class(_)
+        | Simple::Id(_)
+        | Simple::Attr(_) => true,
+    }
+}
+
+fn pseudo_is_decidable(pseudo: &Pseudo, el: &Element) -> bool {
+    match pseudo {
+        Pseudo::Link | Pseudo::Visited | Pseudo::Root => true,
+        Pseudo::Not(inner) => pseudo_argument_known(inner, el),
+        Pseudo::FirstChild
+        | Pseudo::LastChild
+        | Pseudo::OnlyChild
+        | Pseudo::FirstOfType
+        | Pseudo::LastOfType
+        | Pseudo::OnlyOfType
+        | Pseudo::NthChild(_)
+        | Pseudo::NthLastChild(_)
+        | Pseudo::NthOfType(_)
+        | Pseudo::NthLastOfType(_) => el.place.is_some(),
     }
 }
 
@@ -984,6 +1061,7 @@ mod tests {
             attrs: Vec::new(),
             ancestors: ancestors.iter().map(|t| Element::tag(t)).collect(),
             preceding: Vec::new(),
+            place: None,
         }
     }
 
@@ -1099,6 +1177,7 @@ mod tests {
                 },
             ],
             preceding: Vec::new(),
+            place: None,
         };
         let c = style_element(&el, &user, &author);
         assert_eq!(c.font_size, 22.0);
@@ -1309,6 +1388,76 @@ mod tests {
         assert!(!selector_matches(&child, &nested));
         assert!(selector_matches(&desc, &direct));
         assert!(selector_matches(&desc, &nested));
+    }
+
+    fn at(tag: &str, index: u32, count: u32, of_i: u32, of_c: u32) -> Element {
+        Element {
+            tag: tag.into(),
+            place: Some(SiblingPlace {
+                index,
+                count,
+                of_type_index: of_i,
+                of_type_count: of_c,
+            }),
+            ..Element::default()
+        }
+    }
+
+    #[test]
+    fn structural_pseudos_follow_sibling_place() {
+        let sel = |s: &str| frihart_css::parse_selector(s).unwrap();
+        let first = at("li", 0, 3, 0, 3);
+        let mid = at("li", 1, 3, 1, 3);
+        let last = at("li", 2, 3, 2, 3);
+        let only = at("p", 0, 1, 0, 1);
+        let unplaced = Element::tag("li");
+        assert!(selector_matches(&sel("li:first-child"), &first));
+        assert!(!selector_matches(&sel("li:first-child"), &mid));
+        assert!(selector_matches(&sel("li:last-child"), &last));
+        assert!(!selector_matches(&sel("li:last-child"), &mid));
+        assert!(selector_matches(&sel("li:nth-child(odd)"), &first));
+        assert!(selector_matches(&sel("li:nth-child(2n+1)"), &last));
+        assert!(!selector_matches(&sel("li:nth-child(even)"), &first));
+        assert!(selector_matches(&sel("li:nth-child(even)"), &mid));
+        assert!(selector_matches(&sel("li:nth-last-child(1)"), &last));
+        assert!(selector_matches(&sel("li:nth-of-type(2)"), &mid));
+        assert!(selector_matches(&sel("p:only-child"), &only));
+        assert!(!selector_matches(&sel("li:only-child"), &only));
+        assert!(!selector_matches(&sel("li:only-child"), &first));
+        assert!(selector_matches(&sel("p:only-of-type"), &only));
+        let second_h2 = at("h2", 2, 3, 1, 2);
+        assert!(selector_matches(&sel("h2:last-of-type"), &second_h2));
+        assert!(selector_matches(&sel("h2:nth-last-of-type(1)"), &second_h2));
+        assert!(!selector_matches(&sel("h2:first-of-type"), &second_h2));
+        assert!(selector_matches(&sel("li:not(:first-child)"), &mid));
+        assert!(!selector_matches(&sel("li:not(:first-child)"), &first));
+        assert!(selector_matches(&sel("li:not(.gone)"), &unplaced));
+        // No position: the pseudo is not true, and :not of it is not true either.
+        assert!(!selector_matches(&sel("li:first-child"), &unplaced));
+        assert!(!selector_matches(&sel("li:nth-child(1)"), &unplaced));
+        assert!(!selector_matches(&sel("li:not(:first-child)"), &unplaced));
+        let after_first = Element {
+            tag: "p".into(),
+            place: Some(SiblingPlace {
+                index: 1,
+                count: 2,
+                of_type_index: 0,
+                of_type_count: 1,
+            }),
+            preceding: vec![Element {
+                tag: "h1".into(),
+                place: Some(SiblingPlace {
+                    index: 0,
+                    count: 2,
+                    of_type_index: 0,
+                    of_type_count: 1,
+                }),
+                ..Element::default()
+            }],
+            ..Element::default()
+        };
+        assert!(selector_matches(&sel("h1:first-child + p"), &after_first));
+        assert!(!selector_matches(&sel("h1:last-child + p"), &after_first));
     }
 
     #[test]

@@ -175,6 +175,7 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
         classes: frag.qual.classes.clone(),
         attrs: frag.qual.attrs.clone(),
         preceding: preceding_of(&frag.qual),
+        place: place_of(frag.qual.sibling_stats()),
         ancestors: frag
             .ancestors
             .iter()
@@ -184,22 +185,40 @@ fn element_from(frag: &frihart_html::Fragment) -> Element {
                 classes: q.classes.clone(),
                 attrs: q.attrs.clone(),
                 preceding: preceding_of(q),
+                place: place_of(q.sibling_stats()),
                 ancestors: Vec::new(),
             })
             .collect(),
     }
 }
 
+fn place_of(stats: Option<frihart_html::SiblingStats>) -> Option<frihart_style::SiblingPlace> {
+    stats.map(|s| frihart_style::SiblingPlace {
+        index: s.index,
+        count: s.count,
+        of_type_index: s.of_type_index,
+        of_type_count: s.of_type_count,
+    })
+}
+
 fn preceding_of(qual: &frihart_html::Qual) -> Vec<Element> {
-    qual.preceding_siblings()
+    if !qual.on_sibling_axis() {
+        return Vec::new();
+    }
+    let shown = qual.preceding_siblings();
+    let end = qual.sibling_index().min(qual.sibling_count());
+    let start = end.saturating_sub(shown.len());
+    shown
         .iter()
-        .map(|s| Element {
+        .enumerate()
+        .map(|(offset, s)| Element {
             tag: s.tag.clone(),
             id: s.id.clone(),
             classes: s.classes.clone(),
             attrs: s.attrs.clone(),
             ancestors: Vec::new(),
             preceding: Vec::new(),
+            place: place_of(qual.sibling_stats_at(start + offset)),
         })
         .collect()
 }
@@ -268,6 +287,59 @@ mod tests {
         assert_ne!(color("after"), 0x00112233, "script breaks +");
         assert_eq!(color("def"), 0x00445566, "dt + dd");
         assert_ne!(color("term"), 0x00445566);
+    }
+
+    #[test]
+    fn structural_pseudos_reach_the_painted_boxes() {
+        let html = r#"<style>
+            ul > li:nth-child(odd) { color: #112233 }
+            ul > li:nth-child(even) { color: #445566 }
+            ul > li:first-child { background-color: #111111 }
+            ul > li:last-child { font-weight: 700 }
+            h2:first-of-type { color: #778899 }
+            h2:nth-last-of-type(1) { color: #aabbcc }
+            p:only-child { color: #010203 }
+            strong.note:not(.skip) { color: #0a0b0c }
+            p:nth-child(2) { background-color: #0d0e0f }
+          </style>
+          <div>
+            <h2>one</h2>
+            <p>mid</p>
+            <h2>two</h2>
+            <ul>
+              <li>alpha</li>
+              <li>beta</li>
+              <li>gamma</li>
+            </ul>
+          </div>
+          <section><p>alone</p></section>
+          <p><strong class="note">kept</strong> <strong class="note skip">dropped</strong></p>"#;
+        let f = layout_html(html, "", 400.0);
+        let box_of = |text: &str| {
+            f.boxes
+                .iter()
+                .find(|b| b.text.contains(text))
+                .unwrap_or_else(|| panic!("missing {text}"))
+        };
+        assert_eq!(box_of("alpha").style.color, 0x00112233);
+        assert_eq!(box_of("alpha").style.background, 0x00111111);
+        assert_eq!(box_of("beta").style.color, 0x00445566);
+        assert_eq!(
+            box_of("gamma").style.color,
+            0x00112233,
+            "third child is odd"
+        );
+        assert_eq!(box_of("gamma").style.background, 0, "not the first child");
+        assert_eq!(box_of("gamma").style.font_weight, 700);
+        assert_ne!(box_of("alpha").style.font_weight, 700);
+        assert_eq!(box_of("one").style.color, 0x00778899);
+        assert_eq!(box_of("two").style.color, 0x00aabbcc);
+        assert_eq!(box_of("alone").style.color, 0x00010203);
+        assert_eq!(box_of("kept").style.color, 0x000a0b0c);
+        assert_ne!(box_of("dropped").style.color, 0x000a0b0c);
+        // Inside the div, the first h2 is child 1 and this paragraph is child 2.
+        assert_eq!(box_of("mid").style.background, 0x000d0e0f);
+        assert_eq!(box_of("alone").style.background, 0);
     }
 
     #[test]
