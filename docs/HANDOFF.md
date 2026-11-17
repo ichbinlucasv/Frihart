@@ -55,7 +55,7 @@ or link + extra title) is one hit. `svg`/`path`/`canvas` skipped.
 **webarch**, **RFC 9110**, **WCAG 2.2**, **RFC 8446**, **RFC 5280**,
 **RFC 8032** (Ed25519), **RFC 7748** (Curve25519 / X25519),
 **RFC 5869** (HKDF), **openbsd.org**, **openssh.com**
-(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**, **torproject.org**, **i2pd.website**, **mullvad.net**, **privacyguides.org**, **sequoia-pgp.org**, **grapheneos.org**. Settings is
+(→ openssh.org), **libressl.org**, **openbsdfoundation.org**, **openbgpd.org**, **opensmtpd.org**, **openntpd.org**, **openiked.org**, **bearssl.org**, **wireguard.com**, **gnupg.org**, **noiseprotocol.org**, **curl.se**, **signal.org**, **c2sp.org/age**, **torproject.org**, **i2pd.website**, **mullvad.net**, **privacyguides.org**, **sequoia-pgp.org**, **grapheneos.org**, **openssl.org**. Settings is
 the LibreWolf-stance page (native prefs, black/yellow). CSS
 `font-family` is engine slots only; `list-style` / `white-space` are in.
 Letterboxing paint exists (pref off).
@@ -81,7 +81,9 @@ Refuse-only. Pref flip is not a grant. `javascript:` refused.
 1. **Bridges (OPSEC).** `about:bridges` + `tor.require_bridges` + `allow_tor_fetch` are in. Next OPSEC slice: ControlPort bridge-status query so require=on can pass when Tor reports Active.
 2. **This / next session — D.** The named queue is empty. Pick one more
    static document (not Wikipedia / GitHub / mail) and claim it from live
-   HTML. Forty-one public claims; CSS leftovers done. **grapheneos.org**
+   HTML. Forty-two public claims; CSS leftovers done. **openssl.org**
+   claimed 2026-11-18 (apex and www same bytes; security and privacy tools).
+   **grapheneos.org**
    claimed 2026-10-29 (www 301 → apex; private and secure mobile OS).
    **RFC 8439** claimed 2026-10-17 (ChaCha20-Poly1305, pre page).
    **sequoia-pgp.org** claimed 2026-10-16. **libsodium.org** Forbidden
@@ -134,7 +136,7 @@ w3.org/TR index, webarch, RFC 9110 HTML, WCAG 2.2, RFC 8446 HTML,
 RFC 5280 HTML, RFC 8032 HTML (Ed25519), RFC 7748 HTML (Curve25519 /
 X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
 (→ openssh.org), libressl.org, openbsdfoundation.org, openbgpd.org, opensmtpd.org, openntpd.org, openiked.org, bearssl.org, wireguard.com, gnupg.org, noiseprotocol.org, curl.se, signal.org, c2sp.org/age, torproject.org, i2pd.website, mullvad.net, privacyguides.org, tails.net, sequoia-pgp.org, RFC 8439 HTML
-(ChaCha20-Poly1305), grapheneos.org.
+(ChaCha20-Poly1305), grapheneos.org, openssl.org.
 
 ## Next session — start here
 
@@ -143,7 +145,7 @@ X25519), RFC 5869 HTML (HKDF), openbsd.org, openssh.com
 `*-of-type` / `nth-last-*` forms, plus `:not` of one simple selector).
 `:hover`, `:focus`, `:active`, `:empty`, `:is` and `:where` stay out.
 Sibling combinators (`+`, `~`) are in, and `>` matches the parent only.
-Not Wikipedia / GitHub / mail. Forty-one public sites (grapheneos.org last Claimed).
+Not Wikipedia / GitHub / mail. Forty-two public sites (openssl.org last Claimed).
 Servo stays the Compat engine for clearnet speed and tests. Own engine
 stays Reader, Tor, and I2P. The Servo request gate refuses `Referer`, a
 `Cookie` or `Authorization` that is not same-site with the document,

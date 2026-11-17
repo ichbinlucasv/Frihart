@@ -1604,4 +1604,23 @@ line2</pre>"#;
         let wide = layout_html_ex(html, "https://grapheneos.org/", 5120.0, 1440.0);
         assert_eq!(wide.title, f.title);
     }
+
+    #[test]
+    fn openssl_org_is_readable() {
+        let html = include_str!("../testdata/openssl.org.html");
+        let f = layout_html_ex(html, "https://www.openssl.org/", 1000.0, 800.0);
+        assert!(f.title.contains("OpenSSL"));
+        let blob: String = f.boxes.iter().map(|b| b.text.as_str()).collect();
+        assert!(blob.contains("security and privacy"));
+        assert!(blob.contains("fundamental human right") || blob.contains("human right"));
+        assert!(blob.contains("OpenSSL Library") || blob.contains("Library"));
+        assert!(blob.contains("FAQ") || blob.contains("About"));
+        assert!(f.boxes.iter().any(|b| {
+            b.href.as_deref().is_some_and(|h| {
+                h.contains("/faq") || h.contains("openssl-library.org") || h.contains("/about")
+            })
+        }));
+        let wide = layout_html_ex(html, "https://www.openssl.org/", 5120.0, 1440.0);
+        assert_eq!(wide.title, f.title);
+    }
 }

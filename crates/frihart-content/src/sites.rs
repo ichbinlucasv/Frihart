@@ -290,6 +290,12 @@ pub fn claims() -> &'static [SiteClaim] {
             note: "title GrapheneOS, private and secure mobile OS, Android app compatibility, Features/Install/FAQ; www 301 to apex; external CSS unused; head redirect.js skipped; live HTML 2026-10-29",
         },
         SiteClaim {
+            url: "https://www.openssl.org/",
+            name: "openssl.org",
+            status: ClaimStatus::Claimed,
+            note: "title OpenSSL, security and privacy tools as a fundamental human right, Library/FAQ/About; apex and www same bytes; no script; live HTML 2026-11-18",
+        },
+        SiteClaim {
             url: "https://age-encryption.org/",
             name: "age-encryption.org",
             status: ClaimStatus::NeedsJs,
@@ -369,6 +375,8 @@ mod tests {
         assert!(is_claimed_url(&u("about:home")));
         assert!(is_claimed_url(&u("https://openbsd.org/faq/")));
         assert!(is_claimed_url(&u("https://www.openbsd.org/")));
+        assert!(is_claimed_url(&u("https://openssl.org/")));
+        assert!(is_claimed_url(&u("https://www.openssl.org/source/")));
         assert!(!is_claimed_url(&u("https://github.com/")));
         assert!(!is_claimed_url(&u("https://notopenbsd.org/")));
         assert!(!is_claimed_url(&u("https://example.invalid/")));
@@ -377,7 +385,7 @@ mod tests {
     #[test]
     fn list_is_honest() {
         assert!(claimed_count() >= 3);
-        assert_eq!(public_claimed(), 41);
+        assert_eq!(public_claimed(), 42);
         assert!(
             claims()
                 .iter()
@@ -585,6 +593,11 @@ mod tests {
             s.status == ClaimStatus::Claimed
                 && s.url.contains("grapheneos.org")
                 && s.note.contains("Android app compatibility")
+        }));
+        assert!(claims().iter().any(|s| {
+            s.status == ClaimStatus::Claimed
+                && s.url.contains("openssl.org")
+                && s.note.contains("fundamental human right")
         }));
         assert!(claims().iter().any(|s| {
             s.status == ClaimStatus::NeedsJs

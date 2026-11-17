@@ -57,11 +57,12 @@ These are our chrome. They do not prove the HTML engine.
 | https://www.sequoia-pgp.org/ | Live HTML 2026-10-16 (apex and www same bytes). Title `Sequoia-PGP`. h1 “A new OpenPGP Library”, modular OpenPGP in Rust, blog cards. External CSS unused (nav stacks). IE conditional + `/script.js` skipped. Also 5120×1440. |
 | https://www.rfc-editor.org/rfc/rfc8439.html | Live HTML 2026-10-17. Title from `span.h1`: ChaCha20 and Poly1305 for IETF Protocols. Abstract, AEAD, pre page. Same shape as the other claimed RFCs. Also 5120×1440. |
 | https://grapheneos.org/ | Live HTML 2026-10-29 (www 301 → apex). Title `GrapheneOS: the private and secure mobile OS`. h1 heading-link “GrapheneOS”. Lead “private and secure mobile operating system” / Android app compatibility. Nav Features / Install / FAQ. About (sandboxing, non-profit open source). “No Google apps or services”. External CSS unused (nav stacks). Head `redirect.js` skipped. SVG icons skipped. Also 5120×1440. |
+| https://www.openssl.org/ | Live HTML 2026-11-18 (apex and www same bytes, both HTTP 200). Title `OpenSSL`. Mission: security and privacy tools as a fundamental human right. Links FAQ, About, OpenSSL Library, Bouncy Castle, Cryptlib. No script. External CSS unused. Also 5120×1440. |
 
 ## Target (open next)
 
-Forty-one public claims are in. CSS leftovers `list-style` /
-`white-space` are in. **grapheneos.org** claimed 2026-10-29. **RFC 8439**
+Forty-two public claims are in. CSS leftovers `list-style` /
+`white-space` are in. **openssl.org** claimed 2026-11-18. **grapheneos.org** claimed 2026-10-29. **RFC 8439**
 claimed 2026-10-17. **sequoia-pgp.org** claimed 2026-10-16.
 **libsodium.org** Forbidden (apex/www → doc → gitbook.io) and
 **age-encryption.org** Forbidden (apex → GitHub) remain unclaimed.
